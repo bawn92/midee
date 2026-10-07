@@ -196,24 +196,7 @@ export class PlayAlongEngine {
           lights.setGuidance(null)
           return
         }
-        const stepTime = status.step.time
-        const notes = midi.tracks.flatMap((track, trackIndex) =>
-          track.isDrum
-            ? []
-            : track.notes
-                .filter(
-                  (note) =>
-<<<<<<< HEAD
-                    (this.state.hand === 'both' || noteHand(note.pitch) === this.state.hand) &&
-                    status.pending.has(note.pitch) &&
-                    Math.abs(note.time - stepTime) <= 0.04,
-=======
-                    status.step!.pitches.has(note.pitch) && Math.abs(note.time - stepTime) <= 0.04,
->>>>>>> f45f43d (fix: separate practice key lights from playback scheduling)
-                )
-                .map((note) => ({ ...note, channel: track.channel, trackIndex })),
-        )
-        lights.setGuidance(notes)
+        lights.setGuidance(status.step.notes)
       }),
       services.clock.subscribe((t) => this.onTick(t)),
       watch(

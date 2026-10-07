@@ -48,12 +48,24 @@ export interface AutoPlayedNote {
   duration: number
 }
 
+// A note the player must press. Shared with key-light guidance so consumers
+// do not reconstruct the chord or its track/channel identities independently.
+export interface PracticeNote {
+  pitch: number
+  velocity: number
+  channel: number
+  trackIndex: number
+}
+
 export interface PracticeStep {
   // Start time of the chord step (seconds).
   time: number
   // Pitches (MIDI numbers) the user must press to advance.
   pitches: ReadonlySet<number>
   auto: readonly AutoPlayedNote[]
+  // Required notes only. Out-of-range and other-hand tones stay in `auto`
+  // so key lights do not guide a key the player should not press.
+  notes: readonly PracticeNote[]
   // Furthest end time of any *required* note in this step — handy for the
   // HUD's "next bar" affordance even though the engine itself doesn't consume it.
   latestEnd: number
@@ -419,7 +431,7 @@ export class PracticeEngine {
       return
     }
 
-    interface Onset {
+    interface Onset extends PracticeNote {
       time: number
       pitch: number
       end: number
@@ -428,7 +440,7 @@ export class PracticeEngine {
       playable: boolean
     }
     const onsets: Onset[] = []
-    for (const track of this.midi.tracks) {
+    for (const [trackIndex, track] of this.midi.tracks.entries()) {
       if (track.isDrum) continue
       if (this.visibleTrackIds && !this.visibleTrackIds.has(track.id)) continue
       for (const note of track.notes) {
@@ -441,6 +453,8 @@ export class PracticeEngine {
           velocity: note.velocity,
           duration: note.duration,
           playable: role.kind === 'required',
+          channel: track.channel,
+          trackIndex,
         })
       }
     }
@@ -476,7 +490,18 @@ export class PracticeEngine {
       }
       // Nothing the player can press — let the clock carry these notes.
       if (pitches.size > 0) {
-        steps.push({ time: head.time, pitches, auto: [...auto.values()], latestEnd })
+        const notes: PracticeNote[] = []
+        for (let k = i; k < j; k++) {
+          const onset = onsets[k]!
+          if (!onset.playable) continue
+          notes.push({
+            pitch: onset.pitch,
+            velocity: onset.velocity,
+            channel: onset.channel,
+            trackIndex: onset.trackIndex,
+          })
+        }
+        steps.push({ time: head.time, pitches, auto: [...auto.values()], latestEnd, notes })
       }
       i = j
     }
