@@ -480,6 +480,21 @@ const ptBR: Messages = {
   'toast.updated': 'Atualizado para a versão mais recente',
 
   'onboarding.localeDetected': 'Mostrando em {language} · troque em Aparência',
+
+  'kbdRange.title': 'Extensão do teclado',
+  'kbdRange.tip':
+    'Teclas que o seu teclado pode tocar. O modo espera ignora as notas fora deste intervalo.',
+  'kbdRange.aria': 'Extensão de {low} a {high}, {count} teclas',
+  'kbdRange.semitoneDown': 'Descer o intervalo um semitom',
+  'kbdRange.semitoneUp': 'Subir o intervalo um semitom',
+  'kbdRange.octaveDown': 'Descer o intervalo uma oitava',
+  'kbdRange.octaveUp': 'Subir o intervalo uma oitava',
+  'kbdRange.start': 'Nota mais grave',
+  'kbdRange.size': 'Número de teclas',
+  'kbdRange.follow': 'Seguir o MIDI',
+  'kbdRange.followTip': 'Desloca o intervalo para incluir notas MIDI que caiam fora dele.',
+  'kbdRange.full': 'Piano completo',
+  'kbdRange.presets': 'Tamanhos',
 }
 
 export default ptBR

@@ -37,13 +37,23 @@ const ENGAGE_LEAD_SEC = 0.01
 // below a typical sixteenth-note at moderate tempos.
 const EARLY_ACCEPT_SEC = 0.12
 
+// A chord tone the player cannot reach. The host sounds it when the step
+// clears. A chord made only of these never becomes a step — the clock keeps
+// running and the synth plays them on its own.
+export interface AutoPlayedNote {
+  pitch: number
+  velocity: number
+  duration: number
+}
+
 export interface PracticeStep {
   // Start time of the chord step (seconds).
   time: number
   // Pitches (MIDI numbers) the user must press to advance.
   pitches: ReadonlySet<number>
-  // Furthest end time of any note in this step — handy for the HUD's "next
-  // bar" affordance even though the engine itself doesn't consume it.
+  auto: readonly AutoPlayedNote[]
+  // Furthest end time of any *required* note in this step — handy for the
+  // HUD's "next bar" affordance even though the engine itself doesn't consume it.
   latestEnd: number
 }
 
@@ -80,7 +90,7 @@ export interface PracticeCallbacks {
   // Called when the engine has cleared the current step. The host should
   // resume playback from `resumeTime` — slightly past the chord onset so the
   // scheduler doesn't re-trigger the chord the user just played.
-  onWaitEnd(resumeTime: number): void
+  onWaitEnd(resumeTime: number, auto?: readonly AutoPlayedNote[]): void
 }
 
 // Outcome of `notePressed`. `articulationMs` is wall-clock between the FIRST
@@ -129,6 +139,10 @@ export class PracticeEngine {
     typeof performance !== 'undefined' ? performance.now() : Date.now()
 
   private visibleTrackIds: Set<string> | null = null
+  // Inclusive MIDI window the player can press. Notes outside it are not
+  // waited on. Defaults to the 88-key piano, which is the historical behavior.
+  private playableMin = MIDI_MIN
+  private playableMax = MIDI_MAX
 
   private unsubClock: (() => void) | null = null
 
@@ -144,6 +158,35 @@ export class PracticeEngine {
     this.rebuildSteps()
     this.recomputeNextStep(this.clock.currentTime)
     this.releaseInternalState()
+    this.publish()
+  }
+
+  // Narrow (or restore) which pitches wait mode demands. Out-of-range notes
+  // in a chord the player *does* have to finish are recorded on the step as
+  // `auto` so the host can sound them; a chord with nothing in range is
+  // omitted and the clock plays straight through it.
+  //
+  // Mirrors `setVisibleTracks`: if a wait was holding a chord that no longer
+  // has a required pitch, the wait drops and the host decides whether to
+  // resume (PlayAlongEngine does, when the player still wants playback).
+  setPlayableRange(min: number, max: number): void {
+    const lo = Number.isFinite(min) ? min : this.playableMin
+    const hi = Number.isFinite(max) ? max : this.playableMax
+    const nextMin = Math.min(lo, hi)
+    const nextMax = Math.max(lo, hi)
+    if (nextMin === this.playableMin && nextMax === this.playableMax) return
+    const previousWaitStep = this.waiting ? (this.steps[this.nextStepIdx] ?? null) : null
+    this.playableMin = nextMin
+    this.playableMax = nextMax
+    this.rebuildSteps()
+    this.releaseInternalState()
+    if (!this.enabled) {
+      this.publish()
+      return
+    }
+    if (previousWaitStep && this.reengageFilteredWait(previousWaitStep)) return
+    this.recomputeNextStep(this.clock.currentTime)
+    if (this.engageWaitIfDue(this.clock.currentTime)) return
     this.publish()
   }
 
@@ -291,6 +334,7 @@ export class PracticeEngine {
   private advancePastCurrentStep(): void {
     const step = this.steps[this.nextStepIdx]
     const resumeAt = step ? step.time + RESUME_NUDGE_SEC : this.clock.currentTime
+    const auto = step && step.auto.length > 0 ? step.auto : undefined
     this.earliestRearmTime = resumeAt + REARM_BUFFER_SEC
     const nextIdx = this.nextStepIdx + 1
     this.nextStepIdx = nextIdx < this.steps.length ? nextIdx : -1
@@ -298,7 +342,10 @@ export class PracticeEngine {
     this.pending = new Set()
     this.accepted = new Set()
     this.chordStartMs = null
-    this.callbacks.onWaitEnd(resumeAt)
+    // Omit the second argument when there's nothing to sound. Callers and
+    // tests treat `onWaitEnd(time)` as the no-auto shape.
+    if (auto) this.callbacks.onWaitEnd(resumeAt, auto)
+    else this.callbacks.onWaitEnd(resumeAt)
   }
 
   private releaseInternalState(): void {
@@ -332,19 +379,24 @@ export class PracticeEngine {
       time: number
       pitch: number
       end: number
+      velocity: number
+      duration: number
+      playable: boolean
     }
     const onsets: Onset[] = []
     for (const track of this.midi.tracks) {
       if (track.isDrum) continue
       if (this.visibleTrackIds && !this.visibleTrackIds.has(track.id)) continue
       for (const note of track.notes) {
-        // No key for it on an 88-key piano — the player can't press it, and
-        // the roll doesn't draw it, so waiting on it would stall forever.
-        if (note.pitch < MIDI_MIN || note.pitch > MIDI_MAX) continue
         onsets.push({
           time: note.time,
           pitch: note.pitch,
           end: note.time + note.duration,
+          velocity: note.velocity,
+          duration: note.duration,
+          // Off the 88 keys there is nothing to press, and the same is true
+          // of a note outside the player's configured keyboard window.
+          playable: this.isPlayablePitch(note.pitch),
         })
       }
     }
@@ -355,19 +407,46 @@ export class PracticeEngine {
     while (i < onsets.length) {
       const head = onsets[i]!
       const groupEnd = head.time + STEP_GROUPING_SEC
-      const pitches = new Set<number>([head.pitch])
-      let latestEnd = head.end
-      let j = i + 1
+      const pitches = new Set<number>()
+      const auto = new Map<number, AutoPlayedNote>()
+      let latestEnd = -Infinity
+      let j = i
       while (j < onsets.length && onsets[j]!.time <= groupEnd) {
-        pitches.add(onsets[j]!.pitch)
-        if (onsets[j]!.end > latestEnd) latestEnd = onsets[j]!.end
+        const onset = onsets[j]!
+        if (onset.playable) {
+          pitches.add(onset.pitch)
+          if (onset.end > latestEnd) latestEnd = onset.end
+        } else {
+          const prev = auto.get(onset.pitch)
+          if (!prev || onset.duration > prev.duration) {
+            auto.set(onset.pitch, {
+              pitch: onset.pitch,
+              velocity: onset.velocity,
+              duration: onset.duration,
+            })
+          } else if (onset.velocity > prev.velocity) {
+            prev.velocity = onset.velocity
+          }
+        }
         j++
       }
-      steps.push({ time: head.time, pitches, latestEnd })
+      // Nothing the player can press — let the clock carry these notes.
+      if (pitches.size > 0) {
+        steps.push({ time: head.time, pitches, auto: [...auto.values()], latestEnd })
+      }
       i = j
     }
 
     this.steps = steps
+  }
+
+  private isPlayablePitch(pitch: number): boolean {
+    return (
+      pitch >= MIDI_MIN &&
+      pitch <= MIDI_MAX &&
+      pitch >= this.playableMin &&
+      pitch <= this.playableMax
+    )
   }
 
   private publish(): void {

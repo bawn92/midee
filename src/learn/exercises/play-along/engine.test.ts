@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
-import { type MidiFile, nominalTempoMap } from '../../../core/midi/types'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { setKeyboardRange } from '../../../core/keyboardRange'
+import { MIDI_MIN, type MidiFile, nominalTempoMap } from '../../../core/midi/types'
 import type { AppServices } from '../../../core/services'
 import { createLearnState, type LearnState } from '../../core/LearnState'
 import { cycleSpeedPreset, PlayAlongEngine } from './engine'
@@ -64,6 +65,9 @@ function makeSynth() {
     get seekCalls() {
       return seekCalls
     },
+    audioContextTime: 10,
+    scheduleNoteOn: vi.fn(),
+    scheduleNoteOff: vi.fn(),
   }
 }
 
@@ -863,5 +867,56 @@ describe('PlayAlongEngine loop seed width', () => {
     engine.attach(short)
     engine.toggleLoop(2)
     expect(engine.state.loopRegion).toEqual({ start: 0, end: 5 })
+  })
+})
+
+describe('PlayAlongEngine keyboard range', () => {
+  afterEach(() => {
+    setKeyboardRange({ start: MIDI_MIN, size: 88, followMidi: false })
+  })
+
+  it('resumes playback when the waited notes leave the keyboard range', () => {
+    const { services, clock, learnState } = makeServices()
+    const engine = new PlayAlongEngine({ services, learnState })
+    engine.attach(makeMidi())
+    engine.setWaitEnabled(true)
+    engine.play()
+
+    clock.emit(2.01)
+    expect(engine.practice.isWaiting).toBe(true)
+    expect(clock.playing).toBe(false)
+
+    // C5–B6. The C4 chord (60/64/67) is below it, so the wait has to let go.
+    setKeyboardRange({ start: 72, size: 24 })
+    expect(engine.practice.isWaiting).toBe(false)
+    expect(clock.playing).toBe(true)
+    expect(learnState.state.status).toBe('playing')
+    engine.detach()
+  })
+
+  it('sounds the out-of-range member of a chord when the player clears it', () => {
+    const { services, clock, synth, learnState } = makeServices()
+    const engine = new PlayAlongEngine({ services, learnState })
+    // C4–B4. The second chord's C5 (72) is one step above the window.
+    setKeyboardRange({ start: 60, size: 12 })
+    engine.attach(makeMidi())
+    engine.setWaitEnabled(true)
+    engine.play()
+
+    clock.emit(2.01)
+    engine.practice.notePressed(60)
+    engine.practice.notePressed(64)
+    engine.practice.notePressed(67)
+    expect(synth.scheduleNoteOn).not.toHaveBeenCalled()
+
+    clock.emit(4.01)
+    expect(engine.practice.isWaiting).toBe(true)
+    expect([...(engine.practice.peekNextStep()?.pitches ?? [])].sort()).toEqual([65, 69])
+    engine.practice.notePressed(65)
+    const outcome = engine.practice.notePressed(69)
+    expect(outcome.kind).toBe('advanced')
+    expect(synth.scheduleNoteOn).toHaveBeenCalledWith(72, 1, 10)
+    expect(synth.scheduleNoteOff).toHaveBeenCalledWith(72, 10.5)
+    engine.detach()
   })
 })

@@ -487,6 +487,21 @@ const fr: Messages = {
   'toast.updated': 'Mis à jour vers la dernière version',
 
   'onboarding.localeDetected': 'Affichage en {language} · changez dans Apparence',
+
+  'kbdRange.title': 'Tessiture du clavier',
+  'kbdRange.tip':
+    'Touches que votre clavier peut jouer. Le mode attente ignore les notes hors de cette plage.',
+  'kbdRange.aria': 'Tessiture de {low} à {high}, {count} touches',
+  'kbdRange.semitoneDown': 'Descendre la tessiture d’un demi-ton',
+  'kbdRange.semitoneUp': 'Monter la tessiture d’un demi-ton',
+  'kbdRange.octaveDown': 'Descendre la tessiture d’une octave',
+  'kbdRange.octaveUp': 'Monter la tessiture d’une octave',
+  'kbdRange.start': 'Note la plus grave',
+  'kbdRange.size': 'Nombre de touches',
+  'kbdRange.follow': 'Suivre le MIDI',
+  'kbdRange.followTip': 'Décale la plage pour inclure les notes MIDI qui tombent en dehors.',
+  'kbdRange.full': 'Piano complet',
+  'kbdRange.presets': 'Tailles',
 }
 
 export default fr

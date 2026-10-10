@@ -1,13 +1,14 @@
 import { batch } from 'solid-js'
 import { createStore, type SetStoreFunction } from 'solid-js/store'
 import type { BusNoteEvent } from '../../../core/input/InputBus'
+import { getKeyboardRange, subscribeKeyboardRange } from '../../../core/keyboardRange'
 import type { MidiFile } from '../../../core/midi/types'
 import type { AppServices } from '../../../core/services'
 import { watch } from '../../../store/watch'
 import type { LearnState } from '../../core/LearnState'
 import { classifyArticulation } from '../../core/scoring'
 import { type LoopRegion, makeRegionFromBars, wrapIfAtEnd } from '../../engines/LoopRegion'
-import { PracticeEngine } from '../../engines/PracticeEngine'
+import { type AutoPlayedNote, PracticeEngine } from '../../engines/PracticeEngine'
 
 // Composes wait-mode (PracticeEngine) with loop-region + a
 // graded score model. UI reads off `engine.state.*`; nothing here touches
@@ -90,6 +91,7 @@ export class PlayAlongEngine {
   readonly services: EngineOptions['services']
 
   private unsubs: Array<() => void> = []
+  private rangeUnsub: (() => void) | null = null
   private active = false
   // Cached so `setHand` can re-apply filters without touching PracticeEngine
   // internals.
@@ -133,13 +135,17 @@ export class PlayAlongEngine {
         this.opts.services.clock.pause()
         this.opts.learnState.setState('status', 'paused')
       },
-      onWaitEnd: (resumeAt: number) => {
+      onWaitEnd: (resumeAt: number, auto?: readonly AutoPlayedNote[]) => {
         // Always seek so internal state + scheduler align, but only resume
         // transport if the user actually wants playback.
         this.opts.services.clock.seek(resumeAt)
         if (this.state.userWantsToPlay) {
           this.opts.services.clock.play()
           this.opts.learnState.setState('status', 'playing')
+          // The resume lands just after the chord, so the scheduler skips it.
+          // Required pitches are the notes the player just played; the rest
+          // of the chord would otherwise go silent.
+          this.soundAuto(auto)
         }
       },
     })
@@ -163,6 +169,7 @@ export class PlayAlongEngine {
 
     // Now build practice steps + apply filters against the correct time.
     this.practice.loadMidi(midi)
+    this.bindPlayableRange()
     this.applyHand(midi)
     this.applySpeed()
     batch(() => {
@@ -183,6 +190,8 @@ export class PlayAlongEngine {
   }
 
   detach(): void {
+    this.rangeUnsub?.()
+    this.rangeUnsub = null
     this.active = false
     this.currentMidi = null
     this.pressedPitches.clear()
@@ -390,6 +399,35 @@ export class PlayAlongEngine {
   }
 
   // ── Internal ──────────────────────────────────────────────────────────
+
+  private bindPlayableRange(): void {
+    this.rangeUnsub?.()
+    const range = getKeyboardRange()
+    this.practice.setPlayableRange(range.start, range.start + range.size - 1)
+    this.rangeUnsub = subscribeKeyboardRange((next) => {
+      this.practice.setPlayableRange(next.start, next.start + next.size - 1)
+      // A range change can drop the chord we were waiting on. Keep going
+      // when the player still wants playback, same as a hand-filter switch.
+      this.resumeAfterPracticeFilterChange()
+    })
+  }
+
+  // Notes the resume seek steps past. Triggered on the audio clock so they
+  // land with the chord the player just finished, then release on their own.
+  private soundAuto(notes: readonly AutoPlayedNote[] | undefined): void {
+    if (!notes || notes.length === 0) return
+    const synth = this.opts.services.synth
+    if (typeof synth.scheduleNoteOn !== 'function' || typeof synth.scheduleNoteOff !== 'function') {
+      return
+    }
+    const t0 = synth.audioContextTime
+    if (!Number.isFinite(t0)) return
+    const speed = this.services.clock.speed > 0 ? this.services.clock.speed : 1
+    for (const n of notes) {
+      synth.scheduleNoteOn(n.pitch, n.velocity, t0)
+      synth.scheduleNoteOff(n.pitch, t0 + Math.max(0.05, n.duration) / speed)
+    }
+  }
 
   private applySpeed(): void {
     const base = this.state.speedPct / 100

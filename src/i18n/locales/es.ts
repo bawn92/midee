@@ -481,6 +481,21 @@ const es: Messages = {
   'toast.updated': 'Actualizado a la última versión',
 
   'onboarding.localeDetected': 'Mostrando en {language} · cambia en Apariencia',
+
+  'kbdRange.title': 'Tesitura del teclado',
+  'kbdRange.tip':
+    'Teclas que puede tocar tu teclado. El modo espera omite las notas fuera de este rango.',
+  'kbdRange.aria': 'Tesitura de {low} a {high}, {count} teclas',
+  'kbdRange.semitoneDown': 'Bajar el rango un semitono',
+  'kbdRange.semitoneUp': 'Subir el rango un semitono',
+  'kbdRange.octaveDown': 'Bajar el rango una octava',
+  'kbdRange.octaveUp': 'Subir el rango una octava',
+  'kbdRange.start': 'Nota más grave',
+  'kbdRange.size': 'Número de teclas',
+  'kbdRange.follow': 'Seguir el MIDI',
+  'kbdRange.followTip': 'Desplaza el rango para incluir las notas MIDI que caen fuera.',
+  'kbdRange.full': 'Piano completo',
+  'kbdRange.presets': 'Tamaños',
 }
 
 export default es

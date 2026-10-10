@@ -461,6 +461,20 @@ const ja: Messages = {
   'toast.updated': '最新バージョンに更新しました',
 
   'onboarding.localeDetected': '{language} で表示中 · 「外観」で変更できます',
+
+  'kbdRange.title': '鍵盤の音域',
+  'kbdRange.tip': 'キーボードで弾ける鍵。待機モードは音域外の音をスキップします。',
+  'kbdRange.aria': '音域 {low} から {high}、{count} 鍵',
+  'kbdRange.semitoneDown': '音域を半音下げる',
+  'kbdRange.semitoneUp': '音域を半音上げる',
+  'kbdRange.octaveDown': '音域を1オクターブ下げる',
+  'kbdRange.octaveUp': '音域を1オクターブ上げる',
+  'kbdRange.start': '最低音',
+  'kbdRange.size': '鍵の数',
+  'kbdRange.follow': 'MIDIに追従',
+  'kbdRange.followTip': '音域外のMIDIノートが来たら、音域をずらして含めます。',
+  'kbdRange.full': '88鍵',
+  'kbdRange.presets': 'サイズ',
 }
 
 export default ja

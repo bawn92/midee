@@ -451,6 +451,20 @@ const zhCN: Messages = {
   'toast.updated': '已更新到最新版本',
 
   'onboarding.localeDetected': '当前显示为 {language} · 可在“外观”中切换',
+
+  'kbdRange.title': '键盘音域',
+  'kbdRange.tip': '你的键盘能弹的音。等待模式会跳过音域之外的音符。',
+  'kbdRange.aria': '键盘音域 {low} 至 {high}，共 {count} 键',
+  'kbdRange.semitoneDown': '音域下移半音',
+  'kbdRange.semitoneUp': '音域上移半音',
+  'kbdRange.octaveDown': '音域下移八度',
+  'kbdRange.octaveUp': '音域上移八度',
+  'kbdRange.start': '最低音',
+  'kbdRange.size': '键数',
+  'kbdRange.follow': '跟随 MIDI',
+  'kbdRange.followTip': '当 MIDI 音符落在音域外时，滑动音域以包含它。',
+  'kbdRange.full': '全钢琴',
+  'kbdRange.presets': '预设',
 }
 
 export default zhCN

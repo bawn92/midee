@@ -182,6 +182,21 @@ describe('Viewport.buildKeyLayout with narrowed pitch range (fit-to-piece)', () 
     expect(vp.pitchToX(72)).toBeCloseTo(14 * whiteW)
   })
 
+  it('keeps a leading black key when the range starts on one', () => {
+    // C#3=49. The white key to its left (C3) is outside the window, so the
+    // black key is clamped to the left edge and overlaps the first white key.
+    const vp = makeViewport({ canvasWidth: 700, pitchMin: 49, pitchMax: 60 })
+    expect(vp.hasKey(49)).toBe(true)
+    expect(vp.pitchToX(49)).toBe(0)
+    // 7 white keys (D3..C4) across 700px → whiteW = 100, blackW = 58.
+    expect(vp.pitchWidth(49)).toBeCloseTo(58)
+    // keyboardTop = 500. Black-key zone is the top 62px of the keyboard.
+    expect(vp.pitchAtPoint(10, 520)).toBe(49)
+    // Past the leading black key, still on D3, and short of D#3.
+    expect(vp.pitchAtPoint(65, 520)).toBe(50)
+    expect(vp.pitchAtPoint(10, 580)).toBe(50)
+  })
+
   it('positions black keys as narrower keys offset between their neighbours', () => {
     const vp = makeViewport({ canvasWidth: 1000, pitchMin: 48, pitchMax: 72 })
     // Literals (not recomputed from the source 0.58 ratio, so a ratio change is

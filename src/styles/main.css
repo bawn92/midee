@@ -4859,6 +4859,229 @@ body.canvas-hidden #kbd-resizer {
 }
 
 /* ─────────────────────────────────────────
+   KEYBOARD RANGE
+   Which keys the physical controller covers. Sits in the lower-left of the
+   roll, above the main HUD, so it stays reachable in Play, Live, and Learn.
+───────────────────────────────────────── */
+
+#kbd-range {
+  position: absolute;
+  left: calc(12px + env(safe-area-inset-left));
+  bottom: calc(var(--keyboard-h) + 92px + env(safe-area-inset-bottom));
+  z-index: 18;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: none;
+}
+
+#kbd-range.kbd-range--hidden,
+body.canvas-hidden #kbd-range {
+  display: none;
+}
+
+.kbd-range-bar,
+.kbd-range-panel {
+  pointer-events: auto;
+}
+
+.kbd-range-bar,
+.kbd-range-presets {
+  border: none;
+  margin: 0;
+  min-inline-size: 0;
+}
+
+.kbd-range-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 14px;
+  background: rgba(7, 9, 18, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.kbd-range-step,
+.kbd-range-label,
+.kbd-range-stepper button,
+.kbd-range-preset,
+.kbd-range-follow,
+.kbd-range-full {
+  font-family: var(--font);
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.kbd-range-step {
+  height: 28px;
+  min-width: 28px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.kbd-range-step:hover:not(:disabled),
+.kbd-range-label:hover,
+.kbd-range-stepper button:hover:not(:disabled),
+.kbd-range-preset:hover,
+.kbd-range-follow:hover,
+.kbd-range-full:hover:not(:disabled) {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.kbd-range-step:disabled,
+.kbd-range-stepper button:disabled,
+.kbd-range-full:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.kbd-range-step:focus-visible,
+.kbd-range-label:focus-visible,
+.kbd-range-stepper button:focus-visible,
+.kbd-range-preset:focus-visible,
+.kbd-range-follow:focus-visible,
+.kbd-range-full:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.kbd-range-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  height: 28px;
+  padding: 0 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.kbd-range-notes {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.kbd-range-label[data-custom] .kbd-range-notes {
+  color: var(--accent);
+}
+
+.kbd-range-count {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.kbd-range-panel {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  width: 248px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(10, 10, 18, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(28px) saturate(150%);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+.kbd-range-hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+
+.kbd-range-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.kbd-range-row-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.kbd-range-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.kbd-range-stepper button {
+  width: 26px;
+  height: 26px;
+  font-size: 14px;
+}
+
+.kbd-range-value {
+  min-width: 42px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.kbd-range-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 0;
+}
+
+.kbd-range-preset {
+  height: 24px;
+  padding: 0 7px;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid var(--border);
+}
+
+.kbd-range-preset[aria-pressed="true"] {
+  color: #0a0a14;
+  background: var(--accent);
+  border-color: transparent;
+}
+
+.kbd-range-follow,
+.kbd-range-full {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: left;
+  border: 1px solid var(--border);
+}
+
+.kbd-range-follow[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: var(--accent-soft);
+}
+
+/* ─────────────────────────────────────────
    TRACK PANEL
 ───────────────────────────────────────── */
 

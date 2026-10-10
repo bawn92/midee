@@ -515,6 +515,21 @@ export const en = {
   // Shown once on first visit if a non-English locale was auto-detected,
   // so the user knows they CAN switch and where to do it.
   'onboarding.localeDetected': 'Showing in {language} · change in Appearance',
+
+  // ── Keyboard range ─────────────────────────────────────────
+  'kbdRange.title': 'Keyboard range',
+  'kbdRange.tip': 'Keys your keyboard can play. Wait mode skips notes outside this range.',
+  'kbdRange.aria': 'Keyboard range {low} to {high}, {count} keys',
+  'kbdRange.semitoneDown': 'Shift range down a semitone',
+  'kbdRange.semitoneUp': 'Shift range up a semitone',
+  'kbdRange.octaveDown': 'Shift range down an octave',
+  'kbdRange.octaveUp': 'Shift range up an octave',
+  'kbdRange.start': 'Lowest key',
+  'kbdRange.size': 'Number of keys',
+  'kbdRange.follow': 'Follow MIDI',
+  'kbdRange.followTip': 'Slide the range to include MIDI notes that fall outside it.',
+  'kbdRange.full': 'Full piano',
+  'kbdRange.presets': 'Presets',
 } as const
 
 // Keys come from the English source; values are any string so translations

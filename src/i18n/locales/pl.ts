@@ -473,6 +473,21 @@ const pl: Messages & Record<PolishPluralKey, string> = {
   'toast.updated': 'Zaktualizowano do najnowszej wersji',
 
   'onboarding.localeDetected': 'Język interfejsu: {language} · zmień w sekcji Wygląd',
+
+  'kbdRange.title': 'Zakres klawiatury',
+  'kbdRange.tip':
+    'Klawisze, które gra twoja klawiatura. Tryb czekania pomija nuty poza tym zakresem.',
+  'kbdRange.aria': 'Zakres od {low} do {high}, {count} klawiszy',
+  'kbdRange.semitoneDown': 'Przesuń zakres o półton w dół',
+  'kbdRange.semitoneUp': 'Przesuń zakres o półton w górę',
+  'kbdRange.octaveDown': 'Przesuń zakres o oktawę w dół',
+  'kbdRange.octaveUp': 'Przesuń zakres o oktawę w górę',
+  'kbdRange.start': 'Najniższy dźwięk',
+  'kbdRange.size': 'Liczba klawiszy',
+  'kbdRange.follow': 'Śledź MIDI',
+  'kbdRange.followTip': 'Gdy nuta MIDI wypadnie poza zakres, przesuń zakres, aby ją objąć.',
+  'kbdRange.full': 'Całe pianino',
+  'kbdRange.presets': 'Rozmiary',
 }
 
 export default pl

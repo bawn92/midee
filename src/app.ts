@@ -2,6 +2,12 @@ import { Metronome } from './audio/Metronome'
 import { INSTRUMENTS, type InstrumentId, SynthEngine } from './audio/SynthEngine'
 import { MasterClock } from './core/clock/MasterClock'
 import { type BusNoteEvent, InputBus } from './core/input/InputBus'
+import {
+  getKeyboardRange,
+  setKeyboardRange,
+  shiftRangeToInclude,
+  subscribeKeyboardRange,
+} from './core/keyboardRange'
 import { lazyHandle } from './core/lazyHandle'
 import { parseMidiFileWithStats } from './core/midi/parser'
 import type { MidiFile } from './core/midi/types'
@@ -79,6 +85,7 @@ import { DropZone } from './ui/DropZone'
 import type { ExportSettings } from './ui/ExportModal'
 import { THROUGHPUT_KEY, throughputFrom } from './ui/exportSettings'
 import { InstrumentMenu } from './ui/InstrumentMenu'
+import { KeyboardRangeControl } from './ui/KeyboardRangeControl'
 import { KeyboardResizer } from './ui/KeyboardResizer'
 import type { SessionAction } from './ui/PostSessionModal'
 import { PEDAL_HIDDEN, type PedalIndicatorState, pedalIndicatorState } from './ui/pedalIndicator'
@@ -168,6 +175,7 @@ export class App {
   // without re-querying the DOM.
   private overlay!: HTMLElement
   private kbdResizer!: KeyboardResizer
+  private kbdRange!: KeyboardRangeControl
   private chordOverlay!: ChordOverlay
   private customizeMenu!: CustomizeMenu
   // Shared handles passed into subsystems (Controls today, mode controllers and
@@ -264,6 +272,8 @@ export class App {
     this.renderer.attachClock(this.clock)
     this.renderer.setLiveNoteStore(this.liveNotes)
     this.renderer.setLoopNoteStore(this.loopNotes)
+    this.applyKeyboardRange(getKeyboardRange())
+    this.unsubs.push(subscribeKeyboardRange((prefs) => this.applyKeyboardRange(prefs)))
 
     this.midiInput = new MidiInputManager(this.clock)
     // Space is the sustain pedal only in Live; Play and Learn own it as the
@@ -518,6 +528,7 @@ export class App {
       (px) => this.renderer.setKeyboardHeight(px),
     )
     this.kbdResizer.restoreSaved()
+    this.kbdRange = new KeyboardRangeControl(overlay, this.store)
 
     this.chordOverlay = new ChordOverlay(this.controls.chordSlot)
     this.chordOverlayOn = chordOverlayStore.load()
@@ -819,6 +830,11 @@ export class App {
       trackActivation('live_note')
     }
 
+    // A controller's octave buttons move which MIDI notes it sends. When
+    // follow is on, a note outside the window slides the window onto it
+    // before the key lights up, so the roll matches the hardware.
+    if (evt.source === 'midi') this.maybeFollowKeyboardRange(evt.pitch)
+
     // Route through the bus: repress-release (note-off sinks, then on),
     // sustained-pitches bookkeeping, and note-on fan-out to audio+visual sinks.
     // Capture uses the bus's note-off path only — no duplicate captureNoteOff
@@ -840,6 +856,18 @@ export class App {
         this.store.setState('status', 'playing')
       }
     }
+  }
+
+  private applyKeyboardRange(range: { start: number; size: number }): void {
+    this.renderer.setPitchRange(range.start, range.start + range.size - 1)
+  }
+
+  private maybeFollowKeyboardRange(pitch: number): void {
+    const prefs = getKeyboardRange()
+    if (!prefs.followMidi) return
+    const next = shiftRangeToInclude(prefs, pitch)
+    if (next.start === prefs.start) return
+    setKeyboardRange({ start: next.start })
   }
 
   private handleLiveNoteOff(evt: BusNoteEvent): void {
@@ -2019,6 +2047,7 @@ export class App {
     this.dropzone.dispose()
     this.controls.dispose()
     this.kbdResizer.dispose()
+    this.kbdRange.dispose()
     this.midiInput.dispose()
     this.keyboardInput.dispose()
     this.liveLooper.dispose()
