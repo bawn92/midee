@@ -496,6 +496,7 @@ const es: Messages = {
   'kbdRange.followTip': 'Desplaza el rango para incluir las notas MIDI que caen fuera.',
   'kbdRange.full': 'Piano completo',
   'kbdRange.presets': 'Tamaños',
+  'kbdRange.picker': 'Arrastra para mover, los bordes para cambiar el tamaño, o pulsa una tecla',
 }
 
 export default es

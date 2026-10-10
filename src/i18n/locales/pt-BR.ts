@@ -495,6 +495,7 @@ const ptBR: Messages = {
   'kbdRange.followTip': 'Desloca o intervalo para incluir notas MIDI que caiam fora dele.',
   'kbdRange.full': 'Piano completo',
   'kbdRange.presets': 'Tamanhos',
+  'kbdRange.picker': 'Arraste para mover, as bordas para redimensionar, ou clique numa tecla',
 }
 
 export default ptBR

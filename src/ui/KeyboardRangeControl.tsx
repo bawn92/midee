@@ -4,16 +4,20 @@ import {
   formatKeyboardRange,
   getKeyboardRange,
   isFullPianoRange,
+  jumpRangeToPitch,
   KEYBOARD_SIZE_MAX,
   KEYBOARD_SIZE_MIN,
   KEYBOARD_SIZE_PRESETS,
+  moveRangeByGrab,
+  pitchAtRatio,
   rangeEnd,
+  resizeRangeFromEdge,
   setKeyboardRange,
   shiftKeyboardRange,
   shiftKeyboardRangeBy,
   subscribeKeyboardRange,
 } from '../core/keyboardRange'
-import { MIDI_MIN, pitchToNoteName } from '../core/midi/types'
+import { isBlackKey, MIDI_MAX, MIDI_MIN, pitchToNoteName } from '../core/midi/types'
 import { t } from '../i18n'
 import type { AppStore } from '../store/state'
 
@@ -26,10 +30,23 @@ function canShift(start: number, size: number, semitones: number): boolean {
   return shiftKeyboardRange({ start, size }, semitones).start !== start
 }
 
+const PIANO_PITCHES = Array.from({ length: KEYBOARD_SIZE_MAX }, (_, i) => MIDI_MIN + i)
+
+type RangeDrag = { mode: 'move' | 'start' | 'end'; grab: number; pointerId: number }
+
+function windowStyle(start: number, size: number): { left: string; width: string } {
+  return {
+    left: `${((start - MIDI_MIN) / KEYBOARD_SIZE_MAX) * 100}%`,
+    width: `${(size / KEYBOARD_SIZE_MAX) * 100}%`,
+  }
+}
+
 function KeyboardRangeView(props: { store: AppStore }) {
   const [open, setOpen] = createSignal(false)
   const [prefs, setPrefs] = createSignal(getKeyboardRange())
   let root!: HTMLDivElement
+  let pickerEl!: HTMLDivElement
+  let drag: RangeDrag | null = null
 
   onMount(() => {
     const off = subscribeKeyboardRange(setPrefs)
@@ -71,8 +88,86 @@ function KeyboardRangeView(props: { store: AppStore }) {
       window.removeEventListener('resize', fitPanel)
       document.removeEventListener('pointerdown', onDoc, true)
       document.removeEventListener('keydown', onKey)
+      endDrag()
     })
   })
+
+  function ratioOf(e: PointerEvent): number {
+    const rect = pickerEl.getBoundingClientRect()
+    if (rect.width <= 0) return 0
+    return (e.clientX - rect.left) / rect.width
+  }
+
+  function applyDrag(pitch: number): void {
+    if (!drag) return
+    const current = getKeyboardRange()
+    const next =
+      drag.mode === 'start'
+        ? resizeRangeFromEdge(current, 'start', pitch)
+        : drag.mode === 'end'
+          ? resizeRangeFromEdge(current, 'end', pitch)
+          : moveRangeByGrab(current, pitch, drag.grab)
+    setKeyboardRange({ start: next.start, size: next.size })
+  }
+
+  function onPickerMove(e: PointerEvent): void {
+    if (!drag || e.pointerId !== drag.pointerId) return
+    applyDrag(pitchAtRatio(ratioOf(e)))
+  }
+
+  function endDrag(e?: PointerEvent): void {
+    if (e && drag && e.pointerId !== drag.pointerId) return
+    drag = null
+    pickerEl?.classList.remove('kbd-range-picker--dragging')
+    pickerEl?.removeEventListener('pointermove', onPickerMove)
+    pickerEl?.removeEventListener('pointerup', endDrag)
+    pickerEl?.removeEventListener('pointercancel', endDrag)
+  }
+
+  function onPickerDown(e: PointerEvent): void {
+    if (!pickerEl || (e.pointerType === 'mouse' && e.button !== 0)) return
+    e.preventDefault()
+    pickerEl.querySelector<HTMLElement>('.kbd-range-window')?.focus({ preventScroll: true })
+    const pitch = pitchAtRatio(ratioOf(e))
+    const target = e.target
+    const current = getKeyboardRange()
+    let mode: RangeDrag['mode'] = 'move'
+    let grab = pitch - current.start
+    if (target instanceof Element && target.closest('.kbd-range-handle--start')) {
+      mode = 'start'
+    } else if (target instanceof Element && target.closest('.kbd-range-handle--end')) {
+      mode = 'end'
+    } else if (!(target instanceof Element && target.closest('.kbd-range-window'))) {
+      const jumped = jumpRangeToPitch(current, pitch)
+      setKeyboardRange({ start: jumped.start, size: jumped.size })
+      grab = pitch - jumped.start
+    }
+    drag = { mode, grab, pointerId: e.pointerId }
+    pickerEl.classList.add('kbd-range-picker--dragging')
+    try {
+      pickerEl.setPointerCapture(e.pointerId)
+    } catch {
+      // jsdom has no pointer capture; the listeners on the picker still see the drag.
+    }
+    pickerEl.addEventListener('pointermove', onPickerMove)
+    pickerEl.addEventListener('pointerup', endDrag)
+    pickerEl.addEventListener('pointercancel', endDrag)
+  }
+
+  function onWindowKey(e: KeyboardEvent): void {
+    const size = range().size
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      const step = e.shiftKey ? 12 : 1
+      shiftKeyboardRangeBy(e.key === 'ArrowLeft' ? -step : step)
+    } else if (e.key === 'Home') {
+      setKeyboardRange({ start: MIDI_MIN, size })
+    } else if (e.key === 'End') {
+      setKeyboardRange({ start: MIDI_MAX - size + 1, size })
+    } else {
+      return
+    }
+    e.preventDefault()
+  }
 
   const range = () => prefs()
   const lowName = () => pitchToNoteName(range().start)
@@ -160,6 +255,40 @@ function KeyboardRangeView(props: { store: AppStore }) {
           aria-label={t('kbdRange.title')}
         >
           <p class="kbd-range-hint">{t('kbdRange.tip')}</p>
+
+          <div class="kbd-range-picker-wrap">
+            <p class="kbd-range-picker-label" id="kbd-range-picker-label">
+              {t('kbdRange.picker')}
+            </p>
+            <div class="kbd-range-picker" ref={pickerEl} onPointerDown={onPickerDown}>
+              <For each={PIANO_PITCHES}>
+                {(pitch) => (
+                  <span
+                    class="kbd-range-key"
+                    classList={{ 'kbd-range-key--black': isBlackKey(pitch) }}
+                    style={{ left: `${((pitch - MIDI_MIN) / KEYBOARD_SIZE_MAX) * 100}%` }}
+                    aria-hidden="true"
+                  />
+                )}
+              </For>
+              <div
+                class="kbd-range-window"
+                role="slider"
+                tabIndex={0}
+                aria-labelledby="kbd-range-picker-label"
+                aria-orientation="horizontal"
+                aria-valuemin={MIDI_MIN}
+                aria-valuemax={MIDI_MAX - range().size + 1}
+                aria-valuenow={range().start}
+                aria-valuetext={formatKeyboardRange(range())}
+                style={windowStyle(range().start, range().size)}
+                onKeyDown={onWindowKey}
+              >
+                <span class="kbd-range-handle kbd-range-handle--start" />
+                <span class="kbd-range-handle kbd-range-handle--end" />
+              </div>
+            </div>
+          </div>
 
           <div class="kbd-range-row">
             <span class="kbd-range-row-label">{t('kbdRange.start')}</span>

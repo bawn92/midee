@@ -81,6 +81,45 @@ export function resizeKeyboardRange(range: KeyboardRange, size: number): Keyboar
   return clampKeyboardRange({ start, size: nextSize })
 }
 
+// Key under a horizontal pointer. 0 is the left edge of A0, 1 the right edge of C8.
+export function pitchAtRatio(ratio: number): number {
+  if (!Number.isFinite(ratio)) return MIDI_MIN
+  const t = Math.min(1, Math.max(0, ratio))
+  const index = Math.min(KEYBOARD_SIZE_MAX - 1, Math.floor(t * KEYBOARD_SIZE_MAX))
+  return MIDI_MIN + index
+}
+
+// Slide the same-sized window so `pitch` lands in the middle.
+export function jumpRangeToPitch(range: KeyboardRange, pitch: number): KeyboardRange {
+  const p = Math.min(MIDI_MAX, Math.max(MIDI_MIN, Math.round(pitch)))
+  const start = Math.round(p - (range.size - 1) / 2)
+  return clampKeyboardRange({ start, size: range.size })
+}
+
+// `grab` is how many keys the pointer sat past the low key when the drag began.
+export function moveRangeByGrab(range: KeyboardRange, pitch: number, grab: number): KeyboardRange {
+  if (!Number.isFinite(pitch) || !Number.isFinite(grab)) return clampKeyboardRange(range)
+  return clampKeyboardRange({ start: Math.round(pitch - grab), size: range.size })
+}
+
+// Dragging an edge keeps the other edge put and snaps to a key. The window
+// never shrinks below KEYBOARD_SIZE_MIN.
+export function resizeRangeFromEdge(
+  range: KeyboardRange,
+  edge: 'start' | 'end',
+  pitch: number,
+): KeyboardRange {
+  const p = Math.min(MIDI_MAX, Math.max(MIDI_MIN, Math.round(pitch)))
+  if (edge === 'start') {
+    const end = rangeEnd(range)
+    const start = Math.min(p, end - KEYBOARD_SIZE_MIN + 1)
+    return clampKeyboardRange({ start, size: end - start + 1 })
+  }
+  const start = range.start
+  const end = Math.max(p, start + KEYBOARD_SIZE_MIN - 1)
+  return clampKeyboardRange({ start, size: end - start + 1 })
+}
+
 // Slide `range` (same size) by the smallest amount that puts `pitch` inside.
 // Pitches off the 88 keys are ignored — there's no key to show them on.
 export function shiftRangeToInclude(range: KeyboardRange, pitch: number): KeyboardRange {

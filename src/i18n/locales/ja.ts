@@ -475,6 +475,7 @@ const ja: Messages = {
   'kbdRange.followTip': '音域外のMIDIノートが来たら、音域をずらして含めます。',
   'kbdRange.full': '88鍵',
   'kbdRange.presets': 'サイズ',
+  'kbdRange.picker': 'ドラッグで移動、端でサイズ変更、鍵のクリックでジャンプ',
 }
 
 export default ja

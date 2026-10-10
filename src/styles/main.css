@@ -5018,7 +5018,7 @@ body.canvas-hidden #kbd-range {
   position: absolute;
   left: 0;
   bottom: calc(100% + 8px);
-  width: 248px;
+  width: 272px;
   /* Set from the bar's position so the panel stays under the top strip. */
   max-height: var(--kbd-range-room, min(420px, 70svh));
   overflow: auto;
@@ -5044,7 +5044,7 @@ body.canvas-hidden #kbd-range {
 #lower-left:has(.kbd-range--beside) .kbd-range-panel {
   left: calc(100% + 10px);
   bottom: 64px;
-  width: min(248px, calc(100vw - 100% - 40px));
+  width: min(272px, calc(100vw - 100% - 40px));
   max-height: calc(
     100svh -
     var(--keyboard-h) -
@@ -5084,6 +5084,110 @@ body.canvas-hidden #kbd-range {
   font-size: 11px;
   line-height: 1.4;
   color: var(--text-dim);
+}
+
+.kbd-range-picker-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kbd-range-picker-label {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Full 88-key overview. Every semitone is the same width so the window snaps
+   to keys. Black keys are shorter so it still reads as a piano. */
+.kbd-range-picker {
+  position: relative;
+  height: 48px;
+  border-radius: 8px;
+  background: #14141c;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  touch-action: none;
+  user-select: none;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.kbd-range-key {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: calc(100% / 88);
+  background: #f4f0e6;
+  box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.16);
+  pointer-events: none;
+}
+
+.kbd-range-key--black {
+  height: 58%;
+  bottom: auto;
+  z-index: 1;
+  background: #2a2a34;
+  border-radius: 0 0 2px 2px;
+  box-shadow: none;
+}
+
+.kbd-range-window {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  background: color-mix(in srgb, var(--accent) 32%, transparent);
+  box-shadow: inset 0 0 0 2px var(--accent);
+  cursor: grab;
+  touch-action: none;
+}
+
+.kbd-range-picker--dragging .kbd-range-window,
+.kbd-range-window:active {
+  cursor: grabbing;
+}
+
+.kbd-range-window:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 2px var(--accent),
+    0 0 0 3px var(--accent-soft);
+}
+
+.kbd-range-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 16px;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.kbd-range-handle--start {
+  left: 0;
+}
+
+.kbd-range-handle--end {
+  right: 0;
+}
+
+.kbd-range-handle::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+  border-radius: 2px;
+  background: #fff;
+}
+
+.kbd-range-handle--start::after {
+  left: 4px;
+}
+
+.kbd-range-handle--end::after {
+  right: 4px;
 }
 
 .kbd-range-row {

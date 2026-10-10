@@ -530,6 +530,7 @@ export const en = {
   'kbdRange.followTip': 'Slide the range to include MIDI notes that fall outside it.',
   'kbdRange.full': 'Full piano',
   'kbdRange.presets': 'Presets',
+  'kbdRange.picker': 'Drag to move, edges to resize, or click a key',
 } as const
 
 // Keys come from the English source; values are any string so translations

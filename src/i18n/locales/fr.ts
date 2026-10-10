@@ -502,6 +502,7 @@ const fr: Messages = {
   'kbdRange.followTip': 'Décale la plage pour inclure les notes MIDI qui tombent en dehors.',
   'kbdRange.full': 'Piano complet',
   'kbdRange.presets': 'Tailles',
+  'kbdRange.picker': 'Glissez pour déplacer, les bords pour redimensionner, ou cliquez une touche',
 }
 
 export default fr

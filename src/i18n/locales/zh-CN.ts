@@ -465,6 +465,7 @@ const zhCN: Messages = {
   'kbdRange.followTip': '当 MIDI 音符落在音域外时，滑动音域以包含它。',
   'kbdRange.full': '全钢琴',
   'kbdRange.presets': '预设',
+  'kbdRange.picker': '拖动移动，拖边缘改大小，或点击某个键',
 }
 
 export default zhCN

@@ -4,10 +4,14 @@ import {
   FULL_PIANO_RANGE,
   formatKeyboardRange,
   getKeyboardRange,
+  jumpRangeToPitch,
   KEYBOARD_RANGE_STORAGE_KEY,
+  moveRangeByGrab,
+  pitchAtRatio,
   pitchInRange,
   reloadKeyboardRange,
   resizeKeyboardRange,
+  resizeRangeFromEdge,
   setKeyboardRange,
   shiftKeyboardRange,
   shiftKeyboardRangeBy,
@@ -78,6 +82,36 @@ describe('shiftRangeToInclude', () => {
     expect(shiftRangeToInclude(range, 60)).toEqual(range)
     expect(shiftRangeToInclude(range, 10)).toEqual(range)
     expect(shiftRangeToInclude(range, 120)).toEqual(range)
+  })
+})
+
+describe('range picker geometry', () => {
+  const range = { start: 48, size: 24 }
+
+  it('maps a pointer ratio onto a key', () => {
+    expect(pitchAtRatio(0)).toBe(MIDI_MIN)
+    expect(pitchAtRatio(1)).toBe(MIDI_MAX)
+    expect(pitchAtRatio(0.5)).toBe(MIDI_MIN + 44)
+    expect(pitchAtRatio(-2)).toBe(MIDI_MIN)
+    expect(pitchAtRatio(Number.NaN)).toBe(MIDI_MIN)
+  })
+
+  it('centers the window on a clicked key', () => {
+    expect(jumpRangeToPitch(range, 60)).toEqual({ start: 49, size: 24 })
+    expect(jumpRangeToPitch(range, MIDI_MIN)).toEqual({ start: MIDI_MIN, size: 24 })
+    expect(jumpRangeToPitch(range, MIDI_MAX).start).toBe(MIDI_MAX - 23)
+  })
+
+  it('slides by the grab offset and stays on the piano', () => {
+    expect(moveRangeByGrab(range, 70, 10)).toEqual({ start: 60, size: 24 })
+    expect(moveRangeByGrab(range, MIDI_MIN, 0)).toEqual({ start: MIDI_MIN, size: 24 })
+  })
+
+  it('resizes from either edge without dropping below the minimum', () => {
+    expect(resizeRangeFromEdge(range, 'end', 80)).toEqual({ start: 48, size: 33 })
+    expect(resizeRangeFromEdge(range, 'end', 48)).toEqual({ start: 48, size: 12 })
+    expect(resizeRangeFromEdge(range, 'start', 40)).toEqual({ start: 40, size: 32 })
+    expect(resizeRangeFromEdge(range, 'start', 80)).toEqual({ start: 60, size: 12 })
   })
 })
 

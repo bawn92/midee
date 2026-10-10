@@ -488,6 +488,7 @@ const pl: Messages & Record<PolishPluralKey, string> = {
   'kbdRange.followTip': 'Gdy nuta MIDI wypadnie poza zakres, przesuń zakres, aby ją objąć.',
   'kbdRange.full': 'Całe pianino',
   'kbdRange.presets': 'Rozmiary',
+  'kbdRange.picker': 'Przeciągnij, aby przesunąć, krawędzie zmieniają rozmiar, kliknij klawisz',
 }
 
 export default pl
