@@ -176,6 +176,7 @@ export class App {
   private overlay!: HTMLElement
   private kbdResizer!: KeyboardResizer
   private kbdRange!: KeyboardRangeControl
+  private lowerLeft: HTMLElement | null = null
   private chordOverlay!: ChordOverlay
   private customizeMenu!: CustomizeMenu
   // Shared handles passed into subsystems (Controls today, mode controllers and
@@ -528,7 +529,15 @@ export class App {
       (px) => this.renderer.setKeyboardHeight(px),
     )
     this.kbdResizer.restoreSaved()
-    this.kbdRange = new KeyboardRangeControl(overlay, this.store)
+    // Shortcuts card and keyboard-range control share the lower-left corner.
+    // One column stacks the range bar above the card so they can't overlap.
+    const lowerLeft = document.createElement('div')
+    lowerLeft.id = 'lower-left'
+    overlay.appendChild(lowerLeft)
+    this.lowerLeft = lowerLeft
+    const keyHint = overlay.querySelector('#key-hint')
+    if (keyHint) lowerLeft.appendChild(keyHint)
+    this.kbdRange = new KeyboardRangeControl(lowerLeft, this.store)
 
     this.chordOverlay = new ChordOverlay(this.controls.chordSlot)
     this.chordOverlayOn = chordOverlayStore.load()
@@ -2048,6 +2057,8 @@ export class App {
     this.controls.dispose()
     this.kbdResizer.dispose()
     this.kbdRange.dispose()
+    this.lowerLeft?.remove()
+    this.lowerLeft = null
     this.midiInput.dispose()
     this.keyboardInput.dispose()
     this.liveLooper.dispose()

@@ -42,10 +42,33 @@ function KeyboardRangeView(props: { store: AppStore }) {
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') setOpen(false)
     }
+    // The detail panel opens upward. Keep it between the bar and the top
+    // strip when the shortcuts card has already pushed the bar up.
+    const fitPanel = (): void => {
+      const bar = root.querySelector('.kbd-range-bar')
+      if (!bar) return
+      // Leave a gap under the top strip, plus the 8px the panel sits above the bar.
+      const strip = document.getElementById('top-strip')
+      const limit = strip ? Math.ceil(strip.getBoundingClientRect().bottom) + 12 : 80
+      const room = Math.round(bar.getBoundingClientRect().top - limit - 8)
+      root.classList.toggle('kbd-range--beside', room < 200)
+      root.style.setProperty('--kbd-range-room', `${Math.max(80, room)}px`)
+    }
+    fitPanel()
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(fitPanel)
+    ro?.observe(document.documentElement)
+    const dock = root.closest('#lower-left')
+    if (dock) ro?.observe(dock)
+    const mo = new MutationObserver(fitPanel)
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] })
+    window.addEventListener('resize', fitPanel)
     document.addEventListener('pointerdown', onDoc, true)
     document.addEventListener('keydown', onKey)
     onCleanup(() => {
       off()
+      ro?.disconnect()
+      mo.disconnect()
+      window.removeEventListener('resize', fitPanel)
       document.removeEventListener('pointerdown', onDoc, true)
       document.removeEventListener('keydown', onKey)
     })
@@ -230,6 +253,7 @@ export class KeyboardRangeControl {
     private store: AppStore,
   ) {
     this.wrapper = document.createElement('div')
+    this.wrapper.className = 'kbd-range-mount'
     container.appendChild(this.wrapper)
     this.disposeRoot = render(() => <KeyboardRangeView store={this.store} />, this.wrapper)
   }

@@ -4484,11 +4484,11 @@ body.coachmark-open #top-strip.strip--dim {
 ───────────────────────────────────────── */
 
 #key-hint {
-  position: absolute;
-  bottom: calc(var(--keyboard-h) + var(--hud-gap) + env(safe-area-inset-bottom));
-  left: calc(20px + env(safe-area-inset-left));
+  position: relative;
   z-index: 14;
   pointer-events: none;
+  /* Out of the column until Live shows it, so Play/Learn don't reserve a gap. */
+  display: none;
   opacity: 0;
   transform: translateY(6px);
   transition:
@@ -4497,6 +4497,7 @@ body.coachmark-open #top-strip.strip--dim {
 }
 
 #key-hint.kh--visible {
+  display: block;
   opacity: 1;
   transform: none;
 }
@@ -4775,7 +4776,8 @@ body.coachmark-open #top-strip.strip--dim {
 }
 
 @media (max-width: 640px) {
-  #key-hint {
+  #key-hint,
+  #key-hint.kh--visible {
     display: none;
   }
 }
@@ -4859,16 +4861,44 @@ body.canvas-hidden #kbd-resizer {
 }
 
 /* ─────────────────────────────────────────
-   KEYBOARD RANGE
-   Which keys the physical controller covers. Sits in the lower-left of the
-   roll, above the main HUD, so it stays reachable in Play, Live, and Learn.
+   LOWER LEFT
+   Keyboard range and the Live shortcuts card share this corner. A column
+   (shortcuts nearest the keys, range bar above it) keeps both fully visible.
+   The 64px lift matches the 56px main HUD plus an 8px gap, so in Play — where
+   the shortcuts card is hidden — the range still clears the HUD.
 ───────────────────────────────────────── */
 
-#kbd-range {
+#lower-left {
   position: absolute;
-  left: calc(12px + env(safe-area-inset-left));
-  bottom: calc(var(--keyboard-h) + 92px + env(safe-area-inset-bottom));
+  left: calc(20px + env(safe-area-inset-left));
+  bottom: calc(var(--keyboard-h) + var(--hud-gap) + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-start;
+  gap: 10px;
+  pointer-events: none;
+}
+
+/* ─────────────────────────────────────────
+   KEYBOARD RANGE
+   Which keys the physical controller covers. Lives in #lower-left.
+───────────────────────────────────────── */
+
+.kbd-range-mount {
+  position: relative;
   z-index: 18;
+  pointer-events: none;
+}
+
+/* Shortcuts card hidden or collapsed to its reopen button: lift the bar
+   clear of the bottom HUD. An open card is taller than the HUD, so the
+   column's own gap is enough. */
+#lower-left:not(:has(#key-hint.kh--visible:not(.kh--collapsed))) .kbd-range-mount {
+  margin-bottom: 64px;
+}
+
+#kbd-range {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -4989,6 +5019,9 @@ body.canvas-hidden #kbd-range {
   left: 0;
   bottom: calc(100% + 8px);
   width: 248px;
+  /* Set from the bar's position so the panel stays under the top strip. */
+  max-height: var(--kbd-range-room, min(420px, 70svh));
+  overflow: auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -4999,6 +5032,51 @@ body.canvas-hidden #kbd-range {
   backdrop-filter: blur(28px) saturate(150%);
   -webkit-backdrop-filter: blur(28px) saturate(150%);
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+/* When the shortcuts card leaves little room above the bar, open the detail
+   panel to the right of the column, still clear of the bottom HUD. */
+#lower-left:has(.kbd-range--beside) .kbd-range-mount,
+#lower-left:has(.kbd-range--beside) #kbd-range {
+  position: static;
+}
+
+#lower-left:has(.kbd-range--beside) .kbd-range-panel {
+  left: calc(100% + 10px);
+  bottom: 64px;
+  width: min(248px, calc(100vw - 100% - 40px));
+  max-height: calc(
+    100svh -
+    var(--keyboard-h) -
+    var(--hud-gap) -
+    148px -
+    env(safe-area-inset-top) -
+    env(safe-area-inset-bottom)
+  );
+}
+
+/* Short windows: the open shortcuts card already fills the corner, so cap it
+   and let it scroll instead of pushing the range bar under the top strip. */
+@media (max-height: 560px) {
+  #key-hint.kh--visible:not(.kh--collapsed) .kh-body {
+    max-height: calc(
+      100svh -
+      var(--keyboard-h) -
+      var(--hud-gap) -
+      148px -
+      env(safe-area-inset-top) -
+      env(safe-area-inset-bottom)
+    );
+    overflow: auto;
+  }
+}
+
+/* Portrait phones dock the HUD under the top strip, so the range can sit
+   on the keys. The shortcuts card is already hidden under 640px. */
+@media (max-width: 640px) and (orientation: portrait) {
+  #lower-left:not(:has(#key-hint.kh--visible:not(.kh--collapsed))) .kbd-range-mount {
+    margin-bottom: 0;
+  }
 }
 
 .kbd-range-hint {
