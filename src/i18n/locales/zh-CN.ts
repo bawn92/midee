@@ -453,7 +453,8 @@ const zhCN: Messages = {
   'onboarding.localeDetected': '当前显示为 {language} · 可在“外观”中切换',
 
   'kbdRange.title': '键盘音域',
-  'kbdRange.tip': '你的键盘能弹的音。等待模式会跳过音域之外的音符。',
+  'kbdRange.tip':
+    '屏幕钢琴始终显示 88 键。这个窗口是控制器实际演奏的范围：MIDI 会移调，使最低键对应该窗口的最低音。等待模式会跳过窗口外的音符。',
   'kbdRange.aria': '键盘音域 {low} 至 {high}，共 {count} 键',
   'kbdRange.semitoneDown': '音域下移半音',
   'kbdRange.semitoneUp': '音域上移半音',
@@ -462,10 +463,18 @@ const zhCN: Messages = {
   'kbdRange.start': '最低音',
   'kbdRange.size': '键数',
   'kbdRange.follow': '跟随 MIDI',
-  'kbdRange.followTip': '当 MIDI 音符落在音域外时，滑动音域以包含它。',
+  'kbdRange.followTip': '校准之前，若 MIDI 音符落在窗口外，会滑动窗口以包含它。',
   'kbdRange.full': '全钢琴',
   'kbdRange.presets': '预设',
   'kbdRange.picker': '拖动移动，拖边缘改大小，或点击某个键',
+  'kbdRange.calibrate': '按下你的最低键',
+  'kbdRange.calibrateShort': '最低键',
+  'kbdRange.calibrateArmed': '请按下键盘上的最低键…',
+  'kbdRange.calibrateArmedShort': '正在聆听…',
+  'kbdRange.calibrateTip': '下一次按下的 MIDI 键会记为控制器的最低音，窗口会映射到它。',
+  'kbdRange.controllerLow': '控制器最低音 {note}',
+  'kbdRange.controllerUnset': '尚未校准。移动窗口会移调进来的音符；按下最低键可精确对齐。',
+  'kbdRange.band': '拖动可移动音域，两侧边缘可调整大小。',
 }
 
 export default zhCN

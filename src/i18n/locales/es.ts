@@ -484,7 +484,7 @@ const es: Messages = {
 
   'kbdRange.title': 'Tesitura del teclado',
   'kbdRange.tip':
-    'Teclas que puede tocar tu teclado. El modo espera omite las notas fuera de este rango.',
+    'El piano en pantalla sigue mostrando 88 teclas. Esta ventana es lo que toca tu controlador: el MIDI se transpone para que su tecla más grave coincida con la ventana. El modo espera omite las notas fuera de ella.',
   'kbdRange.aria': 'Tesitura de {low} a {high}, {count} teclas',
   'kbdRange.semitoneDown': 'Bajar el rango un semitono',
   'kbdRange.semitoneUp': 'Subir el rango un semitono',
@@ -493,10 +493,21 @@ const es: Messages = {
   'kbdRange.start': 'Nota más grave',
   'kbdRange.size': 'Número de teclas',
   'kbdRange.follow': 'Seguir el MIDI',
-  'kbdRange.followTip': 'Desplaza el rango para incluir las notas MIDI que caen fuera.',
+  'kbdRange.followTip':
+    'Antes de calibrar, desplaza la ventana para incluir las notas MIDI que caen fuera.',
   'kbdRange.full': 'Piano completo',
   'kbdRange.presets': 'Tamaños',
   'kbdRange.picker': 'Arrastra para mover, los bordes para cambiar el tamaño, o pulsa una tecla',
+  'kbdRange.calibrate': 'Pulsa tu tecla más grave',
+  'kbdRange.calibrateShort': 'Tecla grave',
+  'kbdRange.calibrateArmed': 'Pulsa la tecla más grave de tu teclado…',
+  'kbdRange.calibrateArmedShort': 'Escuchando…',
+  'kbdRange.calibrateTip':
+    'La siguiente tecla MIDI se guarda como la nota más grave del controlador, y la ventana se asigna a ella.',
+  'kbdRange.controllerLow': 'Grave del controlador {note}',
+  'kbdRange.controllerUnset':
+    'Sin calibrar. Mover la ventana transpone las notas; pulsa la tecla más grave para alinearla.',
+  'kbdRange.band': 'Arrastra para mover el rango. Los bordes cambian el tamaño.',
 }
 
 export default es

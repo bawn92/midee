@@ -490,7 +490,7 @@ const fr: Messages = {
 
   'kbdRange.title': 'Tessiture du clavier',
   'kbdRange.tip':
-    'Touches que votre clavier peut jouer. Le mode attente ignore les notes hors de cette plage.',
+    'Le piano à l’écran reste à 88 touches. Cette fenêtre est ce que joue votre contrôleur : le MIDI est transposé pour que sa touche la plus grave corresponde à la fenêtre. Le mode attente ignore les notes hors de celle-ci.',
   'kbdRange.aria': 'Tessiture de {low} à {high}, {count} touches',
   'kbdRange.semitoneDown': 'Descendre la tessiture d’un demi-ton',
   'kbdRange.semitoneUp': 'Monter la tessiture d’un demi-ton',
@@ -499,10 +499,21 @@ const fr: Messages = {
   'kbdRange.start': 'Note la plus grave',
   'kbdRange.size': 'Nombre de touches',
   'kbdRange.follow': 'Suivre le MIDI',
-  'kbdRange.followTip': 'Décale la plage pour inclure les notes MIDI qui tombent en dehors.',
+  'kbdRange.followTip':
+    'Avant le calibrage, décale la fenêtre pour inclure les notes MIDI qui tombent en dehors.',
   'kbdRange.full': 'Piano complet',
   'kbdRange.presets': 'Tailles',
   'kbdRange.picker': 'Glissez pour déplacer, les bords pour redimensionner, ou cliquez une touche',
+  'kbdRange.calibrate': 'Appuyez sur votre touche la plus grave',
+  'kbdRange.calibrateShort': 'Touche grave',
+  'kbdRange.calibrateArmed': 'Appuyez sur la touche la plus grave du clavier…',
+  'kbdRange.calibrateArmedShort': 'Écoute…',
+  'kbdRange.calibrateTip':
+    'La prochaine touche MIDI devient la note la plus grave du contrôleur, et la fenêtre s’aligne dessus.',
+  'kbdRange.controllerLow': 'Grave du contrôleur {note}',
+  'kbdRange.controllerUnset':
+    'Non calibré. Déplacer la fenêtre transpose les notes ; appuyez sur la touche la plus grave pour l’aligner.',
+  'kbdRange.band': 'Glissez pour déplacer la tessiture. Les bords changent la taille.',
 }
 
 export default fr

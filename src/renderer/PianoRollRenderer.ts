@@ -659,6 +659,7 @@ export class PianoRollRenderer {
     }
 
     this.keyboardRenderer.drawActiveKeys(activeColors, this.viewport)
+    this.keyboardRenderer.drawRange(this.viewport)
     this.particles.update(dt)
     this.mistStrike?.update(this.viewport, activeColors, currentTime)
 
@@ -803,6 +804,45 @@ export class PianoRollRenderer {
 
   get canvas(): HTMLCanvasElement {
     return this.app.canvas as HTMLCanvasElement
+  }
+
+  // Highlight which of the 88 keys the controller window covers. Does not
+  // change the roll's pitch viewport — export framing still owns that.
+  setPlayableRange(start: number, end: number): void {
+    this.keyboardRenderer.setPlayableRange(start, end)
+    if (!this.exportMode) this.presentFrame()
+  }
+
+  // Screen rect of the on-screen keys from `start` through `end`, inclusive.
+  keyBandRect(
+    start: number,
+    end: number,
+  ): { left: number; top: number; width: number; height: number } | null {
+    if (!this.viewport.hasKey(start) || !this.viewport.hasKey(end)) return null
+    const bounds = this.canvas.getBoundingClientRect()
+    const { canvasWidth, canvasHeight } = this.viewport.config
+    if (bounds.width < 2 || bounds.height < 2 || canvasWidth < 1 || canvasHeight < 1) return null
+    const scaleX = bounds.width / canvasWidth
+    const scaleY = bounds.height / canvasHeight
+    const x0 = this.viewport.pitchToX(start) * scaleX
+    const x1 = (this.viewport.pitchToX(end) + this.viewport.pitchWidth(end)) * scaleX
+    const keyboardPx = this.keyboardHeight * scaleY
+    return {
+      left: bounds.left + x0,
+      top: bounds.top + bounds.height - keyboardPx,
+      width: Math.max(12, x1 - x0),
+      height: keyboardPx,
+    }
+  }
+
+  // Pitch under a client X, using the white-key row so a horizontal drag
+  // moves monotonically across the piano.
+  pitchFromClientX(clientX: number): number {
+    const bounds = this.canvas.getBoundingClientRect()
+    if (bounds.width <= 0) return 21
+    const x = ((clientX - bounds.left) / bounds.width) * this.viewport.config.canvasWidth
+    const y = this.viewport.config.canvasHeight - 2
+    return this.viewport.pitchAtPoint(x, y) ?? 21
   }
 
   // Convert a client-space (canvas) point into a MIDI pitch if it lands on a key.

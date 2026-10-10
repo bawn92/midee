@@ -518,7 +518,8 @@ export const en = {
 
   // ── Keyboard range ─────────────────────────────────────────
   'kbdRange.title': 'Keyboard range',
-  'kbdRange.tip': 'Keys your keyboard can play. Wait mode skips notes outside this range.',
+  'kbdRange.tip':
+    'The on-screen piano stays 88 keys. This window is what your controller plays: MIDI is transposed so its lowest key matches the window. Wait mode skips notes outside it.',
   'kbdRange.aria': 'Keyboard range {low} to {high}, {count} keys',
   'kbdRange.semitoneDown': 'Shift range down a semitone',
   'kbdRange.semitoneUp': 'Shift range up a semitone',
@@ -527,10 +528,21 @@ export const en = {
   'kbdRange.start': 'Lowest key',
   'kbdRange.size': 'Number of keys',
   'kbdRange.follow': 'Follow MIDI',
-  'kbdRange.followTip': 'Slide the range to include MIDI notes that fall outside it.',
+  'kbdRange.followTip':
+    'Before the controller is calibrated, slide the window to include MIDI notes that fall outside it.',
   'kbdRange.full': 'Full piano',
   'kbdRange.presets': 'Presets',
   'kbdRange.picker': 'Drag to move, edges to resize, or click a key',
+  'kbdRange.calibrate': 'Press your lowest key',
+  'kbdRange.calibrateShort': 'Lowest key',
+  'kbdRange.calibrateArmed': 'Press the lowest key on your keyboard…',
+  'kbdRange.calibrateArmedShort': 'Listening…',
+  'kbdRange.calibrateTip':
+    'The next MIDI key you press is saved as the controller’s lowest note, and the window maps onto it.',
+  'kbdRange.controllerLow': 'Controller low {note}',
+  'kbdRange.controllerUnset':
+    'Not calibrated. Moving the window shifts incoming notes; press your lowest key to line them up.',
+  'kbdRange.band': 'Drag to move the keyboard range. The side edges resize it.',
 } as const
 
 // Keys come from the English source; values are any string so translations

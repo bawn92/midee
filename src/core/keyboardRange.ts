@@ -1,7 +1,8 @@
-// The slice of the piano the player's instrument can actually reach.
-// A 24-key controller (ROLI Piano M and similar) only covers two octaves,
-// and its octave buttons move that window. The roll, the on-screen keys,
-// and wait mode all read this so a song never stalls on a key they can't press.
+// The slice of the piano the player's instrument covers. The on-screen
+// keyboard always draws all 88 keys; this window is a highlight on that
+// keyboard and the target a hardware controller is transposed onto, so its
+// lowest key sounds as the window's lowest key. Wait mode only waits for
+// notes inside the window.
 //
 // Persisted under `midee.keyboardRange`. The default is the full 88 keys, so
 // nothing changes until the player narrows it.
@@ -27,7 +28,15 @@ export interface KeyboardRange {
 
 export interface KeyboardRangePrefs extends KeyboardRange {
   // When a MIDI note lands outside the window, slide the window to include it.
+  // Ignored once the controller's lowest key is known — those notes are
+  // transposed into the window instead of moving it.
   followMidi: boolean
+  // MIDI pitch the physical controller's lowest key sends. Null until a range
+  // move anchors it or the player calibrates by pressing that key.
+  controllerLow: number | null
+  // True after "press your lowest key". An anchor from dragging the window
+  // transposes relative to the previous window, but it is not a calibration.
+  calibrated: boolean
 }
 
 export const FULL_PIANO_RANGE: KeyboardRange = {
@@ -35,7 +44,12 @@ export const FULL_PIANO_RANGE: KeyboardRange = {
   size: KEYBOARD_SIZE_MAX,
 }
 
-const FULL_PREFS: KeyboardRangePrefs = { ...FULL_PIANO_RANGE, followMidi: false }
+const FULL_PREFS: KeyboardRangePrefs = {
+  ...FULL_PIANO_RANGE,
+  followMidi: false,
+  controllerLow: null,
+  calibrated: false,
+}
 
 export function rangeEnd(range: KeyboardRange): number {
   return range.start + range.size - 1
@@ -120,6 +134,121 @@ export function resizeRangeFromEdge(
   return clampKeyboardRange({ start, size: end - start + 1 })
 }
 
+// Pitch class a controller of this size is built to start on.
+// 76-key pianos start on E. 88 keys are the piano itself (A0 only).
+// 24, 25, 32, 37, 49, 61, and any other size start on C.
+export function rangeAnchorPitchClass(size: number): number | null {
+  if (size >= KEYBOARD_SIZE_MAX) return null
+  if (size === 76) return 4
+  return 0
+}
+
+// Nearest musically valid low key for `size`, preferring the lower key on a tie.
+// 88-key windows are pinned to A0. Semitone nudges do not call this.
+export function snapRangeStart(size: number, preferredStart: number): number {
+  const clamped = clampKeyboardRange({ start: preferredStart, size })
+  const pitchClass = rangeAnchorPitchClass(clamped.size)
+  if (pitchClass === null) return MIDI_MIN
+  const maxStart = MIDI_MAX - clamped.size + 1
+  const baseClass = ((MIDI_MIN % 12) + 12) % 12
+  let best = MIDI_MIN + ((pitchClass - baseClass + 12) % 12)
+  if (best > maxStart) return clamped.start
+  let bestDist = Math.abs(best - preferredStart)
+  for (let start = best + 12; start <= maxStart; start += 12) {
+    const dist = Math.abs(start - preferredStart)
+    if (dist < bestDist) {
+      bestDist = dist
+      best = start
+    }
+  }
+  return best
+}
+
+export function withSnappedStart(range: KeyboardRange): KeyboardRange {
+  const clamped = clampKeyboardRange(range)
+  return clampKeyboardRange({
+    start: snapRangeStart(clamped.size, clamped.start),
+    size: clamped.size,
+  })
+}
+
+// Resize around the current center, then snap the low key to the layout for
+// that size (C, E, or A0). The − / + buttons stay unsnapped so a player can
+// fine-tune after a layout snap.
+export function resizeKeyboardRangeSnapped(range: KeyboardRange, size: number): KeyboardRange {
+  return withSnappedStart(resizeKeyboardRange(range, size))
+}
+
+function clampMidiPitch(pitch: number): number {
+  if (!Number.isFinite(pitch)) return 0
+  return Math.max(0, Math.min(127, Math.round(pitch)))
+}
+
+// How far to transpose a hardware note so the controller's lowest key lands
+// on the window's lowest key. Uncalibrated and unanchored windows pass
+// notes through.
+export function controllerTranspose(prefs: KeyboardRangePrefs): number {
+  if (prefs.controllerLow == null) return 0
+  return prefs.start - prefs.controllerLow
+}
+
+export function mapControllerPitch(rawPitch: number, prefs: KeyboardRangePrefs): number {
+  return clampMidiPitch(clampMidiPitch(rawPitch) + controllerTranspose(prefs))
+}
+
+// Smallest octave shift (a multiple of 12, or 0) that puts `rawPitch` back
+// inside the calibrated span. A 24-key window is two octaves, so a note can
+// fit more than one shift; the closest one wins. Ambiguous jumps of two
+// octaves still need the calibrate button.
+export function detectControllerOctaveShift(
+  rawPitch: number,
+  controllerLow: number,
+  size: number,
+): number {
+  const raw = Math.round(rawPitch)
+  const low = Math.round(controllerLow)
+  const span = Math.max(1, Math.round(size))
+  const high = low + span - 1
+  if (raw >= low && raw <= high) return 0
+  let best: number | null = null
+  for (let octave = -8; octave <= 8; octave++) {
+    if (octave === 0) continue
+    const shift = octave * 12
+    if (raw >= low + shift && raw <= high + shift) {
+      if (best === null || Math.abs(shift) < Math.abs(best)) best = shift
+    }
+  }
+  return best ?? 0
+}
+
+// Apply a calibration press or, once calibrated, an octave-button shift.
+// Returns the pitch downstream (wait mode, scoring, sound) should hear.
+export function adoptControllerNote(
+  rawPitch: number,
+  prefs: KeyboardRangePrefs,
+  calibrating: boolean,
+): {
+  controllerLow: number | null
+  calibrated: boolean
+  calibrating: boolean
+  mapped: number
+} {
+  const raw = clampMidiPitch(rawPitch)
+  let controllerLow = prefs.controllerLow
+  let calibrated = prefs.calibrated
+  let armed = calibrating
+  if (armed) {
+    controllerLow = raw
+    calibrated = true
+    armed = false
+  } else if (calibrated && controllerLow != null) {
+    const shift = detectControllerOctaveShift(raw, controllerLow, prefs.size)
+    if (shift !== 0) controllerLow = clampMidiPitch(controllerLow + shift)
+  }
+  const mapped = mapControllerPitch(raw, { ...prefs, controllerLow, calibrated })
+  return { controllerLow, calibrated, calibrating: armed, mapped }
+}
+
 // Slide `range` (same size) by the smallest amount that puts `pitch` inside.
 // Pitches off the 88 keys are ignored — there's no key to show them on.
 export function shiftRangeToInclude(range: KeyboardRange, pitch: number): KeyboardRange {
@@ -131,6 +260,13 @@ export function shiftRangeToInclude(range: KeyboardRange, pitch: number): Keyboa
   return clampKeyboardRange({ start: p - range.size + 1, size: range.size })
 }
 
+function readControllerLow(value: unknown): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null
+  const pitch = Math.round(value)
+  if (pitch < 0 || pitch > 127) return null
+  return pitch
+}
+
 function migrateKeyboardRange(raw: unknown): KeyboardRangePrefs {
   if (!raw || typeof raw !== 'object') return { ...FULL_PREFS }
   const o = raw as Record<string, unknown>
@@ -138,7 +274,12 @@ function migrateKeyboardRange(raw: unknown): KeyboardRangePrefs {
     start: typeof o.start === 'number' ? o.start : MIDI_MIN,
     size: typeof o.size === 'number' ? o.size : KEYBOARD_SIZE_MAX,
   })
-  return { ...clamped, followMidi: o.followMidi === true }
+  return {
+    ...clamped,
+    followMidi: o.followMidi === true,
+    controllerLow: readControllerLow(o.controllerLow),
+    calibrated: o.calibrated === true,
+  }
 }
 
 const persisted = jsonPersisted<KeyboardRangePrefs>(
@@ -165,7 +306,9 @@ function commit(next: KeyboardRangePrefs): KeyboardRangePrefs {
   if (
     next.start === current.start &&
     next.size === current.size &&
-    next.followMidi === current.followMidi
+    next.followMidi === current.followMidi &&
+    next.controllerLow === current.controllerLow &&
+    next.calibrated === current.calibrated
   ) {
     return current
   }
@@ -175,7 +318,24 @@ function commit(next: KeyboardRangePrefs): KeyboardRangePrefs {
   return current
 }
 
+// Moving a window that is already narrower than the piano anchors the
+// controller to the previous low key, so the move transposes MIDI by the
+// same amount. Leaving the full piano does not: the first placement just
+// shows where the controller is assumed to sit, until the player calibrates
+// or moves the window again.
+function anchorControllerLow(
+  prev: KeyboardRangePrefs,
+  next: KeyboardRangePrefs,
+  controllerLowSpecified: boolean,
+): number | null {
+  if (controllerLowSpecified) return next.controllerLow
+  if (prev.controllerLow != null) return prev.controllerLow
+  if (next.start !== prev.start && !isFullPianoRange(prev)) return prev.start
+  return null
+}
+
 // `size` without `start` recenters. Passing both pins the low key explicitly.
+// Layout snapping is the caller's job (drag, presets); − / + stay exact.
 export function setKeyboardRange(partial: Partial<KeyboardRangePrefs>): KeyboardRangePrefs {
   const sizeChanged = partial.size !== undefined && partial.size !== current.size
   const startProvided = partial.start !== undefined
@@ -190,16 +350,43 @@ export function setKeyboardRange(partial: Partial<KeyboardRangePrefs>): Keyboard
     start = clamped.start
     size = clamped.size
   }
-  return commit({
+  const controllerLowSpecified = partial.controllerLow !== undefined
+  const drafted: KeyboardRangePrefs = {
     start,
     size,
     followMidi: partial.followMidi ?? current.followMidi,
-  })
+    controllerLow:
+      partial.controllerLow !== undefined ? partial.controllerLow : current.controllerLow,
+    calibrated: partial.calibrated ?? current.calibrated,
+  }
+  drafted.controllerLow = anchorControllerLow(current, drafted, controllerLowSpecified)
+  return commit(drafted)
 }
 
 export function shiftKeyboardRangeBy(semitones: number): KeyboardRangePrefs {
   const next = shiftKeyboardRange(current, semitones)
-  return commit({ ...current, start: next.start, size: next.size })
+  const drafted: KeyboardRangePrefs = { ...current, start: next.start, size: next.size }
+  drafted.controllerLow = anchorControllerLow(current, drafted, false)
+  return commit(drafted)
+}
+
+// "Press your lowest key". Not persisted — it only arms the next MIDI note.
+let calibrateArmed = false
+const calibrateListeners = new Set<(armed: boolean) => void>()
+
+export function isControllerCalibrateArmed(): boolean {
+  return calibrateArmed
+}
+
+export function setControllerCalibrateArmed(armed: boolean): void {
+  if (calibrateArmed === armed) return
+  calibrateArmed = armed
+  for (const fn of calibrateListeners) fn(armed)
+}
+
+export function subscribeControllerCalibrate(fn: (armed: boolean) => void): () => void {
+  calibrateListeners.add(fn)
+  return () => calibrateListeners.delete(fn)
 }
 
 // Tests re-read storage after planting a value, or drop back to the default

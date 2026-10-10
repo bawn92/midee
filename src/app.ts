@@ -3,7 +3,11 @@ import { INSTRUMENTS, type InstrumentId, SynthEngine } from './audio/SynthEngine
 import { MasterClock } from './core/clock/MasterClock'
 import { type BusNoteEvent, InputBus } from './core/input/InputBus'
 import {
+  adoptControllerNote,
   getKeyboardRange,
+  isControllerCalibrateArmed,
+  mapControllerPitch,
+  setControllerCalibrateArmed,
   setKeyboardRange,
   shiftRangeToInclude,
   subscribeKeyboardRange,
@@ -85,7 +89,7 @@ import { DropZone } from './ui/DropZone'
 import type { ExportSettings } from './ui/ExportModal'
 import { THROUGHPUT_KEY, throughputFrom } from './ui/exportSettings'
 import { InstrumentMenu } from './ui/InstrumentMenu'
-import { KeyboardRangeControl } from './ui/KeyboardRangeControl'
+import { KeyboardRangeBand, KeyboardRangeControl } from './ui/KeyboardRangeControl'
 import { KeyboardResizer } from './ui/KeyboardResizer'
 import type { SessionAction } from './ui/PostSessionModal'
 import { PEDAL_HIDDEN, type PedalIndicatorState, pedalIndicatorState } from './ui/pedalIndicator'
@@ -176,6 +180,10 @@ export class App {
   private overlay!: HTMLElement
   private kbdResizer!: KeyboardResizer
   private kbdRange!: KeyboardRangeControl
+  private kbdRangeBand!: KeyboardRangeBand
+  // Hardware note-on pitch → the transposed pitch we actually sounded, so
+  // note-off releases that pitch even if the range moves while the key is held.
+  private mappedMidi = new Map<number, number>()
   private lowerLeft: HTMLElement | null = null
   private chordOverlay!: ChordOverlay
   private customizeMenu!: CustomizeMenu
@@ -538,6 +546,10 @@ export class App {
     const keyHint = overlay.querySelector('#key-hint')
     if (keyHint) lowerLeft.appendChild(keyHint)
     this.kbdRange = new KeyboardRangeControl(lowerLeft, this.store)
+    this.kbdRangeBand = new KeyboardRangeBand(overlay, this.store, {
+      rect: (start, end) => this.renderer.keyBandRect(start, end),
+      pitchAt: (clientX) => this.renderer.pitchFromClientX(clientX),
+    })
 
     this.chordOverlay = new ChordOverlay(this.controls.chordSlot)
     this.chordOverlayOn = chordOverlayStore.load()
@@ -689,10 +701,12 @@ export class App {
     // per-source because the bus merges them with an OR.
     this.unsubs.push(
       this.midiInput.noteOn.subscribe((evt) => {
-        if (evt) this.inputBus.emitNoteOn(evt, 'midi')
+        if (!evt) return
+        this.inputBus.emitNoteOn({ ...evt, pitch: this.takeMidiPitch(evt.pitch, true) }, 'midi')
       }),
       this.midiInput.noteOff.subscribe((evt) => {
-        if (evt) this.inputBus.emitNoteOff(evt, 'midi')
+        if (!evt) return
+        this.inputBus.emitNoteOff({ ...evt, pitch: this.takeMidiPitch(evt.pitch, false) }, 'midi')
       }),
       this.midiInput.pedal.subscribe((down) => {
         this.inputBus.emitPedal(down, 'midi')
@@ -868,12 +882,37 @@ export class App {
   }
 
   private applyKeyboardRange(range: { start: number; size: number }): void {
-    this.renderer.setPitchRange(range.start, range.start + range.size - 1)
+    // The roll keeps all 88 keys. The range is a highlight plus the MIDI map.
+    this.renderer.setPlayableRange(range.start, range.start + range.size - 1)
+  }
+
+  // Transpose a hardware note so the controller's lowest key plays the
+  // window's lowest key. Note-off uses the pitch chosen at note-on.
+  private takeMidiPitch(raw: number, down: boolean): number {
+    if (!down) {
+      const held = this.mappedMidi.get(raw)
+      this.mappedMidi.delete(raw)
+      if (held !== undefined) return held
+      return mapControllerPitch(raw, getKeyboardRange())
+    }
+    const before = getKeyboardRange()
+    const adopted = adoptControllerNote(raw, before, isControllerCalibrateArmed())
+    if (!adopted.calibrating) setControllerCalibrateArmed(false)
+    if (
+      adopted.controllerLow !== before.controllerLow ||
+      adopted.calibrated !== before.calibrated
+    ) {
+      setKeyboardRange({ controllerLow: adopted.controllerLow, calibrated: adopted.calibrated })
+    }
+    this.mappedMidi.set(raw, adopted.mapped)
+    return adopted.mapped
   }
 
   private maybeFollowKeyboardRange(pitch: number): void {
     const prefs = getKeyboardRange()
-    if (!prefs.followMidi) return
+    // Once the controller maps onto the window, notes outside it are an
+    // octave shift (handled in takeMidiPitch), not a request to move the window.
+    if (!prefs.followMidi || prefs.controllerLow != null) return
     const next = shiftRangeToInclude(prefs, pitch)
     if (next.start === prefs.start) return
     setKeyboardRange({ start: next.start })
@@ -2057,6 +2096,7 @@ export class App {
     this.controls.dispose()
     this.kbdResizer.dispose()
     this.kbdRange.dispose()
+    this.kbdRangeBand.dispose()
     this.lowerLeft?.remove()
     this.lowerLeft = null
     this.midiInput.dispose()

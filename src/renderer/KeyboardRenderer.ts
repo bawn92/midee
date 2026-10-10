@@ -70,6 +70,12 @@ export class KeyboardRenderer {
   private practicePending: ReadonlySet<number> | null = null
   private practiceAccepted: ReadonlySet<number> | null = null
 
+  // Playable-window highlight. Defaults to the whole piano, which draws nothing.
+  private rangeLayer: Graphics
+  private playStart = MIDI_MIN
+  private playEnd = MIDI_MAX
+  private rangeSignature = ''
+
   // Snapshot of the last-drawn pitch→color map as a single signature string.
   // If nothing changed we skip the clear + redraw entirely (common during
   // sustained chords and idle frames).
@@ -96,13 +102,17 @@ export class KeyboardRenderer {
     this.whitePracticeHintLayer.label = 'keyboard-practice-hint-white'
     this.blackPracticeHintLayer = new Graphics()
     this.blackPracticeHintLayer.label = 'keyboard-practice-hint-black'
+    this.rangeLayer = new Graphics()
+    this.rangeLayer.label = 'keyboard-range'
     // Order matters: white hints/active must sit above the white sprite but
     // below the black sprite. Black hints/active sit above the black sprite.
-    // Sprites are inserted by build() at the correct indices.
+    // The range wash sits above every key so the playable window reads on
+    // both white and black keys. Sprites are inserted by build().
     this.container.addChild(this.whitePracticeHintLayer)
     this.container.addChild(this.whiteActiveLayer)
     this.container.addChild(this.blackPracticeHintLayer)
     this.container.addChild(this.blackActiveLayer)
+    this.container.addChild(this.rangeLayer)
   }
 
   // Build or rebuild the static keyboard textures.
@@ -237,7 +247,7 @@ export class KeyboardRenderer {
     // layers. Reinsert the sprites
     // at the correct indices so the final order is:
     //   whiteSprite, whitePracticeHintLayer, whiteActiveLayer,
-    //   blackSprite, blackPracticeHintLayer, blackActiveLayer
+    //   blackSprite, blackPracticeHintLayer, blackActiveLayer, rangeLayer
     this.whiteSprite = new Sprite(this.whiteTexture)
     this.whiteSprite.y = yOffset
     this.container.addChildAt(this.whiteSprite, 0)
@@ -251,6 +261,8 @@ export class KeyboardRenderer {
     this.whiteActiveLayer.y = yOffset
     this.blackPracticeHintLayer.y = yOffset
     this.blackActiveLayer.y = yOffset
+    this.rangeLayer.y = yOffset
+    this.rangeSignature = ''
     // Force a redraw of the hint layer on the next setPracticeHints call —
     // the geometry depends on the freshly-built viewport.
     this.practiceSignature = ''
@@ -303,6 +315,54 @@ export class KeyboardRenderer {
     this.activeLayerDirty = true
     // Practice hint colours follow the active theme accent.
     this.practiceSignature = ''
+    this.rangeSignature = ''
+  }
+
+  // Inclusive MIDI pitches of the controller window. The full piano draws
+  // no wash — every key is already in range.
+  setPlayableRange(start: number, end: number): void {
+    if (this.playStart === start && this.playEnd === end) return
+    this.playStart = start
+    this.playEnd = end
+    this.rangeSignature = ''
+  }
+
+  drawRange(viewport: Viewport): void {
+    const { canvasWidth, keyboardHeight, pitchMin, pitchMax } = viewport.config
+    const sig =
+      `${this.playStart}-${this.playEnd}|${canvasWidth}x${keyboardHeight}|` +
+      `${pitchMin ?? MIDI_MIN}-${pitchMax ?? MIDI_MAX}|${this.theme.accent}`
+    if (sig === this.rangeSignature) return
+    this.rangeSignature = sig
+    this.rangeLayer.clear()
+
+    const lo = pitchMin ?? MIDI_MIN
+    const hi = pitchMax ?? MIDI_MAX
+    if (this.playStart <= lo && this.playEnd >= hi) return
+
+    const positions = viewport.getAllKeyPositions()
+    const startPos = positions.get(this.playStart)
+    const endPos = positions.get(this.playEnd)
+    if (!startPos || !endPos) return
+    const x0 = startPos.x
+    const x1 = endPos.x + endPos.width
+    const accent = this.theme.accent
+
+    if (x0 > 0)
+      this.rangeLayer.rect(0, 0, x0, keyboardHeight).fill({ color: 0x000000, alpha: 0.34 })
+    if (x1 < canvasWidth) {
+      this.rangeLayer
+        .rect(x1, 0, canvasWidth - x1, keyboardHeight)
+        .fill({ color: 0x000000, alpha: 0.34 })
+    }
+    this.rangeLayer
+      .rect(x0, 0, Math.max(1, x1 - x0), keyboardHeight)
+      .fill({ color: accent, alpha: 0.18 })
+    this.rangeLayer.rect(x0, 0, 2, keyboardHeight).fill({ color: accent, alpha: 0.95 })
+    this.rangeLayer
+      .rect(Math.max(x0, x1 - 2), 0, 2, keyboardHeight)
+      .fill({ color: accent, alpha: 0.95 })
+    this.rangeLayer.rect(x0, 0, Math.max(1, x1 - x0), 3).fill({ color: accent, alpha: 0.9 })
   }
 
   // Public hook for the parent renderer to swap in the current practice-mode

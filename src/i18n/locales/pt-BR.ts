@@ -483,7 +483,7 @@ const ptBR: Messages = {
 
   'kbdRange.title': 'Extensão do teclado',
   'kbdRange.tip':
-    'Teclas que o seu teclado pode tocar. O modo espera ignora as notas fora deste intervalo.',
+    'O piano na tela continua com 88 teclas. Esta janela é o que o controlador toca: o MIDI é transposto para a tecla mais grave coincidir com a janela. O modo espera ignora as notas fora dela.',
   'kbdRange.aria': 'Extensão de {low} a {high}, {count} teclas',
   'kbdRange.semitoneDown': 'Descer o intervalo um semitom',
   'kbdRange.semitoneUp': 'Subir o intervalo um semitom',
@@ -492,10 +492,21 @@ const ptBR: Messages = {
   'kbdRange.start': 'Nota mais grave',
   'kbdRange.size': 'Número de teclas',
   'kbdRange.follow': 'Seguir o MIDI',
-  'kbdRange.followTip': 'Desloca o intervalo para incluir notas MIDI que caiam fora dele.',
+  'kbdRange.followTip':
+    'Antes de calibrar, desloque a janela para incluir notas MIDI que caiam fora dela.',
   'kbdRange.full': 'Piano completo',
   'kbdRange.presets': 'Tamanhos',
   'kbdRange.picker': 'Arraste para mover, as bordas para redimensionar, ou clique numa tecla',
+  'kbdRange.calibrate': 'Pressione a tecla mais grave',
+  'kbdRange.calibrateShort': 'Tecla grave',
+  'kbdRange.calibrateArmed': 'Pressione a tecla mais grave do teclado…',
+  'kbdRange.calibrateArmedShort': 'Ouvindo…',
+  'kbdRange.calibrateTip':
+    'A próxima tecla MIDI vira a nota mais grave do controlador, e a janela se alinha a ela.',
+  'kbdRange.controllerLow': 'Grave do controlador {note}',
+  'kbdRange.controllerUnset':
+    'Sem calibrar. Mover a janela transpoe as notas; pressione a tecla mais grave para alinhar.',
+  'kbdRange.band': 'Arraste para mover o intervalo. As bordas mudam o tamanho.',
 }
 
 export default ptBR

@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   getKeyboardRange,
+  isControllerCalibrateArmed,
   KEYBOARD_RANGE_STORAGE_KEY,
   reloadKeyboardRange,
+  setControllerCalibrateArmed,
 } from '../core/keyboardRange'
 import { createAppStore } from '../store/state'
 import { KeyboardRangeControl } from './KeyboardRangeControl'
@@ -16,6 +18,7 @@ describe('KeyboardRangeControl', () => {
     host.remove()
     localStorage.removeItem(KEYBOARD_RANGE_STORAGE_KEY)
     reloadKeyboardRange()
+    setControllerCalibrateArmed(false)
   })
 
   function mount(mode: 'play' | 'home' = 'play'): void {
@@ -38,21 +41,22 @@ describe('KeyboardRangeControl', () => {
       (b) => b.textContent === '24',
     )!
     preset.click()
-    expect(getKeyboardRange()).toMatchObject({ start: 53, size: 24 })
-    expect(root.querySelector('.kbd-range-notes')!.textContent).toBe('F3–E5')
+    // 24 keys snap to C. The middle of the piano lands on C3.
+    expect(getKeyboardRange()).toMatchObject({ start: 48, size: 24 })
+    expect(root.querySelector('.kbd-range-notes')!.textContent).toBe('C3–B4')
 
     host.querySelector<HTMLButtonElement>('#kbd-range-up')!.click()
-    expect(getKeyboardRange().start).toBe(54)
-    expect(root.querySelector('.kbd-range-notes')!.textContent).toBe('F#3–F5')
+    expect(getKeyboardRange().start).toBe(49)
+    expect(root.querySelector('.kbd-range-notes')!.textContent).toBe('C#3–C5')
 
     host.querySelector<HTMLButtonElement>('#kbd-range-oct-up')!.click()
-    expect(getKeyboardRange().start).toBe(66)
+    expect(getKeyboardRange().start).toBe(61)
 
     host.querySelector<HTMLButtonElement>('.kbd-range-follow')!.click()
     expect(getKeyboardRange().followMidi).toBe(true)
 
     reloadKeyboardRange()
-    expect(getKeyboardRange()).toMatchObject({ start: 66, size: 24, followMidi: true })
+    expect(getKeyboardRange()).toMatchObject({ start: 61, size: 24, followMidi: true })
   })
 
   it('drags, jumps, and resizes the piano overview', () => {
@@ -89,31 +93,44 @@ describe('KeyboardRangeControl', () => {
       target.dispatchEvent(event)
     }
 
-    // Click a key outside the window: the highlight jumps so that key is centered.
+    // Click a key outside the window: the highlight jumps, then snaps to C.
     fire('pointerdown', picker, point(90))
     fire('pointerup', picker, point(90))
-    expect(getKeyboardRange()).toMatchObject({ start: 79, size: 24 })
+    expect(getKeyboardRange()).toMatchObject({ start: 84, size: 24 })
 
-    // Drag the window body. Touch uses the same pointer path.
+    // Drag the window body. Touch uses the same pointer path. The landing snaps to C.
     const windowEl = host.querySelector<HTMLElement>('.kbd-range-window')!
     fire('pointerdown', windowEl, point(79), 'touch')
     fire('pointermove', picker, point(70), 'touch')
     fire('pointerup', picker, point(70), 'touch')
-    expect(getKeyboardRange()).toMatchObject({ start: 70, size: 24 })
+    expect(getKeyboardRange()).toMatchObject({ start: 72, size: 24 })
 
-    // Drag the right edge to add keys.
+    // Drag the right edge to add keys. The low key stays on C.
     const endHandle = host.querySelector<HTMLElement>('.kbd-range-handle--end')!
     fire('pointerdown', endHandle, point(93))
     fire('pointermove', picker, point(100))
     fire('pointerup', picker, point(100))
-    expect(getKeyboardRange()).toMatchObject({ start: 70, size: 31 })
+    expect(getKeyboardRange()).toMatchObject({ start: 72, size: 29 })
 
+    // Arrow keys fine-tune by a semitone and do not snap back to C.
     windowEl.focus()
     windowEl.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
-    expect(getKeyboardRange().start).toBe(71)
+    expect(getKeyboardRange().start).toBe(73)
 
     reloadKeyboardRange()
-    expect(getKeyboardRange()).toMatchObject({ start: 71, size: 31 })
+    expect(getKeyboardRange()).toMatchObject({ start: 73, size: 29 })
+  })
+
+  it('arms calibration until the lowest key is pressed', () => {
+    mount()
+    host.querySelector<HTMLButtonElement>('#kbd-range-label')!.click()
+    const button = host.querySelector<HTMLButtonElement>('#kbd-range-calibrate')!
+    expect(isControllerCalibrateArmed()).toBe(false)
+    button.click()
+    expect(isControllerCalibrateArmed()).toBe(true)
+    expect(button.getAttribute('aria-pressed')).toBe('true')
+    button.click()
+    expect(isControllerCalibrateArmed()).toBe(false)
   })
 
   it('hides on the home screen', () => {

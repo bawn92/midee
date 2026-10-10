@@ -1,8 +1,9 @@
-import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import { render } from 'solid-js/web'
 import {
   formatKeyboardRange,
   getKeyboardRange,
+  isControllerCalibrateArmed,
   isFullPianoRange,
   jumpRangeToPitch,
   KEYBOARD_SIZE_MAX,
@@ -11,11 +12,15 @@ import {
   moveRangeByGrab,
   pitchAtRatio,
   rangeEnd,
+  resizeKeyboardRangeSnapped,
   resizeRangeFromEdge,
+  setControllerCalibrateArmed,
   setKeyboardRange,
   shiftKeyboardRange,
   shiftKeyboardRangeBy,
+  subscribeControllerCalibrate,
   subscribeKeyboardRange,
+  withSnappedStart,
 } from '../core/keyboardRange'
 import { isBlackKey, MIDI_MAX, MIDI_MIN, pitchToNoteName } from '../core/midi/types'
 import { t } from '../i18n'
@@ -41,8 +46,14 @@ function windowStyle(start: number, size: number): { left: string; width: string
   }
 }
 
+function applySnappedSize(size: number): void {
+  const next = resizeKeyboardRangeSnapped(getKeyboardRange(), size)
+  setKeyboardRange({ start: next.start, size: next.size })
+}
+
 function KeyboardRangeView(props: { store: AppStore }) {
   const [open, setOpen] = createSignal(false)
+  const [armed, setArmed] = createSignal(isControllerCalibrateArmed())
   const [prefs, setPrefs] = createSignal(getKeyboardRange())
   let root!: HTMLDivElement
   let pickerEl!: HTMLDivElement
@@ -50,6 +61,7 @@ function KeyboardRangeView(props: { store: AppStore }) {
 
   onMount(() => {
     const off = subscribeKeyboardRange(setPrefs)
+    const offArm = subscribeControllerCalibrate(setArmed)
     const onDoc = (e: PointerEvent): void => {
       if (!open()) return
       const target = e.target
@@ -83,6 +95,7 @@ function KeyboardRangeView(props: { store: AppStore }) {
     document.addEventListener('keydown', onKey)
     onCleanup(() => {
       off()
+      offArm()
       ro?.disconnect()
       mo.disconnect()
       window.removeEventListener('resize', fitPanel)
@@ -101,12 +114,13 @@ function KeyboardRangeView(props: { store: AppStore }) {
   function applyDrag(pitch: number): void {
     if (!drag) return
     const current = getKeyboardRange()
-    const next =
+    const raw =
       drag.mode === 'start'
         ? resizeRangeFromEdge(current, 'start', pitch)
         : drag.mode === 'end'
           ? resizeRangeFromEdge(current, 'end', pitch)
           : moveRangeByGrab(current, pitch, drag.grab)
+    const next = withSnappedStart(raw)
     setKeyboardRange({ start: next.start, size: next.size })
   }
 
@@ -138,7 +152,7 @@ function KeyboardRangeView(props: { store: AppStore }) {
     } else if (target instanceof Element && target.closest('.kbd-range-handle--end')) {
       mode = 'end'
     } else if (!(target instanceof Element && target.closest('.kbd-range-window'))) {
-      const jumped = jumpRangeToPitch(current, pitch)
+      const jumped = withSnappedStart(jumpRangeToPitch(current, pitch))
       setKeyboardRange({ start: jumped.start, size: jumped.size })
       grab = pitch - jumped.start
     }
@@ -172,6 +186,13 @@ function KeyboardRangeView(props: { store: AppStore }) {
   const range = () => prefs()
   const lowName = () => pitchToNoteName(range().start)
   const highName = () => pitchToNoteName(rangeEnd(range()))
+  const calibrationLabel = () => {
+    const low = range().controllerLow
+    if (range().calibrated && low != null) {
+      return t('kbdRange.controllerLow', { note: pitchToNoteName(low) })
+    }
+    return t('kbdRange.controllerUnset')
+  }
 
   return (
     <div
@@ -245,6 +266,18 @@ function KeyboardRangeView(props: { store: AppStore }) {
         >
           +8va
         </button>
+        <Show when={!isFullPianoRange(range()) && !range().calibrated}>
+          <button
+            class="kbd-range-step kbd-range-calibrate-bar"
+            id="kbd-range-calibrate-bar"
+            type="button"
+            aria-pressed={armed()}
+            data-tip={t('kbdRange.calibrateTip')}
+            onClick={() => setControllerCalibrateArmed(true)}
+          >
+            {armed() ? t('kbdRange.calibrateArmedShort') : t('kbdRange.calibrateShort')}
+          </button>
+        </Show>
       </fieldset>
 
       <Show when={open()}>
@@ -255,6 +288,18 @@ function KeyboardRangeView(props: { store: AppStore }) {
           aria-label={t('kbdRange.title')}
         >
           <p class="kbd-range-hint">{t('kbdRange.tip')}</p>
+
+          <button
+            type="button"
+            id="kbd-range-calibrate"
+            class="kbd-range-calibrate"
+            aria-pressed={armed()}
+            data-tip={t('kbdRange.calibrateTip')}
+            onClick={() => setControllerCalibrateArmed(!armed())}
+          >
+            {armed() ? t('kbdRange.calibrateArmed') : t('kbdRange.calibrate')}
+          </button>
+          <p class="kbd-range-cal-status">{calibrationLabel()}</p>
 
           <div class="kbd-range-picker-wrap">
             <p class="kbd-range-picker-label" id="kbd-range-picker-label">
@@ -319,7 +364,7 @@ function KeyboardRangeView(props: { store: AppStore }) {
               <button
                 type="button"
                 disabled={range().size <= KEYBOARD_SIZE_MIN}
-                onClick={() => setKeyboardRange({ size: range().size - 1 })}
+                onClick={() => applySnappedSize(range().size - 1)}
               >
                 −
               </button>
@@ -327,7 +372,7 @@ function KeyboardRangeView(props: { store: AppStore }) {
               <button
                 type="button"
                 disabled={range().size >= KEYBOARD_SIZE_MAX}
-                onClick={() => setKeyboardRange({ size: range().size + 1 })}
+                onClick={() => applySnappedSize(range().size + 1)}
               >
                 +
               </button>
@@ -341,7 +386,7 @@ function KeyboardRangeView(props: { store: AppStore }) {
                   type="button"
                   class="kbd-range-preset"
                   aria-pressed={range().size === size}
-                  onClick={() => setKeyboardRange({ size })}
+                  onClick={() => applySnappedSize(size)}
                 >
                   {size}
                 </button>
@@ -385,6 +430,183 @@ export class KeyboardRangeControl {
     this.wrapper.className = 'kbd-range-mount'
     container.appendChild(this.wrapper)
     this.disposeRoot = render(() => <KeyboardRangeView store={this.store} />, this.wrapper)
+  }
+
+  dispose(): void {
+    this.disposeRoot?.()
+    this.disposeRoot = null
+    this.wrapper?.remove()
+    this.wrapper = null
+  }
+}
+
+export interface KeyBandRect {
+  left: number
+  top: number
+  width: number
+  height: number
+}
+
+export interface KeyboardRangeBandLayout {
+  rect: (start: number, end: number) => KeyBandRect | null
+  pitchAt: (clientX: number) => number
+}
+
+function KeyboardRangeBandView(props: { store: AppStore; layout: KeyboardRangeBandLayout }) {
+  const [prefs, setPrefs] = createSignal(getKeyboardRange())
+  const [box, setBox] = createSignal<KeyBandRect | null>(null)
+  const [dragging, setDragging] = createSignal(false)
+  let drag: RangeDrag | null = null
+
+  function measure(): void {
+    const range = getKeyboardRange()
+    const hidden =
+      props.store.state.mode === 'home' ||
+      isFullPianoRange(range) ||
+      document.body.classList.contains('canvas-hidden')
+    setBox(hidden ? null : props.layout.rect(range.start, rangeEnd(range)))
+  }
+
+  function applyDrag(pitch: number): void {
+    if (!drag) return
+    const current = getKeyboardRange()
+    const raw =
+      drag.mode === 'start'
+        ? resizeRangeFromEdge(current, 'start', pitch)
+        : drag.mode === 'end'
+          ? resizeRangeFromEdge(current, 'end', pitch)
+          : moveRangeByGrab(current, pitch, drag.grab)
+    const next = withSnappedStart(raw)
+    setKeyboardRange({ start: next.start, size: next.size })
+  }
+
+  function onMove(e: PointerEvent): void {
+    if (!drag || e.pointerId !== drag.pointerId) return
+    applyDrag(props.layout.pitchAt(e.clientX))
+  }
+
+  function endDrag(e?: PointerEvent): void {
+    if (e && drag && e.pointerId !== drag.pointerId) return
+    drag = null
+    setDragging(false)
+    window.removeEventListener('pointermove', onMove)
+    window.removeEventListener('pointerup', endDrag)
+    window.removeEventListener('pointercancel', endDrag)
+  }
+
+  function onDown(e: PointerEvent): void {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    e.preventDefault()
+    e.stopPropagation()
+    const current = getKeyboardRange()
+    const pitch = props.layout.pitchAt(e.clientX)
+    const target = e.target
+    let mode: RangeDrag['mode'] = 'move'
+    if (target instanceof Element && target.closest('.kbd-range-band-edge--start')) mode = 'start'
+    else if (target instanceof Element && target.closest('.kbd-range-band-edge--end')) mode = 'end'
+    drag = { mode, grab: pitch - current.start, pointerId: e.pointerId }
+    setDragging(true)
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', endDrag)
+    window.addEventListener('pointercancel', endDrag)
+  }
+
+  function onKey(e: KeyboardEvent): void {
+    const size = prefs().size
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      const step = e.shiftKey ? 12 : 1
+      shiftKeyboardRangeBy(e.key === 'ArrowLeft' ? -step : step)
+    } else if (e.key === 'Home') {
+      setKeyboardRange({ start: MIDI_MIN, size })
+    } else if (e.key === 'End') {
+      setKeyboardRange({ start: MIDI_MAX - size + 1, size })
+    } else {
+      return
+    }
+    e.preventDefault()
+  }
+
+  onMount(() => {
+    const off = subscribeKeyboardRange(() => {
+      setPrefs(getKeyboardRange())
+      measure()
+    })
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure)
+    ro?.observe(document.documentElement)
+    const canvas = document.getElementById('pianoroll')
+    if (canvas) ro?.observe(canvas)
+    const mo = new MutationObserver(measure)
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class'] })
+    mo.observe(document.body, { attributes: true, attributeFilter: ['class'] })
+    window.addEventListener('resize', measure)
+    onCleanup(() => {
+      off()
+      ro?.disconnect()
+      mo.disconnect()
+      window.removeEventListener('resize', measure)
+      endDrag()
+    })
+  })
+
+  createEffect(() => {
+    props.store.state.mode
+    prefs()
+    measure()
+  })
+
+  const placed = () => box()
+
+  return (
+    <div
+      id="kbd-range-band"
+      hidden={placed() == null}
+      classList={{ 'kbd-range-band--dragging': dragging() }}
+      style={
+        placed()
+          ? {
+              left: `${placed()!.left}px`,
+              top: `${placed()!.top}px`,
+              width: `${placed()!.width}px`,
+              height: `${placed()!.height}px`,
+            }
+          : undefined
+      }
+    >
+      <div
+        class="kbd-range-band-move"
+        role="slider"
+        tabIndex={0}
+        aria-label={t('kbdRange.band')}
+        aria-orientation="horizontal"
+        aria-valuemin={MIDI_MIN}
+        aria-valuemax={MIDI_MAX - prefs().size + 1}
+        aria-valuenow={prefs().start}
+        aria-valuetext={formatKeyboardRange(prefs())}
+        onPointerDown={onDown}
+        onKeyDown={onKey}
+      >
+        {formatKeyboardRange(prefs())}
+      </div>
+      <div class="kbd-range-band-edge kbd-range-band-edge--start" onPointerDown={onDown} />
+      <div class="kbd-range-band-edge kbd-range-band-edge--end" onPointerDown={onDown} />
+    </div>
+  )
+}
+
+export class KeyboardRangeBand {
+  private disposeRoot: (() => void) | null = null
+  private wrapper: HTMLDivElement | null = null
+
+  constructor(container: HTMLElement, store: AppStore, layout: KeyboardRangeBandLayout) {
+    // Own mount node: solid's render() dispose clears its container, and the
+    // overlay holds the rest of the HUD.
+    this.wrapper = document.createElement('div')
+    this.wrapper.className = 'kbd-range-band-mount'
+    container.appendChild(this.wrapper)
+    this.disposeRoot = render(
+      () => <KeyboardRangeBandView store={store} layout={layout} />,
+      this.wrapper,
+    )
   }
 
   dispose(): void {

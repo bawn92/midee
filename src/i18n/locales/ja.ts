@@ -463,7 +463,8 @@ const ja: Messages = {
   'onboarding.localeDetected': '{language} で表示中 · 「外観」で変更できます',
 
   'kbdRange.title': '鍵盤の音域',
-  'kbdRange.tip': 'キーボードで弾ける鍵。待機モードは音域外の音をスキップします。',
+  'kbdRange.tip':
+    '画面の鍵盤は常に 88 鍵です。この範囲がコントローラーの演奏音域です。MIDI は最低鍵が範囲の最低音になるよう移調されます。待機モードは範囲外の音をスキップします。',
   'kbdRange.aria': '音域 {low} から {high}、{count} 鍵',
   'kbdRange.semitoneDown': '音域を半音下げる',
   'kbdRange.semitoneUp': '音域を半音上げる',
@@ -472,10 +473,18 @@ const ja: Messages = {
   'kbdRange.start': '最低音',
   'kbdRange.size': '鍵の数',
   'kbdRange.follow': 'MIDIに追従',
-  'kbdRange.followTip': '音域外のMIDIノートが来たら、音域をずらして含めます。',
+  'kbdRange.followTip': 'キャリブレーション前は、範囲外の MIDI ノートが来ると範囲をずらして含めます。',
   'kbdRange.full': '88鍵',
   'kbdRange.presets': 'サイズ',
   'kbdRange.picker': 'ドラッグで移動、端でサイズ変更、鍵のクリックでジャンプ',
+  'kbdRange.calibrate': '一番低い鍵を押す',
+  'kbdRange.calibrateShort': '最低鍵',
+  'kbdRange.calibrateArmed': 'キーボードの一番低い鍵を押してください…',
+  'kbdRange.calibrateArmedShort': '待機中…',
+  'kbdRange.calibrateTip': '次に押した MIDI 鍵をコントローラーの最低音として覚え、範囲をそこへ対応させます。',
+  'kbdRange.controllerLow': 'コントローラー最低音 {note}',
+  'kbdRange.controllerUnset': '未設定です。範囲を動かすと入力は移調されます。一番低い鍵を押すと正確に揃います。',
+  'kbdRange.band': 'ドラッグで音域を移動。端でサイズを変更。',
 }
 
 export default ja

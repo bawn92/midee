@@ -476,7 +476,7 @@ const pl: Messages & Record<PolishPluralKey, string> = {
 
   'kbdRange.title': 'Zakres klawiatury',
   'kbdRange.tip':
-    'Klawisze, które gra twoja klawiatura. Tryb czekania pomija nuty poza tym zakresem.',
+    'Fortepian na ekranie ma zawsze 88 klawiszy. To okno jest tym, co gra kontroler: MIDI jest transponowane tak, by najniższy klawisz pokrywał się z oknem. Tryb czekania pomija nuty poza nim.',
   'kbdRange.aria': 'Zakres od {low} do {high}, {count} klawiszy',
   'kbdRange.semitoneDown': 'Przesuń zakres o półton w dół',
   'kbdRange.semitoneUp': 'Przesuń zakres o półton w górę',
@@ -485,10 +485,21 @@ const pl: Messages & Record<PolishPluralKey, string> = {
   'kbdRange.start': 'Najniższy dźwięk',
   'kbdRange.size': 'Liczba klawiszy',
   'kbdRange.follow': 'Śledź MIDI',
-  'kbdRange.followTip': 'Gdy nuta MIDI wypadnie poza zakres, przesuń zakres, aby ją objąć.',
+  'kbdRange.followTip':
+    'Przed kalibracją przesuń okno, aby objęło nuty MIDI spoza niego.',
   'kbdRange.full': 'Całe pianino',
   'kbdRange.presets': 'Rozmiary',
   'kbdRange.picker': 'Przeciągnij, aby przesunąć, krawędzie zmieniają rozmiar, kliknij klawisz',
+  'kbdRange.calibrate': 'Naciśnij najniższy klawisz',
+  'kbdRange.calibrateShort': 'Najniższy',
+  'kbdRange.calibrateArmed': 'Naciśnij najniższy klawisz na klawiaturze…',
+  'kbdRange.calibrateArmedShort': 'Słucham…',
+  'kbdRange.calibrateTip':
+    'Następny klawisz MIDI zostanie zapamiętany jako najniższy dźwięk kontrolera, a okno dopasuje się do niego.',
+  'kbdRange.controllerLow': 'Najniższy kontrolera {note}',
+  'kbdRange.controllerUnset':
+    'Bez kalibracji. Przesunięcie okna transponuje nuty; naciśnij najniższy klawisz, aby je wyrównać.',
+  'kbdRange.band': 'Przeciągnij, aby przesunąć zakres. Krawędzie zmieniają rozmiar.',
 }
 
 export default pl

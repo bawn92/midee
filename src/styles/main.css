@@ -4943,6 +4943,7 @@ body.canvas-hidden #kbd-range {
 .kbd-range-stepper button,
 .kbd-range-preset,
 .kbd-range-follow,
+.kbd-range-calibrate,
 .kbd-range-full {
   font-family: var(--font);
   color: var(--text-muted);
@@ -4966,6 +4967,7 @@ body.canvas-hidden #kbd-range {
 .kbd-range-stepper button:hover:not(:disabled),
 .kbd-range-preset:hover,
 .kbd-range-follow:hover,
+.kbd-range-calibrate:hover,
 .kbd-range-full:hover:not(:disabled) {
   color: var(--text);
   background: rgba(255, 255, 255, 0.08);
@@ -4983,6 +4985,7 @@ body.canvas-hidden #kbd-range {
 .kbd-range-stepper button:focus-visible,
 .kbd-range-preset:focus-visible,
 .kbd-range-follow:focus-visible,
+.kbd-range-calibrate:focus-visible,
 .kbd-range-full:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
@@ -5248,19 +5251,112 @@ body.canvas-hidden #kbd-range {
 }
 
 .kbd-range-follow,
+.kbd-range-calibrate,
 .kbd-range-full {
-  height: 28px;
-  padding: 0 10px;
+  height: auto;
+  min-height: 28px;
+  padding: 6px 10px;
   font-size: 11px;
   font-weight: 600;
   text-align: left;
   border: 1px solid var(--border);
 }
 
-.kbd-range-follow[aria-pressed="true"] {
+.kbd-range-follow[aria-pressed="true"],
+.kbd-range-calibrate[aria-pressed="true"],
+.kbd-range-calibrate-bar[aria-pressed="true"] {
   color: var(--accent);
   border-color: color-mix(in srgb, var(--accent) 55%, transparent);
   background: var(--accent-soft);
+}
+
+.kbd-range-cal-status {
+  margin: -4px 0 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text-dim);
+}
+
+.kbd-range-band-mount {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+
+#kbd-range-band {
+  position: fixed;
+  z-index: 6;
+  pointer-events: none;
+  touch-action: none;
+}
+
+#kbd-range-band[hidden] {
+  display: none !important;
+}
+
+.kbd-range-band-move {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 8px;
+  height: 26px;
+  padding: 0 8px;
+  pointer-events: auto;
+  cursor: grab;
+  border: none;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 32%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 75%, transparent);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.kbd-range-band-move:active,
+#kbd-range-band.kbd-range-band--dragging .kbd-range-band-move {
+  cursor: grabbing;
+}
+
+.kbd-range-band-move:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+}
+
+.kbd-range-band-edge {
+  position: absolute;
+  top: 8px;
+  bottom: 6px;
+  width: 16px;
+  pointer-events: auto;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.kbd-range-band-edge--start {
+  left: -4px;
+}
+
+.kbd-range-band-edge--end {
+  right: -4px;
+}
+
+.kbd-range-band-edge::before {
+  content: '';
+  position: absolute;
+  top: 18px;
+  bottom: 8px;
+  left: 6px;
+  width: 4px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+body.canvas-hidden #kbd-range-band {
+  display: none;
 }
 
 /* ─────────────────────────────────────────

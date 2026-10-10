@@ -1,28 +1,42 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  adoptControllerNote,
   clampKeyboardRange,
+  detectControllerOctaveShift,
   FULL_PIANO_RANGE,
   formatKeyboardRange,
   getKeyboardRange,
   jumpRangeToPitch,
   KEYBOARD_RANGE_STORAGE_KEY,
+  mapControllerPitch,
   moveRangeByGrab,
   pitchAtRatio,
   pitchInRange,
   reloadKeyboardRange,
   resizeKeyboardRange,
+  resizeKeyboardRangeSnapped,
   resizeRangeFromEdge,
+  setControllerCalibrateArmed,
   setKeyboardRange,
   shiftKeyboardRange,
   shiftKeyboardRangeBy,
   shiftRangeToInclude,
+  snapRangeStart,
   subscribeKeyboardRange,
 } from './keyboardRange'
 import { MIDI_MAX, MIDI_MIN } from './midi/types'
 
+const FULL_PREFS = {
+  ...FULL_PIANO_RANGE,
+  followMidi: false,
+  controllerLow: null,
+  calibrated: false,
+}
+
 afterEach(() => {
   localStorage.removeItem(KEYBOARD_RANGE_STORAGE_KEY)
   reloadKeyboardRange()
+  setControllerCalibrateArmed(false)
 })
 
 describe('clampKeyboardRange', () => {
@@ -115,6 +129,69 @@ describe('range picker geometry', () => {
   })
 })
 
+describe('snapRangeStart', () => {
+  it('snaps compact keyboards onto C, 76 onto E, and 88 onto A0', () => {
+    // A 24-key window around the middle of the piano (F3) snaps down to C3.
+    expect(snapRangeStart(24, 53)).toBe(48)
+    expect(snapRangeStart(24, 57)).toBe(60)
+    expect(snapRangeStart(25, 50) % 12).toBe(0)
+    expect(snapRangeStart(37, 50) % 12).toBe(0)
+    expect(snapRangeStart(49, 50) % 12).toBe(0)
+    expect(snapRangeStart(61, 40) % 12).toBe(0)
+    // E1–G7 is the only 76-key window that fits on the piano.
+    expect(snapRangeStart(76, 40)).toBe(28)
+    expect(snapRangeStart(88, 40)).toBe(MIDI_MIN)
+  })
+
+  it('resizes onto that layout instead of an arbitrary center', () => {
+    expect(resizeKeyboardRangeSnapped(FULL_PIANO_RANGE, 24)).toEqual({ start: 48, size: 24 })
+    expect(resizeKeyboardRangeSnapped(FULL_PIANO_RANGE, 76)).toEqual({ start: 28, size: 76 })
+  })
+})
+
+describe('controller mapping', () => {
+  const prefs = {
+    start: 60,
+    size: 24,
+    followMidi: false,
+    controllerLow: 48,
+    calibrated: true,
+  }
+
+  it('maps the calibrated lowest key onto the range start', () => {
+    expect(mapControllerPitch(48, prefs)).toBe(60)
+    expect(mapControllerPitch(71, prefs)).toBe(83)
+  })
+
+  it('passes notes through until a low key is known', () => {
+    expect(mapControllerPitch(48, { ...prefs, controllerLow: null })).toBe(48)
+  })
+
+  it('hears an octave shift as the same physical key', () => {
+    expect(detectControllerOctaveShift(60, 48, 24)).toBe(0)
+    expect(detectControllerOctaveShift(72, 48, 24)).toBe(12)
+    expect(detectControllerOctaveShift(36, 48, 24)).toBe(-12)
+    const adopted = adoptControllerNote(72, prefs, false)
+    expect(adopted.controllerLow).toBe(60)
+    expect(adopted.mapped).toBe(72)
+    expect(adopted.calibrating).toBe(false)
+  })
+
+  it('takes the next key as the lowest key while calibrating', () => {
+    const adopted = adoptControllerNote(
+      36,
+      { ...prefs, controllerLow: null, calibrated: false },
+      true,
+    )
+    expect(adopted).toMatchObject({
+      controllerLow: 36,
+      calibrated: true,
+      calibrating: false,
+      mapped: 60,
+    })
+  })
+})
+
 describe('formatKeyboardRange', () => {
   it('names both ends', () => {
     expect(formatKeyboardRange({ start: 48, size: 24 })).toBe('C3\u2013B4')
@@ -124,18 +201,36 @@ describe('formatKeyboardRange', () => {
 describe('keyboard range store', () => {
   it('persists across a reload', () => {
     setKeyboardRange({ start: 48, size: 24, followMidi: true })
-    expect(reloadKeyboardRange()).toEqual({ start: 48, size: 24, followMidi: true })
+    expect(reloadKeyboardRange()).toEqual({
+      start: 48,
+      size: 24,
+      followMidi: true,
+      controllerLow: null,
+      calibrated: false,
+    })
     expect(localStorage.getItem(KEYBOARD_RANGE_STORAGE_KEY)).toContain('"followMidi":true')
   })
 
   it('drops a corrupt payload back to the full piano', () => {
     localStorage.setItem(KEYBOARD_RANGE_STORAGE_KEY, '{"start":"nope"}')
-    expect(reloadKeyboardRange()).toEqual({ ...FULL_PIANO_RANGE, followMidi: false })
+    expect(reloadKeyboardRange()).toEqual(FULL_PREFS)
   })
 
   it('recenters when only the size changes', () => {
     setKeyboardRange({ size: 24 })
     expect(getKeyboardRange()).toMatchObject({ start: 53, size: 24 })
+  })
+
+  it('anchors the controller when a partial window moves, so MIDI follows it', () => {
+    setKeyboardRange({ start: 48, size: 24 })
+    expect(getKeyboardRange().controllerLow).toBeNull()
+    shiftKeyboardRangeBy(12)
+    const prefs = getKeyboardRange()
+    expect(prefs).toMatchObject({ start: 60, controllerLow: 48, calibrated: false })
+    expect(mapControllerPitch(48, prefs)).toBe(60)
+    // A later move keeps the same physical low key.
+    shiftKeyboardRangeBy(-1)
+    expect(mapControllerPitch(48, getKeyboardRange())).toBe(59)
   })
 
   it('notifies subscribers on change and not on a no-op', () => {
