@@ -1,8 +1,8 @@
 // The slice of the piano the player's instrument covers. The on-screen
 // keyboard always draws all 88 keys; this window is a highlight on that
 // keyboard and the target a hardware controller is transposed onto, so its
-// lowest key sounds as the window's lowest key. Wait mode only waits for
-// notes inside the window.
+// lowest key sounds as the window's lowest key. With fit-to-range on, song
+// notes outside the window move by whole octaves onto keys inside it.
 //
 // Persisted under `midee.keyboardRange`. The default is the full 88 keys, so
 // nothing changes until the player narrows it.
@@ -37,6 +37,10 @@ export interface KeyboardRangePrefs extends KeyboardRange {
   // True after "press your lowest key". An anchor from dragging the window
   // transposes relative to the previous window, but it is not a calibration.
   calibrated: boolean
+  // Shift song notes that fall outside the window by whole octaves until they
+  // land inside it. Off keeps the old behavior: those notes are heard but not
+  // waited on.
+  fitToRange: boolean
 }
 
 export const FULL_PIANO_RANGE: KeyboardRange = {
@@ -49,6 +53,52 @@ const FULL_PREFS: KeyboardRangePrefs = {
   followMidi: false,
   controllerLow: null,
   calibrated: false,
+  fitToRange: true,
+}
+
+export interface FoldedPitch {
+  pitch: number
+  // Whole octaves added to the original pitch. Positive moves the note up.
+  octaves: number
+}
+
+// Smallest octave shift that lands `pitch` inside `range`. Already-inside
+// pitches come back unchanged. A window shorter than an octave cannot hold
+// every pitch class; those return null and stay where they are.
+export function foldPitchIntoRange(pitch: number, range: KeyboardRange): FoldedPitch | null {
+  if (!Number.isFinite(pitch)) return null
+  const p = Math.round(pitch)
+  const start = range.start
+  const end = rangeEnd(range)
+  if (p >= start && p <= end) return { pitch: p, octaves: 0 }
+  const center = (start + end) / 2
+  let best: FoldedPitch | null = null
+  let bestAbs = Infinity
+  let bestDist = Infinity
+  for (let octaves = -10; octaves <= 10; octaves++) {
+    if (octaves === 0) continue
+    const folded = p + octaves * 12
+    if (folded < start || folded > end) continue
+    const abs = Math.abs(octaves)
+    const dist = Math.abs(folded - center)
+    if (!best || abs < bestAbs || (abs === bestAbs && dist < bestDist)) {
+      best = { pitch: folded, octaves }
+      bestAbs = abs
+      bestDist = dist
+    }
+  }
+  return best
+}
+
+// Where a song note should be drawn, sounded, and waited on. In-range notes
+// stay put. Fit off, or a pitch class the window cannot hold, returns null
+// and the caller keeps the original pitch without treating it as playable.
+export function placedPitch(pitch: number, prefs: KeyboardRangePrefs): FoldedPitch | null {
+  if (!Number.isFinite(pitch)) return null
+  const p = Math.round(pitch)
+  if (pitchInRange(p, prefs)) return { pitch: p, octaves: 0 }
+  if (!prefs.fitToRange) return null
+  return foldPitchIntoRange(p, prefs)
 }
 
 export function rangeEnd(range: KeyboardRange): number {
@@ -279,6 +329,8 @@ function migrateKeyboardRange(raw: unknown): KeyboardRangePrefs {
     followMidi: o.followMidi === true,
     controllerLow: readControllerLow(o.controllerLow),
     calibrated: o.calibrated === true,
+    // Missing means on, including saves written before this field existed.
+    fitToRange: o.fitToRange !== false,
   }
 }
 
@@ -308,7 +360,8 @@ function commit(next: KeyboardRangePrefs): KeyboardRangePrefs {
     next.size === current.size &&
     next.followMidi === current.followMidi &&
     next.controllerLow === current.controllerLow &&
-    next.calibrated === current.calibrated
+    next.calibrated === current.calibrated &&
+    next.fitToRange === current.fitToRange
   ) {
     return current
   }
@@ -358,6 +411,7 @@ export function setKeyboardRange(partial: Partial<KeyboardRangePrefs>): Keyboard
     controllerLow:
       partial.controllerLow !== undefined ? partial.controllerLow : current.controllerLow,
     calibrated: partial.calibrated ?? current.calibrated,
+    fitToRange: partial.fitToRange ?? current.fitToRange,
   }
   drafted.controllerLow = anchorControllerLow(current, drafted, controllerLowSpecified)
   return commit(drafted)

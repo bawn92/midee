@@ -485,8 +485,7 @@ const pl: Messages & Record<PolishPluralKey, string> = {
   'kbdRange.start': 'Najniższy dźwięk',
   'kbdRange.size': 'Liczba klawiszy',
   'kbdRange.follow': 'Śledź MIDI',
-  'kbdRange.followTip':
-    'Przed kalibracją przesuń okno, aby objęło nuty MIDI spoza niego.',
+  'kbdRange.followTip': 'Przed kalibracją przesuń okno, aby objęło nuty MIDI spoza niego.',
   'kbdRange.full': 'Całe pianino',
   'kbdRange.presets': 'Rozmiary',
   'kbdRange.picker': 'Przeciągnij, aby przesunąć, krawędzie zmieniają rozmiar, kliknij klawisz',
@@ -500,6 +499,14 @@ const pl: Messages & Record<PolishPluralKey, string> = {
   'kbdRange.controllerUnset':
     'Bez kalibracji. Przesunięcie okna transponuje nuty; naciśnij najniższy klawisz, aby je wyrównać.',
   'kbdRange.band': 'Przeciągnij, aby przesunąć zakres. Krawędzie zmieniają rozmiar.',
+  'kbdRange.fit': 'Dopasuj do zakresu',
+  'kbdRange.fitTip':
+    'Przesuwa nuty spoza zakresu o całe oktawy, tak aby trafiły na klawisze, które możesz zagrać.',
+  'hud.hands': 'Ręce',
+  'hud.handHear': 'Słysz drugą rękę',
+  'hud.handHearTip': 'Odtwarzaj drugą rękę jako dźwięk',
+  'hud.handMute': 'Wycisz drugą rękę',
+  'hud.handMuteTip': 'Wycisz drugą rękę',
 }
 
 export default pl

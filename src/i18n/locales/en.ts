@@ -543,6 +543,14 @@ export const en = {
   'kbdRange.controllerUnset':
     'Not calibrated. Moving the window shifts incoming notes; press your lowest key to line them up.',
   'kbdRange.band': 'Drag to move the keyboard range. The side edges resize it.',
+  'kbdRange.fit': 'Fit to your range',
+  'kbdRange.fitTip':
+    'Shift notes outside your range by whole octaves so they land on keys you can play.',
+  'hud.hands': 'Hands',
+  'hud.handHear': 'Hear the other hand',
+  'hud.handHearTip': 'Play the other hand as audio',
+  'hud.handMute': 'Mute the other hand',
+  'hud.handMuteTip': 'Silence the other hand',
 } as const
 
 // Keys come from the English source; values are any string so translations

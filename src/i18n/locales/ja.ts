@@ -473,7 +473,8 @@ const ja: Messages = {
   'kbdRange.start': '最低音',
   'kbdRange.size': '鍵の数',
   'kbdRange.follow': 'MIDIに追従',
-  'kbdRange.followTip': 'キャリブレーション前は、範囲外の MIDI ノートが来ると範囲をずらして含めます。',
+  'kbdRange.followTip':
+    'キャリブレーション前は、範囲外の MIDI ノートが来ると範囲をずらして含めます。',
   'kbdRange.full': '88鍵',
   'kbdRange.presets': 'サイズ',
   'kbdRange.picker': 'ドラッグで移動、端でサイズ変更、鍵のクリックでジャンプ',
@@ -481,10 +482,19 @@ const ja: Messages = {
   'kbdRange.calibrateShort': '最低鍵',
   'kbdRange.calibrateArmed': 'キーボードの一番低い鍵を押してください…',
   'kbdRange.calibrateArmedShort': '待機中…',
-  'kbdRange.calibrateTip': '次に押した MIDI 鍵をコントローラーの最低音として覚え、範囲をそこへ対応させます。',
+  'kbdRange.calibrateTip':
+    '次に押した MIDI 鍵をコントローラーの最低音として覚え、範囲をそこへ対応させます。',
   'kbdRange.controllerLow': 'コントローラー最低音 {note}',
-  'kbdRange.controllerUnset': '未設定です。範囲を動かすと入力は移調されます。一番低い鍵を押すと正確に揃います。',
+  'kbdRange.controllerUnset':
+    '未設定です。範囲を動かすと入力は移調されます。一番低い鍵を押すと正確に揃います。',
   'kbdRange.band': 'ドラッグで音域を移動。端でサイズを変更。',
+  'kbdRange.fit': '音域に合わせる',
+  'kbdRange.fitTip': '音域外の音をオクターブ単位でずらし、弾ける鍵に収めます。',
+  'hud.hands': '両手',
+  'hud.handHear': 'もう一方も鳴らす',
+  'hud.handHearTip': 'もう一方の手を音で再生する',
+  'hud.handMute': 'もう一方を消す',
+  'hud.handMuteTip': 'もう一方の手を無音にする',
 }
 
 export default ja

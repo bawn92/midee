@@ -1,11 +1,13 @@
 import { Metronome } from './audio/Metronome'
 import { INSTRUMENTS, type InstrumentId, SynthEngine } from './audio/SynthEngine'
 import { MasterClock } from './core/clock/MasterClock'
+import { getHandPractice, subscribeHandPractice } from './core/handPractice'
 import { type BusNoteEvent, InputBus } from './core/input/InputBus'
 import {
   adoptControllerNote,
   getKeyboardRange,
   isControllerCalibrateArmed,
+  type KeyboardRangePrefs,
   mapControllerPitch,
   setControllerCalibrateArmed,
   setKeyboardRange,
@@ -283,6 +285,8 @@ export class App {
     this.renderer.setLoopNoteStore(this.loopNotes)
     this.applyKeyboardRange(getKeyboardRange())
     this.unsubs.push(subscribeKeyboardRange((prefs) => this.applyKeyboardRange(prefs)))
+    this.applyHandPractice(getHandPractice())
+    this.unsubs.push(subscribeHandPractice((prefs) => this.applyHandPractice(prefs)))
 
     this.midiInput = new MidiInputManager(this.clock)
     // Space is the sustain pedal only in Live; Play and Learn own it as the
@@ -881,9 +885,33 @@ export class App {
     }
   }
 
-  private applyKeyboardRange(range: { start: number; size: number }): void {
+  private applyKeyboardRange(range: KeyboardRangePrefs): void {
     // The roll keeps all 88 keys. The range is a highlight plus the MIDI map.
+    // Fit-to-range is read while drawing, so a window move repaints note positions
+    // even when the highlight's endpoints did not change.
     this.renderer.setPlayableRange(range.start, range.start + range.size - 1)
+    this.renderer.refreshPlacement()
+    this.refreshSoundingPitches()
+  }
+
+  private applyHandPractice(prefs: {
+    hand: 'left' | 'right' | 'both'
+    otherHandAudible: boolean
+  }): void {
+    this.renderer.refreshPlacement()
+    this.synth.setHandGate(prefs.hand, prefs.otherHandAudible)
+  }
+
+  // Folded pitches are baked into the scheduled Part. A live window move has
+  // to rebuild that Part while playback is running, and drop the pause-resume
+  // shortcut so the next play doesn't reuse the old pitches.
+  private refreshSoundingPitches(): void {
+    this.synth.invalidateScheduledPitches()
+    const mode = this.store.state.mode
+    const learnPlaying =
+      mode === 'learn' && this.learnControllerHandle.peek()?.learnState.state.status === 'playing'
+    const playPlaying = mode === 'play' && this.store.state.status === 'playing'
+    if (playPlaying || learnPlaying) this.synth.seek(this.clock.currentTime)
   }
 
   // Transpose a hardware note so the controller's lowest key plays the
@@ -1400,6 +1428,11 @@ export class App {
         instrumentId: INSTRUMENTS[this.instrumentIndex]!.id,
         volume: this.store.state.volume,
         disabledTrackIds: this.synth.getDisabledTrackIds(),
+        audibility: {
+          range: getKeyboardRange(),
+          hand: getHandPractice().hand,
+          otherHandAudible: getHandPractice().otherHandAudible,
+        },
         onRenderAudioProgressMode: (d) => exportModal.setRenderAudioProgressMode(d),
         onProgress: report,
       })

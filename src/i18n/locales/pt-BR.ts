@@ -507,6 +507,14 @@ const ptBR: Messages = {
   'kbdRange.controllerUnset':
     'Sem calibrar. Mover a janela transpoe as notas; pressione a tecla mais grave para alinhar.',
   'kbdRange.band': 'Arraste para mover o intervalo. As bordas mudam o tamanho.',
+  'kbdRange.fit': 'Ajustar ao seu alcance',
+  'kbdRange.fitTip':
+    'Desloca em oitavas inteiras as notas fora do seu alcance para teclas que você pode tocar.',
+  'hud.hands': 'Mãos',
+  'hud.handHear': 'Ouvir a outra mão',
+  'hud.handHearTip': 'Tocar a outra mão como áudio',
+  'hud.handMute': 'Silenciar a outra mão',
+  'hud.handMuteTip': 'Silenciar a outra mão',
 }
 
 export default ptBR

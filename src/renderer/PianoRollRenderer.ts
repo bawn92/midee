@@ -1,5 +1,7 @@
 import { Application, Graphics, Sprite, type Ticker } from 'pixi.js'
 import type { MasterClock } from '../core/clock/MasterClock'
+import { getHandPractice, noteMatchesHand } from '../core/handPractice'
+import { getKeyboardRange, placedPitch } from '../core/keyboardRange'
 import type { MidiFile } from '../core/midi/types'
 import type { LiveNoteStore } from '../midi/LiveNoteStore'
 import { BeatGrid } from './BeatGrid'
@@ -531,6 +533,8 @@ export class PianoRollRenderer {
       // normal "sounds now" rule applies — pausing mid-piece still shows
       // sustained notes correctly.
       const beforeFirstPlay = !emitParticles && currentTime === 0
+      const rangePrefs = getKeyboardRange()
+      const practiceHand = getHandPractice().hand
 
       for (let ti = 0; ti < tracks.length; ti++) {
         const track = tracks[ti]!
@@ -545,20 +549,24 @@ export class PianoRollRenderer {
         const [alo, ahi] = visibleNoteRange(track.notes, currentTime, currentTime)
         for (let ni = alo; ni < ahi; ni++) {
           const note = track.notes[ni]!
+          const placement = track.isDrum ? null : placedPitch(note.pitch, rangePrefs)
+          const sounding = placement?.pitch ?? note.pitch
           // No key to light up or burst from — see Viewport.hasKey.
-          if (!this.viewport.hasKey(note.pitch)) continue
+          if (!this.viewport.hasKey(sounding)) continue
+          const handDim = !track.isDrum && !noteMatchesHand(note.pitch, practiceHand)
+          const dimmed = practiceInactive || handDim
 
-          const key = keyBase + note.pitch
-          const awaitingPracticePress = this.practiceHintPending?.has(note.pitch) ?? false
-          if (!practiceInactive && !awaitingPracticePress) {
+          const key = keyBase + sounding
+          const awaitingPracticePress = this.practiceHintPending?.has(sounding) ?? false
+          if (!dimmed && !awaitingPracticePress) {
             curr.add(key)
-            if (!beforeFirstPlay) activeColors.set(note.pitch, trackColor)
+            if (!beforeFirstPlay) activeColors.set(sounding, trackColor)
           }
 
-          if (!emitParticles || practiceInactive || awaitingPracticePress) continue
+          if (!emitParticles || dimmed || awaitingPracticePress) continue
 
-          const w = this.viewport.pitchWidth(note.pitch)
-          const cx = this.viewport.pitchToX(note.pitch) + w / 2
+          const w = this.viewport.pitchWidth(sounding)
+          const cx = this.viewport.pitchToX(sounding) + w / 2
           eligible.add(key)
           geom.set(key, { cx, w, color: trackColor })
         }
@@ -810,6 +818,12 @@ export class PianoRollRenderer {
   // change the roll's pitch viewport — export framing still owns that.
   setPlayableRange(start: number, end: number): void {
     this.keyboardRenderer.setPlayableRange(start, end)
+    if (!this.exportMode) this.presentFrame()
+  }
+
+  // Repaint note positions after fit-to-range or the practice hand changes.
+  // The idle ticker may already be stopped, so this cannot wait for a tick.
+  refreshPlacement(): void {
     if (!this.exportMode) this.presentFrame()
   }
 

@@ -508,6 +508,14 @@ const es: Messages = {
   'kbdRange.controllerUnset':
     'Sin calibrar. Mover la ventana transpone las notas; pulsa la tecla más grave para alinearla.',
   'kbdRange.band': 'Arrastra para mover el rango. Los bordes cambian el tamaño.',
+  'kbdRange.fit': 'Ajustar a tu rango',
+  'kbdRange.fitTip':
+    'Desplaza por octavas enteras las notas fuera de tu rango para que caigan en teclas que puedes tocar.',
+  'hud.hands': 'Manos',
+  'hud.handHear': 'Oír la otra mano',
+  'hud.handHearTip': 'Tocar la otra mano como audio',
+  'hud.handMute': 'Silenciar la otra mano',
+  'hud.handMuteTip': 'Silenciar la otra mano',
 }
 
 export default es

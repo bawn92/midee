@@ -475,6 +475,13 @@ const zhCN: Messages = {
   'kbdRange.controllerLow': '控制器最低音 {note}',
   'kbdRange.controllerUnset': '尚未校准。移动窗口会移调进来的音符；按下最低键可精确对齐。',
   'kbdRange.band': '拖动可移动音域，两侧边缘可调整大小。',
+  'kbdRange.fit': '适配你的音域',
+  'kbdRange.fitTip': '把超出音域的音符按整八度移到你能弹的键上。',
+  'hud.hands': '左右手',
+  'hud.handHear': '播放另一只手',
+  'hud.handHearTip': '把另一只手作为音频播放',
+  'hud.handMute': '静音另一只手',
+  'hud.handMuteTip': '静音另一只手',
 }
 
 export default zhCN

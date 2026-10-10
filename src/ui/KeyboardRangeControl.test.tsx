@@ -52,7 +52,7 @@ describe('KeyboardRangeControl', () => {
     host.querySelector<HTMLButtonElement>('#kbd-range-oct-up')!.click()
     expect(getKeyboardRange().start).toBe(61)
 
-    host.querySelector<HTMLButtonElement>('.kbd-range-follow')!.click()
+    host.querySelector<HTMLButtonElement>('#kbd-range-follow')!.click()
     expect(getKeyboardRange().followMidi).toBe(true)
 
     reloadKeyboardRange()
@@ -131,6 +131,17 @@ describe('KeyboardRangeControl', () => {
     expect(button.getAttribute('aria-pressed')).toBe('true')
     button.click()
     expect(isControllerCalibrateArmed()).toBe(false)
+  })
+
+  it('fits notes into the range unless the toggle is turned off', () => {
+    mount()
+    host.querySelector<HTMLButtonElement>('#kbd-range-label')!.click()
+    const fit = host.querySelector<HTMLButtonElement>('#kbd-range-fit')!
+    expect(fit.getAttribute('aria-pressed')).toBe('true')
+    expect(getKeyboardRange().fitToRange).toBe(true)
+    fit.click()
+    expect(fit.getAttribute('aria-pressed')).toBe('false')
+    expect(getKeyboardRange().fitToRange).toBe(false)
   })
 
   it('hides on the home screen', () => {

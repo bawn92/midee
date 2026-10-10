@@ -397,6 +397,18 @@ function KeyboardRangeView(props: { store: AppStore }) {
           <button
             type="button"
             class="kbd-range-follow"
+            id="kbd-range-fit"
+            aria-pressed={range().fitToRange}
+            data-tip={t('kbdRange.fitTip')}
+            onClick={() => setKeyboardRange({ fitToRange: !range().fitToRange })}
+          >
+            {t('kbdRange.fit')}
+          </button>
+
+          <button
+            type="button"
+            class="kbd-range-follow"
+            id="kbd-range-follow"
             aria-pressed={range().followMidi}
             data-tip={t('kbdRange.followTip')}
             onClick={() => setKeyboardRange({ followMidi: !range().followMidi })}

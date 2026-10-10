@@ -514,6 +514,14 @@ const fr: Messages = {
   'kbdRange.controllerUnset':
     'Non calibré. Déplacer la fenêtre transpose les notes ; appuyez sur la touche la plus grave pour l’aligner.',
   'kbdRange.band': 'Glissez pour déplacer la tessiture. Les bords changent la taille.',
+  'kbdRange.fit': 'Ajuster à votre tessiture',
+  'kbdRange.fitTip':
+    'Décale d’octaves entières les notes hors de votre tessiture pour les ramener sur des touches jouables.',
+  'hud.hands': 'Mains',
+  'hud.handHear': 'Entendre l’autre main',
+  'hud.handHearTip': 'Jouer l’autre main en audio',
+  'hud.handMute': 'Couper l’autre main',
+  'hud.handMuteTip': 'Rendre l’autre main muette',
 }
 
 export default fr

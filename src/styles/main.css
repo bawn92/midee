@@ -4466,6 +4466,74 @@ body.coachmark-open #top-strip.strip--dim {
   color: var(--accent);
 }
 
+.hud-hands {
+  gap: 4px;
+  flex-shrink: 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.hud-hand-track {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  gap: 2px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.hud-hand,
+.hud-hand-audio {
+  font: 600 11px / 1 var(--font);
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.hud-hand {
+  min-width: 28px;
+  padding: 5px 7px;
+}
+
+.hud-hand.is-active {
+  color: #0a0a14;
+  background: var(--accent);
+}
+
+.hud-hand-audio {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 22px;
+  padding: 0;
+}
+
+.hud-hand-audio:disabled,
+.pa-hand-audio:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.hud-hand:focus-visible,
+.hud-hand-audio:focus-visible,
+.pa-hand-audio:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.pa-hand-audio {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  padding: 6px 7px;
+}
+
 /* Disable controls during export */
 #hud.hud--exporting .btn-play,
 #hud.hud--exporting .btn-skip,

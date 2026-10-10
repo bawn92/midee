@@ -4,6 +4,7 @@ import {
   clampKeyboardRange,
   detectControllerOctaveShift,
   FULL_PIANO_RANGE,
+  foldPitchIntoRange,
   formatKeyboardRange,
   getKeyboardRange,
   jumpRangeToPitch,
@@ -12,6 +13,7 @@ import {
   moveRangeByGrab,
   pitchAtRatio,
   pitchInRange,
+  placedPitch,
   reloadKeyboardRange,
   resizeKeyboardRange,
   resizeKeyboardRangeSnapped,
@@ -31,6 +33,7 @@ const FULL_PREFS = {
   followMidi: false,
   controllerLow: null,
   calibrated: false,
+  fitToRange: true,
 }
 
 afterEach(() => {
@@ -156,6 +159,7 @@ describe('controller mapping', () => {
     followMidi: false,
     controllerLow: 48,
     calibrated: true,
+    fitToRange: true,
   }
 
   it('maps the calibrated lowest key onto the range start', () => {
@@ -207,6 +211,7 @@ describe('keyboard range store', () => {
       followMidi: true,
       controllerLow: null,
       calibrated: false,
+      fitToRange: true,
     })
     expect(localStorage.getItem(KEYBOARD_RANGE_STORAGE_KEY)).toContain('"followMidi":true')
   })
@@ -244,5 +249,57 @@ describe('keyboard range store', () => {
     off()
     setKeyboardRange({ start: 36 })
     expect(fn).toHaveBeenCalledTimes(1)
+  })
+
+  it('fits notes into the range unless a save turned that off', () => {
+    localStorage.setItem(
+      KEYBOARD_RANGE_STORAGE_KEY,
+      JSON.stringify({
+        start: 48,
+        size: 24,
+        followMidi: false,
+        controllerLow: null,
+        calibrated: false,
+      }),
+    )
+    expect(reloadKeyboardRange().fitToRange).toBe(true)
+    localStorage.setItem(
+      KEYBOARD_RANGE_STORAGE_KEY,
+      JSON.stringify({
+        start: 48,
+        size: 24,
+        followMidi: false,
+        controllerLow: null,
+        calibrated: false,
+        fitToRange: false,
+      }),
+    )
+    expect(reloadKeyboardRange().fitToRange).toBe(false)
+  })
+})
+
+describe('foldPitchIntoRange', () => {
+  const range = { start: 48, size: 24 }
+
+  it('leaves a note that is already inside', () => {
+    expect(foldPitchIntoRange(60, range)).toEqual({ pitch: 60, octaves: 0 })
+  })
+
+  it('moves by the smallest whole octave', () => {
+    expect(foldPitchIntoRange(36, range)).toEqual({ pitch: 48, octaves: 1 })
+    // C6 is two octaves above C4; C5 sits one key past this window.
+    expect(foldPitchIntoRange(84, range)).toEqual({ pitch: 60, octaves: -2 })
+  })
+
+  it('returns null when the window cannot hold that pitch class', () => {
+    // 48–58 is C through A#. B (59) has nowhere to land.
+    expect(foldPitchIntoRange(59, { start: 48, size: 11 })).toBeNull()
+  })
+
+  it('placedPitch keeps the original note when fit is off', () => {
+    const prefs = { ...FULL_PREFS, start: 48, size: 24, fitToRange: false }
+    expect(placedPitch(36, prefs)).toBeNull()
+    expect(placedPitch(60, prefs)).toEqual({ pitch: 60, octaves: 0 })
+    expect(placedPitch(36, { ...prefs, fitToRange: true })).toEqual({ pitch: 48, octaves: 1 })
   })
 })
