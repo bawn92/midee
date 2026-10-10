@@ -510,9 +510,13 @@ const fr: Messages = {
   'kbdRange.calibrateArmedShort': 'Écoute…',
   'kbdRange.calibrateTip':
     'La prochaine touche MIDI devient la note la plus grave du contrôleur, et la fenêtre s’aligne dessus.',
-  'kbdRange.controllerLow': 'Grave du contrôleur {note}',
+  'kbdRange.controllerLow': 'Calibré. La touche la plus grave est {note}.',
   'kbdRange.controllerUnset':
-    'Non calibré. Déplacer la fenêtre transpose les notes ; appuyez sur la touche la plus grave pour l’aligner.',
+    'Non calibré. Tant que vous n’appuyez pas sur votre touche la plus grave, elle est supposée être {note} — le do médium, l’octave par défaut du ROLI Piano M (ROLI l’appelle C3). Cette touche joue le début de la fenêtre.',
+  'kbdRange.controllerUnsetGeneric':
+    'Non calibré. Appuyez sur votre touche la plus grave pour aligner cette fenêtre sur votre contrôleur.',
+  'kbdRange.notCalibrated': 'Non calibré',
+  'kbdRange.calibratedBadge': 'Calibré {note}',
   'kbdRange.band': 'Glissez pour déplacer la tessiture. Les bords changent la taille.',
   'kbdRange.fit': 'Ajuster à votre tessiture',
   'kbdRange.fitTip':

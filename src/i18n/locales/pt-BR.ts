@@ -503,9 +503,13 @@ const ptBR: Messages = {
   'kbdRange.calibrateArmedShort': 'Ouvindo…',
   'kbdRange.calibrateTip':
     'A próxima tecla MIDI vira a nota mais grave do controlador, e a janela se alinha a ela.',
-  'kbdRange.controllerLow': 'Grave do controlador {note}',
+  'kbdRange.controllerLow': 'Calibrado. A tecla mais grave é {note}.',
   'kbdRange.controllerUnset':
-    'Sem calibrar. Mover a janela transpoe as notas; pressione a tecla mais grave para alinhar.',
+    'Sem calibrar. Até você pressionar a tecla mais grave, ela é assumida como {note} — o dó central, a oitava padrão do ROLI Piano M (a ROLI chama de C3). Essa tecla toca o início desta janela.',
+  'kbdRange.controllerUnsetGeneric':
+    'Sem calibrar. Pressione a tecla mais grave para alinhar esta janela ao controlador.',
+  'kbdRange.notCalibrated': 'Sem calibrar',
+  'kbdRange.calibratedBadge': 'Calibrado {note}',
   'kbdRange.band': 'Arraste para mover o intervalo. As bordas mudam o tamanho.',
   'kbdRange.fit': 'Ajustar ao seu alcance',
   'kbdRange.fitTip':

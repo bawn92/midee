@@ -539,9 +539,13 @@ export const en = {
   'kbdRange.calibrateArmedShort': 'Listening…',
   'kbdRange.calibrateTip':
     'The next MIDI key you press is saved as the controller’s lowest note, and the window maps onto it.',
-  'kbdRange.controllerLow': 'Controller low {note}',
+  'kbdRange.controllerLow': 'Calibrated. Lowest key is {note}.',
   'kbdRange.controllerUnset':
-    'Not calibrated. Moving the window shifts incoming notes; press your lowest key to line them up.',
+    'Not calibrated. Until you press your lowest key, it is assumed to be {note} — middle C, the ROLI Piano M’s default octave (ROLI labels that key C3). That key plays the start of this window.',
+  'kbdRange.controllerUnsetGeneric':
+    'Not calibrated. Press your lowest key so this window lines up with your controller.',
+  'kbdRange.notCalibrated': 'Not calibrated',
+  'kbdRange.calibratedBadge': 'Calibrated {note}',
   'kbdRange.band': 'Drag to move the keyboard range. The side edges resize it.',
   'kbdRange.fit': 'Fit to your range',
   'kbdRange.fitTip':

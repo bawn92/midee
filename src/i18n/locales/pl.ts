@@ -495,9 +495,13 @@ const pl: Messages & Record<PolishPluralKey, string> = {
   'kbdRange.calibrateArmedShort': 'Słucham…',
   'kbdRange.calibrateTip':
     'Następny klawisz MIDI zostanie zapamiętany jako najniższy dźwięk kontrolera, a okno dopasuje się do niego.',
-  'kbdRange.controllerLow': 'Najniższy kontrolera {note}',
+  'kbdRange.controllerLow': 'Skalibrowano. Najniższy klawisz to {note}.',
   'kbdRange.controllerUnset':
-    'Bez kalibracji. Przesunięcie okna transponuje nuty; naciśnij najniższy klawisz, aby je wyrównać.',
+    'Bez kalibracji. Dopóki nie naciśniesz najniższego klawisza, przyjmujemy {note} — środkowe C, domyślną oktawę ROLI Piano M (ROLI nazywa ją C3). Ten klawisz gra początek okna.',
+  'kbdRange.controllerUnsetGeneric':
+    'Bez kalibracji. Naciśnij najniższy klawisz, aby wyrównać to okno z kontrolerem.',
+  'kbdRange.notCalibrated': 'Bez kalibracji',
+  'kbdRange.calibratedBadge': 'Skalibrowano {note}',
   'kbdRange.band': 'Przeciągnij, aby przesunąć zakres. Krawędzie zmieniają rozmiar.',
   'kbdRange.fit': 'Dopasuj do zakresu',
   'kbdRange.fitTip':

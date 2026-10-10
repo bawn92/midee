@@ -1,6 +1,8 @@
 import { createEffect, createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import { render } from 'solid-js/web'
 import {
+  assumesFactoryControllerLow,
+  DEFAULT_CONTROLLER_LOW,
   formatKeyboardRange,
   getKeyboardRange,
   isControllerCalibrateArmed,
@@ -186,12 +188,25 @@ function KeyboardRangeView(props: { store: AppStore }) {
   const range = () => prefs()
   const lowName = () => pitchToNoteName(range().start)
   const highName = () => pitchToNoteName(rangeEnd(range()))
+  const calibrated = () => range().calibrated && range().controllerLow != null
   const calibrationLabel = () => {
     const low = range().controllerLow
-    if (range().calibrated && low != null) {
+    if (calibrated() && low != null) {
       return t('kbdRange.controllerLow', { note: pitchToNoteName(low) })
     }
-    return t('kbdRange.controllerUnset')
+    if (assumesFactoryControllerLow(range())) {
+      return t('kbdRange.controllerUnset', {
+        note: pitchToNoteName(DEFAULT_CONTROLLER_LOW),
+      })
+    }
+    return t('kbdRange.controllerUnsetGeneric')
+  }
+  const badgeText = () => {
+    const low = range().controllerLow
+    if (range().calibrated && low != null) {
+      return t('kbdRange.calibratedBadge', { note: pitchToNoteName(low) })
+    }
+    return t('kbdRange.notCalibrated')
   }
 
   return (
@@ -266,6 +281,17 @@ function KeyboardRangeView(props: { store: AppStore }) {
         >
           +8va
         </button>
+        <Show when={!isFullPianoRange(range())}>
+          <span
+            class="kbd-range-cal-badge"
+            classList={{ 'is-set': calibrated() }}
+            id="kbd-range-cal-badge"
+            role="status"
+            aria-label={calibrationLabel()}
+          >
+            {badgeText()}
+          </span>
+        </Show>
         <Show when={!isFullPianoRange(range()) && !range().calibrated}>
           <button
             class="kbd-range-step kbd-range-calibrate-bar"
@@ -299,7 +325,13 @@ function KeyboardRangeView(props: { store: AppStore }) {
           >
             {armed() ? t('kbdRange.calibrateArmed') : t('kbdRange.calibrate')}
           </button>
-          <p class="kbd-range-cal-status">{calibrationLabel()}</p>
+          <p
+            class="kbd-range-cal-status"
+            classList={{ 'is-unset': !calibrated() }}
+            id="kbd-range-cal-status"
+          >
+            {calibrationLabel()}
+          </p>
 
           <div class="kbd-range-picker-wrap">
             <p class="kbd-range-picker-label" id="kbd-range-picker-label">

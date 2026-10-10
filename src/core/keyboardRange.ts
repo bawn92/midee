@@ -1,8 +1,10 @@
 // The slice of the piano the player's instrument covers. The on-screen
 // keyboard always draws all 88 keys; this window is a highlight on that
 // keyboard and the target a hardware controller is transposed onto, so its
-// lowest key sounds as the window's lowest key. With fit-to-range on, song
-// notes outside the window move by whole octaves onto keys inside it.
+// lowest key sounds as the window's lowest key. Until the player calibrates,
+// a 24- or 25-key controller is assumed to sit on its factory octave: the
+// lowest key sends middle C (MIDI 60). With fit-to-range on, song notes
+// outside the window move by whole octaves onto keys inside it.
 //
 // Persisted under `midee.keyboardRange`. The default is the full 88 keys, so
 // nothing changes until the player narrows it.
@@ -31,11 +33,11 @@ export interface KeyboardRangePrefs extends KeyboardRange {
   // Ignored once the controller's lowest key is known — those notes are
   // transposed into the window instead of moving it.
   followMidi: boolean
-  // MIDI pitch the physical controller's lowest key sends. Null until a range
-  // move anchors it or the player calibrates by pressing that key.
+  // MIDI pitch the physical controller's lowest key sends. Null until the
+  // player calibrates by pressing that key. An uncalibrated 24- or 25-key
+  // window assumes DEFAULT_CONTROLLER_LOW instead of inventing one.
   controllerLow: number | null
-  // True after "press your lowest key". An anchor from dragging the window
-  // transposes relative to the previous window, but it is not a calibration.
+  // True after "press your lowest key".
   calibrated: boolean
   // Shift song notes that fall outside the window by whole octaves until they
   // land inside it. Off keeps the old behavior: those notes are heard but not
@@ -234,12 +236,25 @@ function clampMidiPitch(pitch: number): number {
   return Math.max(0, Math.min(127, Math.round(pitch)))
 }
 
+// Factory lowest key of a ROLI Piano M (and the usual default for a 24- or
+// 25-key controller). ROLI labels this key C3. This app uses scientific pitch,
+// where the same MIDI note is C4 — middle C. Assuming MIDI 48 (our C3) puts
+// every Piano M note one octave above the window.
+export const DEFAULT_CONTROLLER_LOW = 60
+
+// Uncalibrated two-octave windows use the factory low key. Anything else
+// passes MIDI through until the player presses their lowest key: a 49- or
+// 76-key controller does not ship on middle C.
+export function assumesFactoryControllerLow(prefs: KeyboardRangePrefs): boolean {
+  return !prefs.calibrated && (prefs.size === 24 || prefs.size === 25)
+}
+
 // How far to transpose a hardware note so the controller's lowest key lands
-// on the window's lowest key. Uncalibrated and unanchored windows pass
-// notes through.
+// on the window's lowest key.
 export function controllerTranspose(prefs: KeyboardRangePrefs): number {
-  if (prefs.controllerLow == null) return 0
-  return prefs.start - prefs.controllerLow
+  if (prefs.calibrated && prefs.controllerLow != null) return prefs.start - prefs.controllerLow
+  if (assumesFactoryControllerLow(prefs)) return prefs.start - DEFAULT_CONTROLLER_LOW
+  return 0
 }
 
 export function mapControllerPitch(rawPitch: number, prefs: KeyboardRangePrefs): number {
@@ -327,7 +342,10 @@ function migrateKeyboardRange(raw: unknown): KeyboardRangePrefs {
   return {
     ...clamped,
     followMidi: o.followMidi === true,
-    controllerLow: readControllerLow(o.controllerLow),
+    // A controllerLow without calibration was an anchor to the previous
+    // window, which assumed the hardware sat on our C3 (MIDI 48). Drop it
+    // so a 24-key window uses the factory middle C instead.
+    controllerLow: o.calibrated === true ? readControllerLow(o.controllerLow) : null,
     calibrated: o.calibrated === true,
     // Missing means on, including saves written before this field existed.
     fitToRange: o.fitToRange !== false,
@@ -371,20 +389,18 @@ function commit(next: KeyboardRangePrefs): KeyboardRangePrefs {
   return current
 }
 
-// Moving a window that is already narrower than the piano anchors the
-// controller to the previous low key, so the move transposes MIDI by the
-// same amount. Leaving the full piano does not: the first placement just
-// shows where the controller is assumed to sit, until the player calibrates
-// or moves the window again.
-function anchorControllerLow(
+// A calibration sticks while the window moves, so the same physical key keeps
+// playing the window's lowest note. Moving an uncalibrated window does not
+// invent a controller low — that used to copy the previous start (often C3)
+// and shift a Piano M up by an octave.
+function resolveControllerLow(
   prev: KeyboardRangePrefs,
   next: KeyboardRangePrefs,
   controllerLowSpecified: boolean,
 ): number | null {
+  if (!next.calibrated) return null
   if (controllerLowSpecified) return next.controllerLow
-  if (prev.controllerLow != null) return prev.controllerLow
-  if (next.start !== prev.start && !isFullPianoRange(prev)) return prev.start
-  return null
+  return prev.controllerLow
 }
 
 // `size` without `start` recenters. Passing both pins the low key explicitly.
@@ -413,14 +429,14 @@ export function setKeyboardRange(partial: Partial<KeyboardRangePrefs>): Keyboard
     calibrated: partial.calibrated ?? current.calibrated,
     fitToRange: partial.fitToRange ?? current.fitToRange,
   }
-  drafted.controllerLow = anchorControllerLow(current, drafted, controllerLowSpecified)
+  drafted.controllerLow = resolveControllerLow(current, drafted, controllerLowSpecified)
   return commit(drafted)
 }
 
 export function shiftKeyboardRangeBy(semitones: number): KeyboardRangePrefs {
   const next = shiftKeyboardRange(current, semitones)
   const drafted: KeyboardRangePrefs = { ...current, start: next.start, size: next.size }
-  drafted.controllerLow = anchorControllerLow(current, drafted, false)
+  drafted.controllerLow = resolveControllerLow(current, drafted, false)
   return commit(drafted)
 }
 

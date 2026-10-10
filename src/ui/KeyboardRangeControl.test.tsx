@@ -5,6 +5,7 @@ import {
   KEYBOARD_RANGE_STORAGE_KEY,
   reloadKeyboardRange,
   setControllerCalibrateArmed,
+  setKeyboardRange,
 } from '../core/keyboardRange'
 import { createAppStore } from '../store/state'
 import { KeyboardRangeControl } from './KeyboardRangeControl'
@@ -119,6 +120,26 @@ describe('KeyboardRangeControl', () => {
 
     reloadKeyboardRange()
     expect(getKeyboardRange()).toMatchObject({ start: 73, size: 29 })
+  })
+
+  it('shows that a 24-key window is not calibrated until the lowest key is saved', () => {
+    mount()
+    expect(host.querySelector('#kbd-range-cal-badge')).toBeNull()
+    host.querySelector<HTMLButtonElement>('#kbd-range-label')!.click()
+    const preset = [...host.querySelectorAll<HTMLButtonElement>('.kbd-range-preset')].find(
+      (b) => b.textContent === '24',
+    )!
+    preset.click()
+    const badge = host.querySelector('#kbd-range-cal-badge')!
+    expect(badge.textContent).toBe('Not calibrated')
+    expect(badge.classList.contains('is-set')).toBe(false)
+    expect(host.querySelector('#kbd-range-cal-status')!.textContent).toContain('C4')
+    expect(host.querySelector('#kbd-range-cal-status')!.classList.contains('is-unset')).toBe(true)
+
+    setKeyboardRange({ controllerLow: 48, calibrated: true })
+    expect(host.querySelector('#kbd-range-cal-badge')!.textContent).toBe('Calibrated C3')
+    expect(host.querySelector('#kbd-range-cal-badge')!.classList.contains('is-set')).toBe(true)
+    expect(host.querySelector('#kbd-range-cal-status')!.textContent).toContain('C3')
   })
 
   it('arms calibration until the lowest key is pressed', () => {

@@ -167,8 +167,31 @@ describe('controller mapping', () => {
     expect(mapControllerPitch(71, prefs)).toBe(83)
   })
 
-  it('passes notes through until a low key is known', () => {
-    expect(mapControllerPitch(48, { ...prefs, controllerLow: null })).toBe(48)
+  it('passes notes through on a full piano and on an uncalibrated longer controller', () => {
+    expect(mapControllerPitch(60, FULL_PREFS)).toBe(60)
+    expect(
+      mapControllerPitch(48, {
+        ...prefs,
+        start: 36,
+        size: 49,
+        controllerLow: null,
+        calibrated: false,
+      }),
+    ).toBe(48)
+  })
+
+  it('maps a Piano M default low key onto the window before calibration', () => {
+    // MIDI 60 is middle C. ROLI calls it C3; this app calls it C4.
+    // Window C4–B5: the lowest key plays C4, not the C5 an old C3 anchor produced.
+    const c4 = { ...prefs, start: 60, size: 24, controllerLow: null, calibrated: false }
+    expect(mapControllerPitch(60, c4)).toBe(60)
+    expect(mapControllerPitch(83, c4)).toBe(83)
+    // Window C3–B4, the 24-key snap: the same physical key plays C3.
+    const c3 = { ...prefs, start: 48, size: 24, controllerLow: null, calibrated: false }
+    expect(mapControllerPitch(60, c3)).toBe(48)
+    expect(mapControllerPitch(83, c3)).toBe(71)
+    // A 25-key C-to-C controller uses the same factory low key.
+    expect(mapControllerPitch(60, { ...c4, size: 25 })).toBe(60)
   })
 
   it('hears an octave shift as the same physical key', () => {
@@ -226,16 +249,43 @@ describe('keyboard range store', () => {
     expect(getKeyboardRange()).toMatchObject({ start: 53, size: 24 })
   })
 
-  it('anchors the controller when a partial window moves, so MIDI follows it', () => {
+  it('keeps the factory low key when an uncalibrated window moves', () => {
     setKeyboardRange({ start: 48, size: 24 })
     expect(getKeyboardRange().controllerLow).toBeNull()
+    expect(mapControllerPitch(60, getKeyboardRange())).toBe(48)
     shiftKeyboardRangeBy(12)
     const prefs = getKeyboardRange()
-    expect(prefs).toMatchObject({ start: 60, controllerLow: 48, calibrated: false })
-    expect(mapControllerPitch(48, prefs)).toBe(60)
-    // A later move keeps the same physical low key.
+    expect(prefs).toMatchObject({ start: 60, controllerLow: null, calibrated: false })
+    // Sliding to C4–B5 must not add another octave on top of middle C.
+    expect(mapControllerPitch(60, prefs)).toBe(60)
     shiftKeyboardRangeBy(-1)
-    expect(mapControllerPitch(48, getKeyboardRange())).toBe(59)
+    expect(mapControllerPitch(60, getKeyboardRange())).toBe(59)
+  })
+
+  it('keeps a real calibration when the window moves', () => {
+    setKeyboardRange({ start: 60, size: 24, controllerLow: 48, calibrated: true })
+    shiftKeyboardRangeBy(12)
+    const prefs = getKeyboardRange()
+    expect(prefs).toMatchObject({ start: 72, controllerLow: 48, calibrated: true })
+    expect(mapControllerPitch(48, prefs)).toBe(72)
+  })
+
+  it('drops an uncalibrated anchor saved by an older build', () => {
+    localStorage.setItem(
+      KEYBOARD_RANGE_STORAGE_KEY,
+      JSON.stringify({
+        start: 60,
+        size: 24,
+        followMidi: false,
+        controllerLow: 48,
+        calibrated: false,
+        fitToRange: true,
+      }),
+    )
+    const prefs = reloadKeyboardRange()
+    expect(prefs.controllerLow).toBeNull()
+    expect(prefs.calibrated).toBe(false)
+    expect(mapControllerPitch(60, prefs)).toBe(60)
   })
 
   it('notifies subscribers on change and not on a no-op', () => {

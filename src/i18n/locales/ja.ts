@@ -484,9 +484,13 @@ const ja: Messages = {
   'kbdRange.calibrateArmedShort': '待機中…',
   'kbdRange.calibrateTip':
     '次に押した MIDI 鍵をコントローラーの最低音として覚え、範囲をそこへ対応させます。',
-  'kbdRange.controllerLow': 'コントローラー最低音 {note}',
+  'kbdRange.controllerLow': '調整済み。最低音は {note} です。',
   'kbdRange.controllerUnset':
-    '未設定です。範囲を動かすと入力は移調されます。一番低い鍵を押すと正確に揃います。',
+    '未調整です。一番低い鍵を押すまで、その鍵は {note}（中央のド、ROLI Piano M の初期オクターブ。ROLI では C3）とみなします。その鍵がこの範囲の最低音になります。',
+  'kbdRange.controllerUnsetGeneric':
+    '未調整です。一番低い鍵を押すと、この範囲がコントローラーに揃います。',
+  'kbdRange.notCalibrated': '未調整',
+  'kbdRange.calibratedBadge': '調整済み {note}',
   'kbdRange.band': 'ドラッグで音域を移動。端でサイズを変更。',
   'kbdRange.fit': '音域に合わせる',
   'kbdRange.fitTip': '音域外の音をオクターブ単位でずらし、弾ける鍵に収めます。',
