@@ -399,11 +399,11 @@ function KeyboardRangeView(props: { store: AppStore }) {
             class="kbd-range-follow"
             id="kbd-range-fit"
             aria-pressed={range().fitToRange}
-            data-tip={t('kbdRange.fitTip')}
             onClick={() => setKeyboardRange({ fitToRange: !range().fitToRange })}
           >
             {t('kbdRange.fit')}
           </button>
+          <p class="kbd-range-cal-status">{t('kbdRange.fitTip')}</p>
 
           <button
             type="button"
