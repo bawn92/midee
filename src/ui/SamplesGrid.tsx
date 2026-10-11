@@ -10,15 +10,15 @@ import { icons } from './icons'
 // pulled from the MIDI — so the bars follow the actual shape of the piece
 // rather than a placeholder.
 //
-// Recents lead the row and can fill it completely — once you have three files
-// of your own, demos are noise. Storage keeps more than the row shows
+// Recents lead the grid and can fill it completely — once you have four files
+// of your own, demos are noise. Storage keeps more than the grid shows
 // (`MAX_RECENTS`), so dismissing a card promotes the next one into view rather
 // than handing the slot back to a sample. Recent cards deliberately drop the
 // per-sample accent colour and wear the app accent plus a "Recent" tag — they
 // read as a distinct family, not as another sample.
 
 const BARS = 32
-const TOTAL_SLOTS = 3
+const TOTAL_SLOTS = 4
 
 interface CardState {
   bars: readonly number[]
@@ -174,8 +174,8 @@ interface GridProps {
 function SamplesGridView(props: GridProps) {
   const [recents, setRecents] = createSignal<RecentMidi[]>([])
 
-  // The row is a fixed three slots so the home card never reflows: recents
-  // take what they need, samples fill whatever is left over.
+  // Four slots, wrapping to two columns on the home card: recents take what
+  // they need, samples fill whatever is left over.
   const visibleRecents = (): readonly RecentMidi[] => recents().slice(0, TOTAL_SLOTS)
   const visibleSamples = (): readonly Sample[] =>
     SAMPLES.slice(0, Math.max(0, TOTAL_SLOTS - visibleRecents().length))

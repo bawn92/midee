@@ -40,6 +40,28 @@ export const en = {
   'keyLights.blocked': 'Allow MIDI devices in your browser’s site settings, then try again.',
   'keyLights.error': 'Could not send MIDI. Reconnect or reselect your light device.',
 
+  'songGuide.open': 'Song guide',
+  'songGuide.title': 'Song guide',
+  'songGuide.hide': 'Hide',
+  'songGuide.bar': 'Bar {n}',
+  'songGuide.step': 'Step {n} of {total}',
+  'songGuide.rest': 'Rest',
+  'songGuide.loopLabel': 'Chord loop',
+  'songGuide.statement': '{label} {n} of {total}',
+  'songGuide.pattern': '{label} {n} of {total}',
+  'songGuide.fingers': 'Fingering',
+  'songGuide.map': 'Sections',
+  'songGuide.sectionJump': '{name}, bars {start}–{end}',
+  'songGuide.looping': 'Looping bars {start}–{end}',
+  'songGuide.learn': 'Learn in this order',
+  'songGuide.tempo': 'Tempo',
+  'songGuide.clean': 'Clean run',
+  'songGuide.cleans': '{n} of {goal} clean runs',
+  'songGuide.ready': 'Three clean runs. Try the next tempo.',
+  'songGuide.tips': 'Practice tips',
+  'songGuide.rh': 'RH',
+  'songGuide.lh': 'LH',
+
   // ── Home / dropzone ─────────────────────────────────────────
   // The title contains inline <em> markup — one of the rare keys allowed
   // to carry HTML (rendered via innerHTML). We do this so word order stays

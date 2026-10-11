@@ -851,6 +851,24 @@ export class PianoRollRenderer {
 
   // Pitch under a client X, using the white-key row so a horizontal drag
   // moves monotonically across the piano.
+  // Top of one key in client pixels, for overlays that number a key.
+  keyClientBox(pitch: number): { x: number; y: number; width: number } | null {
+    if (!this.viewport.hasKey(pitch)) return null
+    const bounds = this.canvas.getBoundingClientRect()
+    const { canvasWidth, canvasHeight } = this.viewport.config
+    if (bounds.width < 2 || canvasHeight < 1) return null
+    const scaleX = bounds.width / canvasWidth
+    const scaleY = bounds.height / canvasHeight
+    const x = this.viewport.pitchToX(pitch) * scaleX
+    const width = this.viewport.pitchWidth(pitch) * scaleX
+    const keyboardPx = this.keyboardHeight * scaleY
+    return {
+      x: bounds.left + x + width / 2,
+      y: bounds.top + bounds.height - keyboardPx,
+      width,
+    }
+  }
+
   pitchFromClientX(clientX: number): number {
     const bounds = this.canvas.getBoundingClientRect()
     if (bounds.width <= 0) return 21

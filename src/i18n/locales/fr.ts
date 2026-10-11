@@ -33,6 +33,28 @@ const fr: Messages = {
   'keyLights.error':
     'Impossible d’envoyer du MIDI. Reconnectez ou sélectionnez à nouveau votre appareil.',
 
+  'songGuide.open': 'Guide du morceau',
+  'songGuide.title': 'Guide du morceau',
+  'songGuide.hide': 'Masquer',
+  'songGuide.bar': 'Mesure {n}',
+  'songGuide.step': 'Étape {n} sur {total}',
+  'songGuide.rest': 'Silence',
+  'songGuide.loopLabel': 'Cycle d’accords',
+  'songGuide.statement': '{label} {n} sur {total}',
+  'songGuide.pattern': '{label} {n} sur {total}',
+  'songGuide.fingers': 'Doigtés',
+  'songGuide.map': 'Sections',
+  'songGuide.sectionJump': '{name}, mesures {start}–{end}',
+  'songGuide.looping': 'Boucle des mesures {start}–{end}',
+  'songGuide.learn': 'Apprendre dans cet ordre',
+  'songGuide.tempo': 'Tempo',
+  'songGuide.clean': 'Passage propre',
+  'songGuide.cleans': '{n} sur {goal} passages propres',
+  'songGuide.ready': 'Trois passages propres. Essayez le tempo suivant.',
+  'songGuide.tips': 'Conseils',
+  'songGuide.rh': 'MD',
+  'songGuide.lh': 'MG',
+
   // ── Home / dropzone ─────────────────────────────────────────
   'home.kicker': 'midee · visualiseur MIDI',
   'home.title.html': 'Jouez des <em>notes</em>,<br/>voyez-les éclore.',

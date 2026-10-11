@@ -199,6 +199,8 @@ body {
   -webkit-backdrop-filter: blur(34px) saturate(132%);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 28px;
+  max-height: calc(100vh - 56px);
+  overflow: auto;
   box-shadow:
     0 28px 72px rgba(0, 0, 0, 0.68),
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
@@ -306,7 +308,7 @@ body {
 
 .samples-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 10px;
   width: 100%;
 }
@@ -9371,4 +9373,376 @@ body.appearance-open #top-strip.strip--dim {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* ─────────────────────────────────────────
+   SONG GUIDE
+   Sits under the top strip. In Play and Live the card is centered; in Learn
+   it moves to the left so it clears the top practice HUD. The card stops
+   above the keyboard HUD, and the collapsed tab is only a small pill.
+───────────────────────────────────────── */
+
+.song-guide {
+  position: absolute;
+  top: calc(78px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(420px, calc(100vw - 28px));
+  z-index: 14;
+  pointer-events: none;
+  font-family: var(--font, system-ui, sans-serif);
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.song-guide--side {
+  top: calc(152px + env(safe-area-inset-top));
+  left: calc(16px + env(safe-area-inset-left));
+  transform: none;
+  width: min(320px, calc(50vw - 28px));
+}
+
+.song-guide-tab,
+.song-guide-card,
+.song-guide-looping,
+.song-guide-close {
+  pointer-events: auto;
+}
+
+.song-guide-tab {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(7, 7, 15, 0.92);
+  color: inherit;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  backdrop-filter: blur(24px);
+}
+
+.song-guide-card {
+  pointer-events: auto;
+  max-height: min(
+    460px,
+    calc(100vh - 78px - var(--keyboard-h, 120px) - var(--hud-gap, 16px) - 96px)
+  );
+  overflow: auto;
+  padding: 14px 14px 12px;
+  border-radius: 20px;
+  background: rgba(7, 7, 15, 0.93);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(40px) saturate(160%);
+}
+
+.song-guide--side .song-guide-card {
+  max-height: calc(100vh - 152px - var(--keyboard-h, 120px) - 210px);
+}
+
+.song-guide-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.song-guide-kicker {
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.song-guide-name {
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.song-guide-close,
+.song-guide-looping,
+.song-guide-ranges button,
+.song-guide-tempo button,
+.song-guide-clean button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.song-guide-close {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
+.song-guide-now {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  align-items: baseline;
+  margin-top: 10px;
+  font-size: 12px;
+}
+
+.song-guide-bar {
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.song-guide-section {
+  font-weight: 700;
+}
+
+.song-guide-step {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.song-guide-chord {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin-top: 8px;
+}
+
+.song-guide-chord-name {
+  font-family: var(--font-display, var(--font, system-ui, sans-serif));
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 500;
+}
+
+.song-guide-loop {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-inline-size: 0;
+}
+
+.song-guide-chip {
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.song-guide-chip--on {
+  color: #0b0b12;
+  background: #e9d5ff;
+  font-weight: 700;
+}
+
+.song-guide-meta,
+.song-guide-fact,
+.song-guide-fingers,
+.song-guide-warn,
+.song-guide-endurance,
+.song-guide-ready {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.song-guide-fact {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.song-guide-warn {
+  color: #fcd34d;
+}
+
+.song-guide-endurance,
+.song-guide-ready {
+  color: #a7f3d0;
+}
+
+.song-guide-fingers span {
+  color: rgba(255, 255, 255, 0.4);
+  margin-right: 6px;
+}
+
+.song-guide-map {
+  position: relative;
+  display: flex;
+  gap: 2px;
+  height: 14px;
+  margin: 12px 0 0;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+
+.song-guide-seg {
+  min-width: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  opacity: 0.55;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.song-guide-seg--on {
+  opacity: 1;
+  outline: 1px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 1px;
+}
+
+.song-guide-playhead {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  margin-left: -1px;
+  background: white;
+  pointer-events: none;
+}
+
+.song-guide-looping {
+  display: inline-flex;
+  margin-top: 8px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
+.song-guide-learn {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.song-guide-learn h3 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.song-guide-learn ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 150px;
+  overflow: auto;
+}
+
+.song-guide-learn li {
+  padding: 6px 8px;
+  border-radius: 10px;
+}
+
+.song-guide-learn--on {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.song-guide-learn-title {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.song-guide-learn p {
+  margin: 2px 0 6px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.song-guide-ranges,
+.song-guide-tempo,
+.song-guide-clean {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.song-guide-ranges button,
+.song-guide-tempo button,
+.song-guide-clean button {
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.song-guide-tempo {
+  margin-top: 10px;
+}
+
+.song-guide-tempo > span,
+.song-guide-clean span {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.song-guide-tempo > div {
+  display: flex;
+  gap: 4px;
+}
+
+.song-guide-tempo--on {
+  background: #e9d5ff !important;
+  color: #0b0b12 !important;
+  border-color: transparent !important;
+  font-weight: 700;
+}
+
+.song-guide-clean {
+  margin-top: 8px;
+}
+
+.song-guide-tips {
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.song-guide-tips summary {
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.song-guide-tips ul {
+  margin: 6px 0 0;
+  padding-left: 16px;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.song-guide-badges {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 12;
+}
+
+.song-guide-badge {
+  position: fixed;
+  transform: translate(-50%, 0);
+  min-width: 16px;
+  padding: 2px 3px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(8, 8, 16, 0.88);
+  font-family: var(--font, system-ui, sans-serif);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+  color: white;
+  pointer-events: none;
 }

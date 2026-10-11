@@ -97,6 +97,7 @@ import { KeyboardRangeBand, KeyboardRangeControl } from './ui/KeyboardRangeContr
 import { KeyboardResizer } from './ui/KeyboardResizer'
 import type { SessionAction } from './ui/PostSessionModal'
 import { PEDAL_HIDDEN, type PedalIndicatorState, pedalIndicatorState } from './ui/pedalIndicator'
+import { SongGuideController } from './ui/SongGuide'
 import { showError, showSuccess } from './ui/Toast'
 import { TrackPanel } from './ui/TrackPanel'
 import { installViewportClassSync } from './ui/utils'
@@ -186,6 +187,7 @@ export class App {
   private kbdResizer!: KeyboardResizer
   private kbdRange!: KeyboardRangeControl
   private kbdRangeBand!: KeyboardRangeBand
+  private songGuide!: SongGuideController
   // Hardware note-on pitch → the transposed pitch we actually sounded, so
   // note-off releases that pitch even if the range moves while the key is held.
   private mappedMidi = new Map<number, number>()
@@ -568,6 +570,9 @@ export class App {
       rect: (start, end) => this.renderer.keyBandRect(start, end),
       pitchAt: (clientX) => this.renderer.pitchFromClientX(clientX),
     })
+    this.songGuide = new SongGuideController(overlay, this.store, this.clock, this.synth, (pitch) =>
+      this.renderer.keyClientBox(pitch),
+    )
 
     this.chordOverlay = new ChordOverlay(this.controls.chordSlot)
     this.chordOverlayOn = chordOverlayStore.load()
@@ -2146,6 +2151,7 @@ export class App {
     this.kbdResizer.dispose()
     this.kbdRange.dispose()
     this.kbdRangeBand.dispose()
+    this.songGuide.dispose()
     this.lowerLeft?.remove()
     this.lowerLeft = null
     this.keyLights.dispose()

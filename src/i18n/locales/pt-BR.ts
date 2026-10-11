@@ -30,6 +30,28 @@ const ptBR: Messages = {
   'keyLights.error':
     'Não foi possível enviar MIDI. Reconecte ou selecione seu dispositivo novamente.',
 
+  'songGuide.open': 'Guia da música',
+  'songGuide.title': 'Guia da música',
+  'songGuide.hide': 'Ocultar',
+  'songGuide.bar': 'Compasso {n}',
+  'songGuide.step': 'Passo {n} de {total}',
+  'songGuide.rest': 'Pausa',
+  'songGuide.loopLabel': 'Ciclo de acordes',
+  'songGuide.statement': '{label} {n} de {total}',
+  'songGuide.pattern': '{label} {n} de {total}',
+  'songGuide.fingers': 'Dedilhado',
+  'songGuide.map': 'Seções',
+  'songGuide.sectionJump': '{name}, compassos {start}–{end}',
+  'songGuide.looping': 'Repetindo compassos {start}–{end}',
+  'songGuide.learn': 'Aprenda nesta ordem',
+  'songGuide.tempo': 'Andamento',
+  'songGuide.clean': 'Execução limpa',
+  'songGuide.cleans': '{n} de {goal} execuções limpas',
+  'songGuide.ready': 'Três execuções limpas. Tente o próximo andamento.',
+  'songGuide.tips': 'Dicas',
+  'songGuide.rh': 'MD',
+  'songGuide.lh': 'ME',
+
   // ── Home / dropzone ─────────────────────────────────────────
   'home.kicker': 'midee · visualizador MIDI',
   'home.title.html': 'Toque <em>notas</em>,<br/>veja-as florescer.',
