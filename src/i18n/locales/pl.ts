@@ -16,7 +16,8 @@ const pl: Messages & Record<PolishPluralKey, string> = {
     'Kanały 12/13 dla lewej/prawej ręki. Ręce są szacowane z wysokości dźwięków ścieżki; pliki z jedną ścieżką są dzielone przy środkowym C. Bez wskazówek palców.',
   'keyLights.pianoM': 'ROLI Piano M',
   'keyLights.pianoMHint':
-    'Fabryczne oprogramowanie Piano M nie zapala nut przychodzących. W ROLI Dashboard przeciągnij na urządzenie skrypt littlefoot, który zapala klawisze od komunikatów note-on — kanały 12 i 13 to lewa i prawa ręka, jak w skrypcie Synthesia dla LUMI. Następnie wybierz Piano M tutaj, w Chrome lub Edge. Światła uwzględniają Dopasuj do zakresu, ćwiczoną rękę i kalibrację klawiatury. Przywrócenie ustawień fabrycznych w Dashboard wraca do oryginalnego oprogramowania.',
+    'Fabryczne oprogramowanie Piano M nie zapala nut przychodzących. Pobierz skrypt kolorów motywu i upuść go na urządzenie w ROLI Dashboard. Jeśli skrypt Synthesia jest już wgrany, upuść ten plik na niego. Kanały 12 i 13 zostają lewą i prawą ręką. midee wysyła kolory rąk z motywu — Sunset to żółty po lewej i pomarańczowy po prawej — i wysyła je ponownie po zmianie motywu. Światła uwzględniają Dopasuj do zakresu, ćwiczoną rękę i kalibrację klawiatury. Przywrócenie ustawień fabrycznych w Dashboard wraca do oryginalnego oprogramowania.',
+  'keyLights.pianoMScript': 'Pobierz piano-m-theme-lights.littlefoot',
   'keyLights.keeziHint':
     'KEEZI: połącz przez KEENEKT. Użyj Visualizer → Synthesia dla kolorów rąk lub → DAW dla kanałów pliku/ścieżek.',
   'keyLights.title': 'Podświetlenie klawiszy',

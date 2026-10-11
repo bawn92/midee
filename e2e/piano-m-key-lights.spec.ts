@@ -69,6 +69,9 @@ test('Piano M lights the physical key for the sounding note', async ({ page }) =
   await expect(colors).toHaveValue('pianoM')
   await page.getByText('Setup help').click()
   await expect(page.getByText(/littlefoot/)).toBeVisible()
+  const script = page.getByRole('link', { name: /piano-m-theme-lights\.littlefoot/ })
+  await expect(script).toBeVisible()
+  await expect(script).toHaveAttribute('href', '/piano-m-theme-lights.littlefoot')
   await page.screenshot({
     path: '/opt/cursor/artifacts/screenshots/piano_m_key_lights.png',
     fullPage: false,
@@ -76,16 +79,35 @@ test('Piano M lights the physical key for the sounding note', async ({ page }) =
   await page.locator('#ts-customize').click()
 
   await page.locator('#hud-play').click()
-  await expect
-    .poll(() =>
-      page.evaluate(() => (window as unknown as { __midiSent: number[][] }).__midiSent),
-    )
-    .toEqual(expect.arrayContaining([[0x9b, 60, 100]]))
+  const sent = () =>
+    page.evaluate(() => (window as unknown as { __midiSent: number[][] }).__midiSent)
+  // Sunset: left #fbbf24 → 125,95,18 and right #f97316 → 124,57,11, on CC 20–22.
+  // CC 23 is the factory lowest key, MIDI 60.
+  const sunsetPalette = [
+    [0xbb, 23, 60],
+    [0xbb, 20, 125],
+    [0xbb, 21, 95],
+    [0xbb, 22, 18],
+    [0xbc, 20, 124],
+    [0xbc, 21, 57],
+    [0xbc, 22, 11],
+  ]
+  await expect.poll(sent).toEqual(expect.arrayContaining([...sunsetPalette, [0x9b, 60, 100]]))
+
+  await openAppearance(page)
+  await page.getByRole('button', { name: 'Ocean theme', exact: true }).click()
+  // Ocean: left #06b6d4 → 3,91,106 and right #38bdf8 → 28,94,124.
+  await expect.poll(sent).toEqual(
+    expect.arrayContaining([
+      [0xbb, 20, 3],
+      [0xbb, 21, 91],
+      [0xbb, 22, 106],
+      [0xbc, 20, 28],
+      [0xbc, 21, 94],
+      [0xbc, 22, 124],
+    ]),
+  )
 
   await page.locator('#hud-play').click()
-  await expect
-    .poll(() =>
-      page.evaluate(() => (window as unknown as { __midiSent: number[][] }).__midiSent),
-    )
-    .toEqual(expect.arrayContaining([[0x8b, 60, 0]]))
+  await expect.poll(sent).toEqual(expect.arrayContaining([[0x8b, 60, 0]]))
 })

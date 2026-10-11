@@ -8402,6 +8402,12 @@ body.appearance-open #top-strip.strip--dim {
   margin-top: 8px;
 }
 
+.key-lights-script {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 650;
+}
+
 .customize-section {
   display: flex;
   flex-direction: column;

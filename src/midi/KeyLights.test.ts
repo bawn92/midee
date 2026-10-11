@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MasterClock } from '../core/clock/MasterClock'
 import { setHandPractice } from '../core/handPractice'
-import { FULL_PIANO_RANGE, setKeyboardRange } from '../core/keyboardRange'
+import { FULL_PIANO_RANGE, getKeyboardRange, setKeyboardRange } from '../core/keyboardRange'
 import { deriveMidi } from '../core/midi/derive'
 import { type MidiFile, nominalTempoMap } from '../core/midi/types'
+import { oceanTheme, sunsetTheme } from '../renderer/theme'
 import { KeyLights } from './KeyLights'
+import { pianoMPaletteMessages, themeHandLights } from './pianoMColors'
 
 function resetGuide(): void {
   setKeyboardRange({
@@ -513,5 +515,39 @@ describe('ROLI Piano M key lights', () => {
       [0x8c, 72, 0],
       [0x9b, 60, 127],
     ])
+  })
+
+  it('sends Sunset hand colours, then replaces them when the theme changes', () => {
+    lights.setTheme(sunsetTheme)
+    expect(send.mock.calls.map(([data]) => data)).toEqual(
+      pianoMPaletteMessages(themeHandLights(sunsetTheme), getKeyboardRange()),
+    )
+    send.mockClear()
+    lights.setTheme(oceanTheme)
+    expect(send.mock.calls.map(([data]) => data)).toEqual(
+      pianoMPaletteMessages(themeHandLights(oceanTheme), getKeyboardRange()),
+    )
+
+    send.mockClear()
+    lights.configure({ channelMode: 'original' })
+    send.mockClear()
+    lights.setTheme(sunsetTheme)
+    expect(send).not.toHaveBeenCalled()
+
+    lights.configure({ channelMode: 'pianoM' })
+    send.mockClear()
+    setKeyboardRange({
+      start: 48,
+      size: 24,
+      calibrated: false,
+      controllerLow: null,
+      fitToRange: true,
+    })
+    expect(send.mock.calls.map(([data]) => data)).toEqual(
+      pianoMPaletteMessages(themeHandLights(sunsetTheme), getKeyboardRange()),
+    )
+    send.mockClear()
+    play(song([48]))
+    expect(send.mock.calls.map(([data]) => data)).toEqual([[0x9b, 60, 127]])
   })
 })

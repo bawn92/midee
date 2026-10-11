@@ -263,7 +263,7 @@ export function mapControllerPitch(rawPitch: number, prefs: KeyboardRangePrefs):
 
 // Lowest MIDI note the controller's current keys send. Null when MIDI passes
 // through and there is no narrower span to aim a light at.
-function physicalKeyLow(prefs: KeyboardRangePrefs): number | null {
+export function controllerKeyLow(prefs: KeyboardRangePrefs): number | null {
   if (prefs.calibrated && prefs.controllerLow != null) return prefs.controllerLow
   if (assumesFactoryControllerLow(prefs)) return DEFAULT_CONTROLLER_LOW
   return null
@@ -280,7 +280,7 @@ export function unmapControllerPitch(
   if (!Number.isFinite(soundingPitch)) return null
   const raw = Math.round(soundingPitch) - controllerTranspose(prefs)
   if (raw < 0 || raw > 127) return null
-  const low = physicalKeyLow(prefs)
+  const low = controllerKeyLow(prefs)
   if (low !== null && (raw < low || raw > low + prefs.size - 1)) return null
   return raw
 }

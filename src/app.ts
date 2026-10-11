@@ -2100,6 +2100,7 @@ export class App {
 
   private applyTheme(theme: Theme): void {
     this.renderer.setTheme(theme)
+    this.keyLights.setTheme(theme)
     this.customizeMenu?.setTheme(this.themeIndex)
     this.trackPanel?.setTheme(theme)
     const accent = accentCSS(theme)

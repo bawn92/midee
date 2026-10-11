@@ -8,7 +8,8 @@ const ja: Messages = {
     '左手・右手にチャンネル12・13を使用します。手はトラックの音の高さから推定し、単一トラックは中央のドで分けます。指番号は送信しません。',
   'keyLights.pianoM': 'ROLI Piano M',
   'keyLights.pianoMHint':
-    'Piano M の工場出荷時ファームウェアは、受信したノートを点灯しません。ROLI Dashboard で、note-on から鍵を光らせる littlefoot スクリプトをデバイスへドラッグしてください。チャンネル 12 と 13 は左と右で、Synthesia の LUMI 用スクリプトと同じです。その後、Chrome または Edge で Piano M をライトデバイスに選びます。ライトは「音域に合わせる」、練習中の手、キーボードのキャリブレーションに従います。Dashboard の工場出荷時リセットで元のファームウェアに戻ります。',
+    'Piano M の工場出荷時ファームウェアは、受信したノートを点灯しません。テーマ用ライトのスクリプトをダウンロードし、ROLI Dashboard でデバイスにドラッグしてください。Synthesia のスクリプトが入っている場合は、このファイルで置き換えます。チャンネル 12 と 13 はこれまで通り左と右です。midee は現在のテーマの左右の色を送ります。Sunset は左が黄色、右がオレンジで、テーマを変えると送り直します。ライトは「音域に合わせる」、練習中の手、キーボードのキャリブレーションに従います。Dashboard の工場出荷時リセットで元のファームウェアに戻ります。',
+  'keyLights.pianoMScript': 'piano-m-theme-lights.littlefoot をダウンロード',
   'keyLights.keeziHint':
     'KEEZIはKEENEKT経由で接続します。手の色にはVisualizer → Synthesia、ファイルやトラックのチャンネルには → DAWを使用してください。',
   'keyLights.title': 'キーライト',

@@ -8,7 +8,9 @@ import {
 } from '../core/keyboardRange'
 import type { MidiFile } from '../core/midi/types'
 import { jsonPersisted } from '../core/persistence'
+import type { Theme } from '../renderer/theme'
 import { createEventSignal } from '../store/eventSignal'
+import { pianoMPaletteMessages, themeHandLights } from './pianoMColors'
 
 export type KeyLightsChannelMode = 'original' | 'track' | 'single' | 'synthesia' | 'pianoM'
 
@@ -55,8 +57,9 @@ const preferences = jsonPersisted('midee.keyLights', defaults, (raw): KeyLightsS
   }
 })
 
-// Only note messages are sent: LED colors are chosen by the device's channel
-// palette. Sustain/audio tails do not extend lights past the notated note end.
+// Note on/off drive the lights. Sustain and audio tails do not extend them
+// past the notated note end. Piano M mode also sends the theme's hand colours
+// as control changes so the littlefoot script can paint them.
 export class KeyLights {
   readonly settings = createEventSignal(preferences.load())
   readonly outputs = createEventSignal<{ id: string; name: string }[]>([])
@@ -77,6 +80,7 @@ export class KeyLights {
   private readonly unsubscribeRange: () => void
   private readonly unsubscribeHand: () => void
   private disposed = false
+  private theme: Theme | null = null
 
   constructor(private readonly clock: MasterClock) {
     this.unsubscribe = clock.subscribeTransport(() => {
@@ -86,7 +90,9 @@ export class KeyLights {
     })
     // Window, calibration, fit, and hand changes retarget lights immediately.
     const retarget = (): void => {
-      if (!this.disposed) this.rebuild()
+      if (this.disposed) return
+      this.rebuild()
+      this.sendPalette()
     }
     this.unsubscribeRange = subscribeKeyboardRange(retarget)
     this.unsubscribeHand = subscribeHandPractice(retarget)
@@ -109,6 +115,14 @@ export class KeyLights {
       this.updateStatus()
       this.restart()
     } else this.updateStatus()
+    this.sendPalette()
+  }
+
+  // The Piano M script paints channels 12/13 with these colours and repaints
+  // keys that are already on, so a theme change does not need new note-ons.
+  setTheme(theme: Theme): void {
+    this.theme = theme
+    this.sendPalette()
   }
 
   configure(patch: Partial<KeyLightsSettings>): void {
@@ -238,6 +252,15 @@ export class KeyLights {
     }
     if (settings.channelMode === 'track') return note.trackIndex % 16
     return note.channel & 0x0f
+  }
+
+  private sendPalette(): void {
+    if (this.disposed || !this.output || !this.theme) return
+    if (this.settings.value.channelMode !== 'pianoM') return
+    for (const message of pianoMPaletteMessages(themeHandLights(this.theme), getKeyboardRange())) {
+      this.send(message)
+      if (!this.output) return
+    }
   }
 
   private send(data: number[]): void {

@@ -97,7 +97,9 @@ export function KeyLightsSettings(props: { lights: KeyLights; midiInput: MidiInp
               </select>
             </label>
           </Show>
-          <p class="customize-toggle-sub">{t('keyLights.colorHint')}</p>
+          <Show when={props.lights.settings.value.channelMode !== 'pianoM'}>
+            <p class="customize-toggle-sub">{t('keyLights.colorHint')}</p>
+          </Show>
         </Show>
         <details class="key-lights-help">
           <summary>{t('keyLights.setupHelp')}</summary>
@@ -105,6 +107,13 @@ export function KeyLightsSettings(props: { lights: KeyLights; midiInput: MidiInp
             <p class="customize-toggle-sub">{t('keyLights.keeziHint')}</p>
             <Show when={props.lights.settings.value.channelMode === 'pianoM'}>
               <p class="customize-toggle-sub">{t('keyLights.pianoMHint')}</p>
+              <a
+                class="key-lights-script"
+                href={`${import.meta.env.BASE_URL}piano-m-theme-lights.littlefoot`}
+                download="piano-m-theme-lights.littlefoot"
+              >
+                {t('keyLights.pianoMScript')}
+              </a>
             </Show>
             <Show when={props.lights.settings.value.channelMode === 'synthesia'}>
               <p class="customize-toggle-sub">{t('keyLights.synthesiaHint')}</p>

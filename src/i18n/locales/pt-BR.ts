@@ -8,7 +8,8 @@ const ptBR: Messages = {
     'Canais 12/13 para mão esquerda/direita. As mãos são estimadas pela altura das faixas; arquivos de uma faixa são divididos no dó central. Sem indicação de dedos.',
   'keyLights.pianoM': 'ROLI Piano M',
   'keyLights.pianoMHint':
-    'O firmware de fábrica do Piano M não acende as notas recebidas. No ROLI Dashboard, arraste para o dispositivo um script littlefoot que acenda as teclas a partir de mensagens note-on — os canais 12 e 13 são esquerda e direita, como o script Synthesia para LUMI. Depois selecione o Piano M aqui, no Chrome ou Edge. As luzes seguem Ajustar ao seu alcance, a mão praticada e a calibração do teclado. Uma redefinição de fábrica no Dashboard restaura o firmware original.',
+    'O firmware de fábrica do Piano M não acende as notas recebidas. Baixe o script de cores do tema e arraste-o para o dispositivo no ROLI Dashboard. Se o script do Synthesia já estiver instalado, solte este arquivo por cima. Os canais 12 e 13 continuam sendo esquerda e direita. O midee envia as cores de cada mão do tema — Sunset é amarelo à esquerda e laranja à direita — e envia de novo quando você troca o tema. As luzes seguem Ajustar ao seu alcance, a mão praticada e a calibração do teclado. Uma redefinição de fábrica no Dashboard restaura o firmware original.',
+  'keyLights.pianoMScript': 'Baixar piano-m-theme-lights.littlefoot',
   'keyLights.keeziHint':
     'KEEZI: conecte via KEENEKT. Use Visualizer → Synthesia para cores por mão, ou → DAW para canais do arquivo/faixas.',
   'keyLights.title': 'Luzes do teclado',
