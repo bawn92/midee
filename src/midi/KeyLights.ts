@@ -1,16 +1,28 @@
 import type { MasterClock } from '../core/clock/MasterClock'
+import { getHandPractice, noteMatchesHand, subscribeHandPractice } from '../core/handPractice'
+import {
+  getKeyboardRange,
+  placedPitch,
+  subscribeKeyboardRange,
+  unmapControllerPitch,
+} from '../core/keyboardRange'
 import type { MidiFile } from '../core/midi/types'
 import { jsonPersisted } from '../core/persistence'
 import { createEventSignal } from '../store/eventSignal'
 
+export type KeyLightsChannelMode = 'original' | 'track' | 'single' | 'synthesia' | 'pianoM'
+
 export interface KeyLightsSettings {
   outputId: string
-  channelMode: 'original' | 'track' | 'single' | 'synthesia'
+  channelMode: KeyLightsChannelMode
   channel: number // 1–16 in the UI
 }
 
 export interface LightNote {
   pitch: number
+  // Written pitch when `pitch` was already folded for practice. Hand colour
+  // follows this so a note folded across middle C keeps its hand.
+  sourcePitch?: number
   velocity: number
   channel: number // zero-based MIDI channel
   trackIndex: number
@@ -29,7 +41,8 @@ const preferences = jsonPersisted('midee.keyLights', defaults, (raw): KeyLightsS
     channelMode:
       value.channelMode === 'track' ||
       value.channelMode === 'single' ||
-      value.channelMode === 'synthesia'
+      value.channelMode === 'synthesia' ||
+      value.channelMode === 'pianoM'
         ? value.channelMode
         : 'original',
     channel:
@@ -61,6 +74,8 @@ export class KeyLights {
   private practiceMode = false
   private timer: ReturnType<typeof setInterval> | null = null
   private readonly unsubscribe: () => void
+  private readonly unsubscribeRange: () => void
+  private readonly unsubscribeHand: () => void
   private disposed = false
 
   constructor(private readonly clock: MasterClock) {
@@ -69,6 +84,12 @@ export class KeyLights {
       // internally; those transitions must not reset or replay the LEDs.
       if (!this.practiceMode && this.guidance === null) this.restart()
     })
+    // Window, calibration, fit, and hand changes retarget lights immediately.
+    const retarget = (): void => {
+      if (!this.disposed) this.rebuild()
+    }
+    this.unsubscribeRange = subscribeKeyboardRange(retarget)
+    this.unsubscribeHand = subscribeHandPractice(retarget)
     window.addEventListener('pagehide', this.onPageHide)
     window.addEventListener('pageshow', this.onPageShow)
   }
@@ -134,10 +155,11 @@ export class KeyLights {
     if (this.disposed || !this.output) return
     const desired = new Map<number, LightNote>()
     for (const note of this.guidance ?? []) {
-      if (!validPitch(note.pitch)) continue
+      const placed = this.place(note)
+      if (!placed) continue
       const track = this.midi?.tracks[note.trackIndex]
       if (track && this.disabled.has(track.id)) continue
-      desired.set(this.channel(note) * 128 + note.pitch, note)
+      desired.set(this.channel(placed) * 128 + placed.pitch, placed)
     }
     for (const [key] of this.shownGuidance) {
       if (desired.has(key)) continue
@@ -168,15 +190,15 @@ export class KeyLights {
       }
       if (track.isDrum || this.disabled.has(track.id)) return
       for (const note of track.notes) {
-        // Transposition intentionally preserves out-of-range pitches for
-        // audio/visuals; Web MIDI data bytes must remain within 0–127.
-        if (note.duration <= 0 || !validPitch(note.pitch)) continue
-        const light = {
+        if (note.duration <= 0) continue
+        const light = this.place({
           pitch: note.pitch,
+          sourcePitch: note.pitch,
           velocity: note.velocity,
           channel: track.channel,
           trackIndex,
-        }
+        })
+        if (!light) continue
         this.events.push({ ...light, time: note.time, on: true })
         this.events.push({ ...light, time: note.time + note.duration, on: false })
       }
@@ -186,11 +208,33 @@ export class KeyLights {
     this.restart()
   }
 
+  // File pitch → the raw note the controller key sends. Fit folds into the
+  // window first; unmap then undoes calibration so the lit key is the one
+  // the player should press. Other-hand and unreachable notes are skipped.
+  private place(note: LightNote): LightNote | null {
+    const sourcePitch = Math.round(note.sourcePitch ?? note.pitch)
+    // A transposed file can carry pitches outside a MIDI byte. Those are not
+    // notes to fold into the window.
+    if (sourcePitch < 0 || sourcePitch > 127) return null
+    if (!noteMatchesHand(sourcePitch, getHandPractice().hand)) return null
+    const range = getKeyboardRange()
+    const placed = placedPitch(sourcePitch, range)
+    if (!placed) return null
+    const pitch = unmapControllerPitch(placed.pitch, range)
+    if (pitch === null) return null
+    return { ...note, pitch, sourcePitch }
+  }
+
   private channel(note: LightNote): number {
     const settings = this.settings.value
     if (settings.channelMode === 'single') return settings.channel - 1
+    const handPitch = note.sourcePitch ?? note.pitch
+    // Piano M littlefoot listeners (and Synthesia's LUMI script) colour
+    // channel 12 left and channel 13 right. Per-note hand keeps a single
+    // piano track split at middle C, using the written pitch.
+    if (settings.channelMode === 'pianoM') return handPitch < 60 ? 11 : 12
     if (settings.channelMode === 'synthesia') {
-      return this.handChannels.get(note.trackIndex) ?? (note.pitch < 60 ? 11 : 12)
+      return this.handChannels.get(note.trackIndex) ?? (handPitch < 60 ? 11 : 12)
     }
     if (settings.channelMode === 'track') return note.trackIndex % 16
     return note.channel & 0x0f
@@ -301,11 +345,9 @@ export class KeyLights {
     this.disposed = true
     this.stop()
     this.unsubscribe()
+    this.unsubscribeRange()
+    this.unsubscribeHand()
     window.removeEventListener('pagehide', this.onPageHide)
     window.removeEventListener('pageshow', this.onPageShow)
   }
-}
-
-function validPitch(pitch: number): boolean {
-  return Number.isInteger(pitch) && pitch >= 0 && pitch <= 127
 }

@@ -18,6 +18,9 @@ export const en = {
   'keyLights.synthesia': 'Synthesia hands (estimated)',
   'keyLights.synthesiaHint':
     'Uses channels 12/13 for left/right hands. Hands are estimated by track pitch; single-track files split at middle C. No finger hints.',
+  'keyLights.pianoM': 'ROLI Piano M',
+  'keyLights.pianoMHint':
+    'Stock Piano M firmware does not light notes sent to it. In ROLI Dashboard, drag a littlefoot script that lights keys from incoming note-on messages onto the device — channels 12 and 13 are left and right, matching the Synthesia LUMI script. Then select the Piano M here, in Chrome or Edge. Lights follow Fit to your range, the hand you are practising, and your keyboard calibration. A factory reset in Dashboard restores the stock firmware.',
   'keyLights.keeziHint':
     'KEEZI: connect through KEENEKT. Use Visualizer → Synthesia for hand colors, or → DAW for file/track channels.',
   'keyLights.title': 'Key Lights',

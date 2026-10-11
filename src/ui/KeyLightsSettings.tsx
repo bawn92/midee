@@ -76,6 +76,7 @@ export function KeyLightsSettings(props: { lights: KeyLights; midiInput: MidiInp
               }
             >
               <option value="original">{t('keyLights.original')}</option>
+              <option value="pianoM">{t('keyLights.pianoM')}</option>
               <option value="synthesia">{t('keyLights.synthesia')}</option>
               <option value="track">{t('keyLights.track')}</option>
               <option value="single">{t('keyLights.single')}</option>
@@ -102,6 +103,9 @@ export function KeyLightsSettings(props: { lights: KeyLights; midiInput: MidiInp
           <summary>{t('keyLights.setupHelp')}</summary>
           <div class="key-lights-help-body">
             <p class="customize-toggle-sub">{t('keyLights.keeziHint')}</p>
+            <Show when={props.lights.settings.value.channelMode === 'pianoM'}>
+              <p class="customize-toggle-sub">{t('keyLights.pianoMHint')}</p>
+            </Show>
             <Show when={props.lights.settings.value.channelMode === 'synthesia'}>
               <p class="customize-toggle-sub">{t('keyLights.synthesiaHint')}</p>
             </Show>

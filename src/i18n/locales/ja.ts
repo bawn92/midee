@@ -6,6 +6,9 @@ const ja: Messages = {
   'keyLights.synthesia': 'Synthesiaの左右の手（推定）',
   'keyLights.synthesiaHint':
     '左手・右手にチャンネル12・13を使用します。手はトラックの音の高さから推定し、単一トラックは中央のドで分けます。指番号は送信しません。',
+  'keyLights.pianoM': 'ROLI Piano M',
+  'keyLights.pianoMHint':
+    'Piano M の工場出荷時ファームウェアは、受信したノートを点灯しません。ROLI Dashboard で、note-on から鍵を光らせる littlefoot スクリプトをデバイスへドラッグしてください。チャンネル 12 と 13 は左と右で、Synthesia の LUMI 用スクリプトと同じです。その後、Chrome または Edge で Piano M をライトデバイスに選びます。ライトは「音域に合わせる」、練習中の手、キーボードのキャリブレーションに従います。Dashboard の工場出荷時リセットで元のファームウェアに戻ります。',
   'keyLights.keeziHint':
     'KEEZIはKEENEKT経由で接続します。手の色にはVisualizer → Synthesia、ファイルやトラックのチャンネルには → DAWを使用してください。',
   'keyLights.title': 'キーライト',

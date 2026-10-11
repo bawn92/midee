@@ -51,7 +51,10 @@ export interface AutoPlayedNote {
 // A note the player must press. Shared with key-light guidance so consumers
 // do not reconstruct the chord or its track/channel identities independently.
 export interface PracticeNote {
+  // Sounding pitch the player must press. Folded when fit-to-range is on.
   pitch: number
+  // Written pitch. Hand identity follows this when a fold crosses middle C.
+  sourcePitch: number
   velocity: number
   channel: number
   trackIndex: number
@@ -449,6 +452,7 @@ export class PracticeEngine {
         onsets.push({
           time: note.time,
           pitch: role.pitch,
+          sourcePitch: note.pitch,
           end: note.time + note.duration,
           velocity: note.velocity,
           duration: note.duration,
@@ -496,6 +500,7 @@ export class PracticeEngine {
           if (!onset.playable) continue
           notes.push({
             pitch: onset.pitch,
+            sourcePitch: onset.sourcePitch,
             velocity: onset.velocity,
             channel: onset.channel,
             trackIndex: onset.trackIndex,

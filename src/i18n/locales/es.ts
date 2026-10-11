@@ -6,6 +6,9 @@ const es: Messages = {
   'keyLights.synthesia': 'Manos Synthesia (estimadas)',
   'keyLights.synthesiaHint':
     'Canales 12/13 para mano izquierda/derecha. Las manos se estiman por la altura de las pistas; los archivos de una pista se dividen en do central. Sin digitación.',
+  'keyLights.pianoM': 'ROLI Piano M',
+  'keyLights.pianoMHint':
+    'El firmware de fábrica del Piano M no enciende las notas que recibe. En ROLI Dashboard, arrastra al dispositivo un script littlefoot que encienda las teclas con mensajes note-on: los canales 12 y 13 son izquierda y derecha, como el script Synthesia para LUMI. Luego elige el Piano M aquí, en Chrome o Edge. Las luces siguen Ajustar a tu rango, la mano que practicas y la calibración del teclado. Un restablecimiento de fábrica en Dashboard devuelve el firmware original.',
   'keyLights.keeziHint':
     'KEEZI: conecta mediante KEENEKT. Usa Visualizer → Synthesia para colores por mano, o → DAW para canales del archivo o pistas.',
   'keyLights.title': 'Luces del teclado',

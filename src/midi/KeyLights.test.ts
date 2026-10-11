@@ -1,8 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MasterClock } from '../core/clock/MasterClock'
+import { setHandPractice } from '../core/handPractice'
+import { FULL_PIANO_RANGE, setKeyboardRange } from '../core/keyboardRange'
 import { deriveMidi } from '../core/midi/derive'
 import { type MidiFile, nominalTempoMap } from '../core/midi/types'
 import { KeyLights } from './KeyLights'
+
+function resetGuide(): void {
+  setKeyboardRange({
+    ...FULL_PIANO_RANGE,
+    followMidi: false,
+    controllerLow: null,
+    calibrated: false,
+    fitToRange: true,
+  })
+  setHandPractice({ hand: 'both', otherHandAudible: true })
+}
 
 vi.mock('tone', () => ({
   getContext: () => ({ rawContext: { state: 'running' } }),
@@ -50,6 +63,7 @@ describe('Key Lights MIDI output', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     localStorage.clear()
+    resetGuide()
     vi.stubGlobal(
       'requestAnimationFrame',
       vi.fn(() => 1),
@@ -301,5 +315,203 @@ describe('Key Lights MIDI output', () => {
     send.mockClear()
     window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }))
     expect(send).toHaveBeenCalledWith([0x90, 64, 127])
+  })
+})
+
+describe('ROLI Piano M key lights', () => {
+  let now: number
+  let clock: MasterClock
+  let lights: KeyLights
+  let send: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    localStorage.clear()
+    resetGuide()
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn(() => 1),
+    )
+    vi.stubGlobal('cancelAnimationFrame', vi.fn())
+    now = 0
+    clock = new MasterClock(() => now)
+    send = vi.fn()
+    const port = {
+      id: 'piano-m',
+      name: 'ROLI Piano M',
+      state: 'connected',
+      send,
+    } as unknown as MIDIOutput
+    const access = { outputs: new Map([[port.id, port]]) } as unknown as MIDIAccess
+    lights = new KeyLights(clock)
+    lights.setAccess(access)
+    lights.configure({ outputId: 'piano-m', channelMode: 'pianoM' })
+    send.mockClear()
+  })
+
+  afterEach(() => {
+    lights.dispose()
+    clock.dispose()
+    resetGuide()
+    vi.unstubAllGlobals()
+    vi.useRealTimers()
+  })
+
+  function play(midi: MidiFile): void {
+    lights.load(midi)
+    clock.play()
+    now = 0.1
+    vi.advanceTimersByTime(25)
+  }
+
+  function song(pitches: number[]): MidiFile {
+    return {
+      name: 'guide.mid',
+      duration: 2,
+      bpm: 120,
+      timeSignature: [4, 4],
+      ...nominalTempoMap(120, [4, 4]),
+      tracks: [
+        {
+          id: 'piano',
+          name: 'Piano',
+          channel: 0,
+          instrument: 0,
+          isDrum: false,
+          colorIndex: 0,
+          notes: pitches.map((pitch) => ({ pitch, velocity: 1, time: 0, duration: 1 })),
+        },
+      ],
+    }
+  }
+
+  it('lights the factory lowest key for a C4 window before calibration', () => {
+    setKeyboardRange({
+      start: 60,
+      size: 24,
+      calibrated: false,
+      controllerLow: null,
+      fitToRange: true,
+    })
+    play(song([60]))
+    expect(send).toHaveBeenCalledWith([0x9c, 60, 127])
+  })
+
+  it('lights the factory lowest key for the window low note on an uncalibrated C3 window', () => {
+    setKeyboardRange({
+      start: 48,
+      size: 24,
+      calibrated: false,
+      controllerLow: null,
+      fitToRange: true,
+    })
+    play(song([48]))
+    expect(send).toHaveBeenCalledWith([0x9b, 60, 127])
+  })
+
+  it('uses the calibrated lowest key after the player presses it', () => {
+    setKeyboardRange({ start: 60, size: 24, calibrated: true, controllerLow: 48, fitToRange: true })
+    play(song([60]))
+    expect(send).toHaveBeenCalledWith([0x9c, 48, 127])
+  })
+
+  it('folds a note into the window and lights the physical key for that sounding pitch', () => {
+    setKeyboardRange({
+      start: 48,
+      size: 24,
+      calibrated: false,
+      controllerLow: null,
+      fitToRange: true,
+    })
+    play(song([84]))
+    // 84 folds two octaves to 60; the Piano M key that plays 60 sends 72.
+    expect(send).toHaveBeenCalledWith([0x9c, 72, 127])
+  })
+
+  it('skips a note the window cannot hold when fit is off', () => {
+    setKeyboardRange({
+      start: 48,
+      size: 24,
+      calibrated: false,
+      controllerLow: null,
+      fitToRange: false,
+    })
+    play(song([84, 60]))
+    expect(send.mock.calls.map(([data]) => data)).toEqual([[0x9c, 72, 127]])
+  })
+
+  it('lights only the practised hand, and colours both hands on channels 12 and 13', () => {
+    setKeyboardRange({
+      start: 48,
+      size: 24,
+      calibrated: false,
+      controllerLow: null,
+      fitToRange: false,
+    })
+    setHandPractice({ hand: 'left' })
+    play(song([48, 60]))
+    expect(send.mock.calls.map(([data]) => data)).toEqual([[0x9b, 60, 127]])
+    send.mockClear()
+    setHandPractice({ hand: 'both' })
+    expect(send.mock.calls.map(([data]) => data)).toEqual([
+      [0x8b, 60, 0],
+      [0x9b, 60, 127],
+      [0x9c, 72, 127],
+    ])
+  })
+
+  it('releases the physical key on pause and retargets it when the window moves', () => {
+    setKeyboardRange({
+      start: 60,
+      size: 24,
+      calibrated: false,
+      controllerLow: null,
+      fitToRange: false,
+    })
+    play(song([60]))
+    expect(send).toHaveBeenCalledWith([0x9c, 60, 127])
+    send.mockClear()
+    clock.pause()
+    expect(send).toHaveBeenCalledWith([0x8c, 60, 0])
+    clock.play()
+    send.mockClear()
+    setKeyboardRange({
+      start: 48,
+      size: 24,
+      calibrated: false,
+      controllerLow: null,
+      fitToRange: false,
+    })
+    expect(send.mock.calls.map(([data]) => data)).toEqual([
+      [0x8c, 60, 0],
+      [0x9c, 72, 127],
+    ])
+  })
+
+  it('guides a waited chord on the physical keys, using the written pitch for hand colour', () => {
+    setKeyboardRange({
+      start: 48,
+      size: 24,
+      calibrated: false,
+      controllerLow: null,
+      fitToRange: true,
+    })
+    lights.load(song([48, 84]))
+    lights.setPracticeMode(true)
+    lights.setGuidance([
+      { pitch: 48, sourcePitch: 48, velocity: 1, channel: 0, trackIndex: 0 },
+      { pitch: 60, sourcePitch: 84, velocity: 1, channel: 0, trackIndex: 0 },
+    ])
+    expect(send.mock.calls.map(([data]) => data).sort()).toEqual([
+      [0x9b, 60, 127],
+      [0x9c, 72, 127],
+    ])
+    send.mockClear()
+    setHandPractice({ hand: 'left' })
+    expect(send.mock.calls.map(([data]) => data)).toEqual([
+      [0x8b, 60, 0],
+      [0x8c, 72, 0],
+      [0x9b, 60, 127],
+    ])
   })
 })

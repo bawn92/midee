@@ -50,6 +50,24 @@ describe('Key Lights settings', () => {
     view.unmount()
   })
 
+  it('explains how to light a ROLI Piano M', () => {
+    vi.stubGlobal('navigator', { requestMIDIAccess: vi.fn() })
+    const clock = { subscribeTransport: () => () => {}, playing: false } as unknown as MasterClock
+    const lights = new KeyLights(clock)
+    const midiInput = new MidiInputManager(clock)
+    const output = { id: 'piano-m', name: 'ROLI Piano M', state: 'connected', send: vi.fn() }
+    const access = { outputs: new Map([[output.id, output]]) } as unknown as MIDIAccess
+    const view = render(() => <KeyLightsSettings lights={lights} midiInput={midiInput} />)
+    lights.setAccess(access)
+    midiInput.midiAccess.set(access)
+    fireEvent.change(screen.getByLabelText('Light device'), { target: { value: 'piano-m' } })
+    fireEvent.change(screen.getByLabelText('Colors'), { target: { value: 'pianoM' } })
+    expect(lights.settings.value.channelMode).toBe('pianoM')
+    expect(screen.getByText(/littlefoot/)).toBeTruthy()
+    lights.dispose()
+    view.unmount()
+  })
+
   it('explains unavailable MIDI output in unsupported browsers', () => {
     vi.stubGlobal('navigator', {})
     const clock = { subscribeTransport: () => () => {} } as unknown as MasterClock

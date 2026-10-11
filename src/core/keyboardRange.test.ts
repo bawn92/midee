@@ -25,6 +25,7 @@ import {
   shiftRangeToInclude,
   snapRangeStart,
   subscribeKeyboardRange,
+  unmapControllerPitch,
 } from './keyboardRange'
 import { MIDI_MAX, MIDI_MIN } from './midi/types'
 
@@ -192,6 +193,20 @@ describe('controller mapping', () => {
     expect(mapControllerPitch(83, c3)).toBe(71)
     // A 25-key C-to-C controller uses the same factory low key.
     expect(mapControllerPitch(60, { ...c4, size: 25 })).toBe(60)
+  })
+
+  it('lights the physical key that plays a sounding pitch', () => {
+    const c4 = { ...prefs, start: 60, size: 24, controllerLow: null, calibrated: false }
+    expect(unmapControllerPitch(60, c4)).toBe(60)
+    expect(unmapControllerPitch(83, c4)).toBe(83)
+    const c3 = { ...prefs, start: 48, size: 24, controllerLow: null, calibrated: false }
+    expect(unmapControllerPitch(48, c3)).toBe(60)
+    expect(unmapControllerPitch(71, c3)).toBe(83)
+    expect(unmapControllerPitch(60, prefs)).toBe(48)
+    expect(unmapControllerPitch(83, prefs)).toBe(71)
+    expect(unmapControllerPitch(60, FULL_PREFS)).toBe(60)
+    expect(unmapControllerPitch(200, FULL_PREFS)).toBeNull()
+    expect(unmapControllerPitch(0, c3)).toBeNull()
   })
 
   it('hears an octave shift as the same physical key', () => {

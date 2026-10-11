@@ -261,6 +261,30 @@ export function mapControllerPitch(rawPitch: number, prefs: KeyboardRangePrefs):
   return clampMidiPitch(clampMidiPitch(rawPitch) + controllerTranspose(prefs))
 }
 
+// Lowest MIDI note the controller's current keys send. Null when MIDI passes
+// through and there is no narrower span to aim a light at.
+function physicalKeyLow(prefs: KeyboardRangePrefs): number | null {
+  if (prefs.calibrated && prefs.controllerLow != null) return prefs.controllerLow
+  if (assumesFactoryControllerLow(prefs)) return DEFAULT_CONTROLLER_LOW
+  return null
+}
+
+// Inverse of mapControllerPitch. `soundingPitch` is the note the player should
+// hear; the result is the raw note to send so the physical key that produces
+// it lights up. Null when that key is outside MIDI 0–127 or the controller's
+// current span.
+export function unmapControllerPitch(
+  soundingPitch: number,
+  prefs: KeyboardRangePrefs,
+): number | null {
+  if (!Number.isFinite(soundingPitch)) return null
+  const raw = Math.round(soundingPitch) - controllerTranspose(prefs)
+  if (raw < 0 || raw > 127) return null
+  const low = physicalKeyLow(prefs)
+  if (low !== null && (raw < low || raw > low + prefs.size - 1)) return null
+  return raw
+}
+
 // Smallest octave shift (a multiple of 12, or 0) that puts `rawPitch` back
 // inside the calibrated span. A 24-key window is two octaves, so a note can
 // fit more than one shift; the closest one wins. Ambiguous jumps of two

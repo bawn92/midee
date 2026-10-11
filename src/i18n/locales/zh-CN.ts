@@ -6,6 +6,9 @@ const zhCN: Messages = {
   'keyLights.synthesia': 'Synthesia 左右手（估计）',
   'keyLights.synthesiaHint':
     '左手和右手使用通道 12/13。根据音轨音高估计左右手；单音轨文件在中央 C 处分开。不提供指法提示。',
+  'keyLights.pianoM': 'ROLI Piano M',
+  'keyLights.pianoMHint':
+    'Piano M 的出厂固件不会点亮收到的音符。请在 ROLI Dashboard 中把会根据 note-on 点亮琴键的 littlefoot 脚本拖到设备上——通道 12 和 13 分别是左手和右手，与 Synthesia 的 LUMI 脚本相同。然后在 Chrome 或 Edge 中把 Piano M 选为灯光设备。灯光会跟随“适配你的音域”、正在练习的手以及键盘校准。在 Dashboard 中恢复出厂设置可还原原固件。',
   'keyLights.keeziHint':
     'KEEZI：通过 KEENEKT 连接。手部颜色使用 Visualizer → Synthesia，文件或音轨通道使用 → DAW。',
   'keyLights.title': '琴键灯光',

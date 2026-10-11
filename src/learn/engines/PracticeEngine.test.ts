@@ -456,6 +456,9 @@ describe('PracticeEngine playable range', () => {
     engine.setPlayableRange(48, 71, true)
     clock.emit(1.01)
     expect([...(engine.peekNextStep()?.pitches ?? [])]).toEqual([48])
+    expect(engine.peekNextStep()?.notes).toEqual([
+      expect.objectContaining({ pitch: 48, sourcePitch: 36 }),
+    ])
     expect(engine.notePressed(36).kind).toBe('rejected')
     expect(engine.notePressed(48).kind).toBe('advanced')
     expect(engine.isWaiting).toBe(false)
