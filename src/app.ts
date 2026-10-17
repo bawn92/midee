@@ -1,7 +1,19 @@
 import { Metronome } from './audio/Metronome'
 import { INSTRUMENTS, type InstrumentId, SynthEngine } from './audio/SynthEngine'
 import { MasterClock } from './core/clock/MasterClock'
+import { getHandPractice, subscribeHandPractice } from './core/handPractice'
 import { type BusNoteEvent, InputBus } from './core/input/InputBus'
+import {
+  adoptControllerNote,
+  getKeyboardRange,
+  isControllerCalibrateArmed,
+  type KeyboardRangePrefs,
+  mapControllerPitch,
+  setControllerCalibrateArmed,
+  setKeyboardRange,
+  shiftRangeToInclude,
+  subscribeKeyboardRange,
+} from './core/keyboardRange'
 import { lazyHandle } from './core/lazyHandle'
 import { parseMidiFileWithStats } from './core/midi/parser'
 import type { MidiFile } from './core/midi/types'
@@ -37,8 +49,10 @@ import {
 import type { ExportStage, VideoExporter } from './export/VideoExporter'
 import { audioBufferToWav } from './export/wav'
 import { setLocale, t } from './i18n'
+import { bindPlayKeyLights } from './midi/bindPlayKeyLights'
 import { CaptureFanout } from './midi/CaptureFanout'
 import { ComputerKeyboardInput } from './midi/ComputerKeyboardInput'
+import { KeyLights } from './midi/KeyLights'
 import { LiveLooper, type LiveLooperState } from './midi/LiveLooper'
 import { LiveNoteStore } from './midi/LiveNoteStore'
 import type { CapturedEvent } from './midi/MidiEncoding'
@@ -51,7 +65,15 @@ import { setNextLiveOpts } from './modes/LiveMode'
 import { MODE_CAPTURES_LIVE, type ModeContext } from './modes/ModeController'
 import { PianoRollRenderer } from './renderer/PianoRollRenderer'
 import { ALL_PARTICLE_STYLES, PARTICLE_STYLES, type ParticleStyle } from './renderer/particleStyles'
-import { ALL_THEMES, accentCSS, THEMES, type Theme, type ThemeId } from './renderer/theme'
+import { applySceneClass } from './renderer/scenes'
+import {
+  ALL_THEMES,
+  accentCSS,
+  DEFAULT_THEME_ID,
+  THEMES,
+  type Theme,
+  type ThemeId,
+} from './renderer/theme'
 import type { AppMode, AppStore } from './store/state'
 import { watch } from './store/watch'
 import {
@@ -79,9 +101,11 @@ import { DropZone } from './ui/DropZone'
 import type { ExportSettings } from './ui/ExportModal'
 import { THROUGHPUT_KEY, throughputFrom } from './ui/exportSettings'
 import { InstrumentMenu } from './ui/InstrumentMenu'
+import { KeyboardRangeBand, KeyboardRangeControl } from './ui/KeyboardRangeControl'
 import { KeyboardResizer } from './ui/KeyboardResizer'
 import type { SessionAction } from './ui/PostSessionModal'
 import { PEDAL_HIDDEN, type PedalIndicatorState, pedalIndicatorState } from './ui/pedalIndicator'
+import { SongGuideController } from './ui/SongGuide'
 import { showError, showSuccess } from './ui/Toast'
 import { TrackPanel } from './ui/TrackPanel'
 import { installViewportClassSync } from './ui/utils'
@@ -100,6 +124,7 @@ export class App {
   private synth = new SynthEngine()
   private inputBus = new InputBus()
   midiInput!: MidiInputManager
+  private keyLights!: KeyLights
   keyboardInput!: ComputerKeyboardInput
   private liveNotes = new LiveNoteStore()
   private loopNotes = new LiveNoteStore()
@@ -168,6 +193,13 @@ export class App {
   // without re-querying the DOM.
   private overlay!: HTMLElement
   private kbdResizer!: KeyboardResizer
+  private kbdRange!: KeyboardRangeControl
+  private kbdRangeBand!: KeyboardRangeBand
+  private songGuide!: SongGuideController
+  // Hardware note-on pitch → the transposed pitch we actually sounded, so
+  // note-off releases that pitch even if the range moves while the key is held.
+  private mappedMidi = new Map<number, number>()
+  private lowerLeft: HTMLElement | null = null
   private chordOverlay!: ChordOverlay
   private customizeMenu!: CustomizeMenu
   // Shared handles passed into subsystems (Controls today, mode controllers and
@@ -264,8 +296,21 @@ export class App {
     this.renderer.attachClock(this.clock)
     this.renderer.setLiveNoteStore(this.liveNotes)
     this.renderer.setLoopNoteStore(this.loopNotes)
+    this.applyKeyboardRange(getKeyboardRange())
+    this.unsubs.push(subscribeKeyboardRange((prefs) => this.applyKeyboardRange(prefs)))
+    this.applyHandPractice(getHandPractice())
+    this.unsubs.push(subscribeHandPractice((prefs) => this.applyHandPractice(prefs)))
 
     this.midiInput = new MidiInputManager(this.clock)
+    this.keyLights = new KeyLights(this.clock)
+    this.midiInput.setLightOutput(this.keyLights.settings.value.outputId)
+    this.unsubs.push(
+      this.keyLights.settings.subscribe((settings) =>
+        this.midiInput.setLightOutput(settings.outputId),
+      ),
+      this.midiInput.midiAccess.subscribe((access) => this.keyLights.setAccess(access)),
+      bindPlayKeyLights(this.keyLights, this.store, () => this.synth.getDisabledTrackIds()),
+    )
     // Space is the sustain pedal only in Live; Play and Learn own it as the
     // transport / exercise key.
     this.keyboardInput = new ComputerKeyboardInput(
@@ -326,6 +371,7 @@ export class App {
       metronome: this.metronome,
       renderer: this.renderer,
       input: this.inputBus,
+      keyLights: this.keyLights,
     }
 
     // Wire the LivePerformanceBus fan-out sinks. Audio and visual-key
@@ -489,6 +535,7 @@ export class App {
       this.renderer,
       (id, enabled) => {
         this.synth.setTrackEnabled(id, enabled)
+        this.keyLights.setTrackEnabled(id, enabled)
         trackEvent('track_toggled', { enabled })
       },
       () => this.openFilePicker(),
@@ -518,6 +565,22 @@ export class App {
       (px) => this.renderer.setKeyboardHeight(px),
     )
     this.kbdResizer.restoreSaved()
+    // Shortcuts card and keyboard-range control share the lower-left corner.
+    // One column stacks the range bar above the card so they can't overlap.
+    const lowerLeft = document.createElement('div')
+    lowerLeft.id = 'lower-left'
+    overlay.appendChild(lowerLeft)
+    this.lowerLeft = lowerLeft
+    const keyHint = overlay.querySelector('#key-hint')
+    if (keyHint) lowerLeft.appendChild(keyHint)
+    this.kbdRange = new KeyboardRangeControl(lowerLeft, this.store)
+    this.kbdRangeBand = new KeyboardRangeBand(overlay, this.store, {
+      rect: (start, end) => this.renderer.keyBandRect(start, end),
+      pitchAt: (clientX) => this.renderer.pitchFromClientX(clientX),
+    })
+    this.songGuide = new SongGuideController(overlay, this.store, this.clock, this.synth, (pitch) =>
+      this.renderer.keyClientBox(pitch),
+    )
 
     this.chordOverlay = new ChordOverlay(this.controls.chordSlot)
     this.chordOverlayOn = chordOverlayStore.load()
@@ -554,6 +617,7 @@ export class App {
           void setLocale(code).then(() => window.location.reload())
         },
       },
+      { lights: this.keyLights, midiInput: this.midiInput },
     )
     this.customizeMenu.setChord(this.chordOverlayOn)
 
@@ -669,10 +733,12 @@ export class App {
     // per-source because the bus merges them with an OR.
     this.unsubs.push(
       this.midiInput.noteOn.subscribe((evt) => {
-        if (evt) this.inputBus.emitNoteOn(evt, 'midi')
+        if (!evt) return
+        this.inputBus.emitNoteOn({ ...evt, pitch: this.takeMidiPitch(evt.pitch, true) }, 'midi')
       }),
       this.midiInput.noteOff.subscribe((evt) => {
-        if (evt) this.inputBus.emitNoteOff(evt, 'midi')
+        if (!evt) return
+        this.inputBus.emitNoteOff({ ...evt, pitch: this.takeMidiPitch(evt.pitch, false) }, 'midi')
       }),
       this.midiInput.pedal.subscribe((down) => {
         this.inputBus.emitPedal(down, 'midi')
@@ -819,6 +885,11 @@ export class App {
       trackActivation('live_note')
     }
 
+    // A controller's octave buttons move which MIDI notes it sends. When
+    // follow is on, a note outside the window slides the window onto it
+    // before the key lights up, so the roll matches the hardware.
+    if (evt.source === 'midi') this.maybeFollowKeyboardRange(evt.pitch)
+
     // Route through the bus: repress-release (note-off sinks, then on),
     // sustained-pitches bookkeeping, and note-on fan-out to audio+visual sinks.
     // Capture uses the bus's note-off path only — no duplicate captureNoteOff
@@ -840,6 +911,68 @@ export class App {
         this.store.setState('status', 'playing')
       }
     }
+  }
+
+  private applyKeyboardRange(range: KeyboardRangePrefs): void {
+    // The roll keeps all 88 keys. The range is a highlight plus the MIDI map.
+    // Fit-to-range is read while drawing, so a window move repaints note positions
+    // even when the highlight's endpoints did not change.
+    this.renderer.setPlayableRange(range.start, range.start + range.size - 1)
+    this.renderer.refreshPlacement()
+    this.refreshSoundingPitches()
+  }
+
+  private applyHandPractice(prefs: {
+    hand: 'left' | 'right' | 'both'
+    otherHandAudible: boolean
+  }): void {
+    this.renderer.refreshPlacement()
+    this.synth.setHandGate(prefs.hand, prefs.otherHandAudible)
+  }
+
+  // Folded pitches are baked into the scheduled Part. A live window move has
+  // to rebuild that Part while playback is running, and drop the pause-resume
+  // shortcut so the next play doesn't reuse the old pitches.
+  private refreshSoundingPitches(): void {
+    this.synth.invalidateScheduledPitches()
+    const mode = this.store.state.mode
+    const learnPlaying =
+      mode === 'learn' && this.learnControllerHandle.peek()?.learnState.state.status === 'playing'
+    const playPlaying = mode === 'play' && this.store.state.status === 'playing'
+    if (playPlaying || learnPlaying) this.synth.seek(this.clock.currentTime)
+  }
+
+  // Transpose a hardware note so the controller's lowest key plays the
+  // window's lowest key. Uncalibrated 24- and 25-key windows assume middle C.
+  // Note-off uses the pitch chosen at note-on.
+  private takeMidiPitch(raw: number, down: boolean): number {
+    if (!down) {
+      const held = this.mappedMidi.get(raw)
+      this.mappedMidi.delete(raw)
+      if (held !== undefined) return held
+      return mapControllerPitch(raw, getKeyboardRange())
+    }
+    const before = getKeyboardRange()
+    const adopted = adoptControllerNote(raw, before, isControllerCalibrateArmed())
+    if (!adopted.calibrating) setControllerCalibrateArmed(false)
+    if (
+      adopted.controllerLow !== before.controllerLow ||
+      adopted.calibrated !== before.calibrated
+    ) {
+      setKeyboardRange({ controllerLow: adopted.controllerLow, calibrated: adopted.calibrated })
+    }
+    this.mappedMidi.set(raw, adopted.mapped)
+    return adopted.mapped
+  }
+
+  private maybeFollowKeyboardRange(pitch: number): void {
+    const prefs = getKeyboardRange()
+    // Once the controller maps onto the window, notes outside it are an
+    // octave shift (handled in takeMidiPitch), not a request to move the window.
+    if (!prefs.followMidi || prefs.controllerLow != null) return
+    const next = shiftRangeToInclude(prefs, pitch)
+    if (next.start === prefs.start) return
+    setKeyboardRange({ start: next.start })
   }
 
   private handleLiveNoteOff(evt: BusNoteEvent): void {
@@ -1324,6 +1457,11 @@ export class App {
         instrumentId: INSTRUMENTS[this.instrumentIndex]!.id,
         volume: this.store.state.volume,
         disabledTrackIds: this.synth.getDisabledTrackIds(),
+        audibility: {
+          range: getKeyboardRange(),
+          hand: getHandPractice().hand,
+          otherHandAudible: getHandPractice().otherHandAudible,
+        },
         onRenderAudioProgressMode: (d) => exportModal.setRenderAudioProgressMode(d),
         onProgress: report,
       })
@@ -1970,12 +2108,14 @@ export class App {
 
   private applyTheme(theme: Theme): void {
     this.renderer.setTheme(theme)
+    this.keyLights.setTheme(theme)
     this.customizeMenu?.setTheme(this.themeIndex)
     this.trackPanel?.setTheme(theme)
     const accent = accentCSS(theme)
     document.documentElement.style.setProperty('--accent', accent)
     document.documentElement.style.setProperty('--accent-soft', `${accent}2e`)
     document.documentElement.style.setProperty('--accent-glow', `${accent}66`)
+    applySceneClass(theme.id)
   }
 
   private showLoading(): void {
@@ -2019,6 +2159,12 @@ export class App {
     this.dropzone.dispose()
     this.controls.dispose()
     this.kbdResizer.dispose()
+    this.kbdRange.dispose()
+    this.kbdRangeBand.dispose()
+    this.songGuide.dispose()
+    this.lowerLeft?.remove()
+    this.lowerLeft = null
+    this.keyLights.dispose()
     this.midiInput.dispose()
     this.keyboardInput.dispose()
     this.liveLooper.dispose()
@@ -2038,7 +2184,7 @@ export class App {
 // migration from the old `midee.*Index` integer keys (see `idPersisted`).
 const themeStore = idPersisted<ThemeId>(
   'midee.theme',
-  'sunset',
+  DEFAULT_THEME_ID,
   THEMES.map((t) => t.id),
   { key: 'midee.themeIndex', ids: ALL_THEMES.map((t) => t.id) },
 )

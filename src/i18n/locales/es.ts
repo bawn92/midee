@@ -1,6 +1,57 @@
 import type { Messages } from './en'
 
 const es: Messages = {
+  // MIDI key lights
+  'keyLights.setupHelp': 'Ayuda de configuración',
+  'keyLights.synthesia': 'Manos Synthesia (estimadas)',
+  'keyLights.synthesiaHint':
+    'Canales 12/13 para mano izquierda/derecha. Las manos se estiman por la altura de las pistas; los archivos de una pista se dividen en do central. Sin digitación.',
+  'keyLights.pianoM': 'ROLI Piano M',
+  'keyLights.pianoMHint':
+    'El firmware de fábrica del Piano M no enciende las notas que recibe. Descarga el script de colores del tema y arrástralo al dispositivo en ROLI Dashboard. Si el script de Synthesia ya está instalado, suelta este archivo encima. Los canales 12 y 13 siguen siendo izquierda y derecha. midee envía los colores de cada mano del tema — Sunset es amarillo a la izquierda y naranja a la derecha — y los vuelve a enviar al cambiar de tema. Las luces siguen Ajustar a tu rango, la mano que practicas y la calibración del teclado. Un restablecimiento de fábrica en Dashboard devuelve el firmware original.',
+  'keyLights.pianoMScript': 'Descargar piano-m-theme-lights.littlefoot',
+  'keyLights.keeziHint':
+    'KEEZI: conecta mediante KEENEKT. Usa Visualizer → Synthesia para colores por mano, o → DAW para canales del archivo o pistas.',
+  'keyLights.title': 'Luces del teclado',
+  'keyLights.description': 'Ilumina tu piano durante la reproducción y la práctica.',
+  'keyLights.connect': 'Activar MIDI',
+  'keyLights.device': 'Dispositivo de luces',
+  'keyLights.off': 'Desactivado',
+  'keyLights.disconnected': 'Dispositivo desconectado',
+  'keyLights.colors': 'Colores',
+  'keyLights.original': 'Canales del archivo',
+  'keyLights.track': 'Un canal por pista',
+  'keyLights.single': 'Un solo canal',
+  'keyLights.channel': 'Canal',
+  'keyLights.colorHint': 'Tu dispositivo controla los colores.',
+  'keyLights.noDevices': 'No hay salidas MIDI. Conecta tu dispositivo de luces.',
+  'keyLights.unavailable':
+    'La salida Web MIDI no está disponible. Prueba Chrome o Edge en un ordenador.',
+  'keyLights.blocked': 'Permite dispositivos MIDI en los ajustes del sitio y vuelve a intentarlo.',
+  'keyLights.error': 'No se pudo enviar MIDI. Reconecta o vuelve a seleccionar tu dispositivo.',
+
+  'songGuide.open': 'Guía del tema',
+  'songGuide.title': 'Guía del tema',
+  'songGuide.hide': 'Ocultar',
+  'songGuide.bar': 'Compás {n}',
+  'songGuide.step': 'Paso {n} de {total}',
+  'songGuide.rest': 'Silencio',
+  'songGuide.loopLabel': 'Ciclo de acordes',
+  'songGuide.statement': '{label} {n} de {total}',
+  'songGuide.pattern': '{label} {n} de {total}',
+  'songGuide.fingers': 'Digitación',
+  'songGuide.map': 'Secciones',
+  'songGuide.sectionJump': '{name}, compases {start}–{end}',
+  'songGuide.looping': 'Repitiendo compases {start}–{end}',
+  'songGuide.learn': 'Aprende en este orden',
+  'songGuide.tempo': 'Tempo',
+  'songGuide.clean': 'Pasada limpia',
+  'songGuide.cleans': '{n} de {goal} pasadas limpias',
+  'songGuide.ready': 'Tres pasadas limpias. Prueba el siguiente tempo.',
+  'songGuide.tips': 'Consejos',
+  'songGuide.rh': 'MD',
+  'songGuide.lh': 'MI',
+
   // ── Home / dropzone ─────────────────────────────────────────
   'home.kicker': 'midee · visualizador MIDI',
   'home.title.html': 'Toca <em>notas</em>,<br/>míralas florecer.',
@@ -70,6 +121,8 @@ const es: Messages = {
   // ── Appearance / customize popover ──────────────────────────
   'customize.aria': 'Apariencia',
   'customize.title': 'Apariencia',
+  'customize.scene': 'Escena',
+  'customize.sceneClassic': 'Clásico',
   'customize.theme': 'Tema',
   'customize.new': 'Nuevo',
   'customize.particles': 'Partículas',
@@ -481,6 +534,45 @@ const es: Messages = {
   'toast.updated': 'Actualizado a la última versión',
 
   'onboarding.localeDetected': 'Mostrando en {language} · cambia en Apariencia',
+
+  'kbdRange.title': 'Tesitura del teclado',
+  'kbdRange.tip':
+    'El piano en pantalla sigue mostrando 88 teclas. Esta ventana es lo que toca tu controlador: el MIDI se transpone para que su tecla más grave coincida con la ventana. El modo espera omite las notas fuera de ella.',
+  'kbdRange.aria': 'Tesitura de {low} a {high}, {count} teclas',
+  'kbdRange.semitoneDown': 'Bajar el rango un semitono',
+  'kbdRange.semitoneUp': 'Subir el rango un semitono',
+  'kbdRange.octaveDown': 'Bajar el rango una octava',
+  'kbdRange.octaveUp': 'Subir el rango una octava',
+  'kbdRange.start': 'Nota más grave',
+  'kbdRange.size': 'Número de teclas',
+  'kbdRange.follow': 'Seguir el MIDI',
+  'kbdRange.followTip':
+    'Antes de calibrar, desplaza la ventana para incluir las notas MIDI que caen fuera.',
+  'kbdRange.full': 'Piano completo',
+  'kbdRange.presets': 'Tamaños',
+  'kbdRange.picker': 'Arrastra para mover, los bordes para cambiar el tamaño, o pulsa una tecla',
+  'kbdRange.calibrate': 'Pulsa tu tecla más grave',
+  'kbdRange.calibrateShort': 'Tecla grave',
+  'kbdRange.calibrateArmed': 'Pulsa la tecla más grave de tu teclado…',
+  'kbdRange.calibrateArmedShort': 'Escuchando…',
+  'kbdRange.calibrateTip':
+    'La siguiente tecla MIDI se guarda como la nota más grave del controlador, y la ventana se asigna a ella.',
+  'kbdRange.controllerLow': 'Calibrado. La tecla más grave es {note}.',
+  'kbdRange.controllerUnset':
+    'Sin calibrar. Hasta que pulses tu tecla más grave, se asume que es {note}: el do central, la octava por defecto del ROLI Piano M (ROLI la llama C3). Esa tecla toca el inicio de esta ventana.',
+  'kbdRange.controllerUnsetGeneric':
+    'Sin calibrar. Pulsa tu tecla más grave para alinear esta ventana con tu controlador.',
+  'kbdRange.notCalibrated': 'Sin calibrar',
+  'kbdRange.calibratedBadge': 'Calibrado {note}',
+  'kbdRange.band': 'Arrastra para mover el rango. Los bordes cambian el tamaño.',
+  'kbdRange.fit': 'Ajustar a tu rango',
+  'kbdRange.fitTip':
+    'Desplaza por octavas enteras las notas fuera de tu rango para que caigan en teclas que puedes tocar.',
+  'hud.hands': 'Manos',
+  'hud.handHear': 'Oír la otra mano',
+  'hud.handHearTip': 'Tocar la otra mano como audio',
+  'hud.handMute': 'Silenciar la otra mano',
+  'hud.handMuteTip': 'Silenciar la otra mano',
 }
 
 export default es

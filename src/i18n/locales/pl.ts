@@ -9,6 +9,57 @@ import type { Messages } from './en'
 type PolishPluralKey = `tracks.notes.${'few' | 'many'}` | `postSession.stats.${'few' | 'many'}`
 
 const pl: Messages & Record<PolishPluralKey, string> = {
+  // MIDI key lights
+  'keyLights.setupHelp': 'Pomoc w konfiguracji',
+  'keyLights.synthesia': 'Ręce Synthesia (szacowane)',
+  'keyLights.synthesiaHint':
+    'Kanały 12/13 dla lewej/prawej ręki. Ręce są szacowane z wysokości dźwięków ścieżki; pliki z jedną ścieżką są dzielone przy środkowym C. Bez wskazówek palców.',
+  'keyLights.pianoM': 'ROLI Piano M',
+  'keyLights.pianoMHint':
+    'Fabryczne oprogramowanie Piano M nie zapala nut przychodzących. Pobierz skrypt kolorów motywu i upuść go na urządzenie w ROLI Dashboard. Jeśli skrypt Synthesia jest już wgrany, upuść ten plik na niego. Kanały 12 i 13 zostają lewą i prawą ręką. midee wysyła kolory rąk z motywu — Sunset to żółty po lewej i pomarańczowy po prawej — i wysyła je ponownie po zmianie motywu. Światła uwzględniają Dopasuj do zakresu, ćwiczoną rękę i kalibrację klawiatury. Przywrócenie ustawień fabrycznych w Dashboard wraca do oryginalnego oprogramowania.',
+  'keyLights.pianoMScript': 'Pobierz piano-m-theme-lights.littlefoot',
+  'keyLights.keeziHint':
+    'KEEZI: połącz przez KEENEKT. Użyj Visualizer → Synthesia dla kolorów rąk lub → DAW dla kanałów pliku/ścieżek.',
+  'keyLights.title': 'Podświetlenie klawiszy',
+  'keyLights.description': 'Podświetlaj klawisze podczas odtwarzania i ćwiczeń.',
+  'keyLights.connect': 'Włącz MIDI',
+  'keyLights.device': 'Urządzenie świetlne',
+  'keyLights.off': 'Wyłączone',
+  'keyLights.disconnected': 'Urządzenie odłączone',
+  'keyLights.colors': 'Kolory',
+  'keyLights.original': 'Kanały pliku',
+  'keyLights.track': 'Jeden kanał na ścieżkę',
+  'keyLights.single': 'Jeden kanał',
+  'keyLights.channel': 'Kanał',
+  'keyLights.colorHint': 'Kolory zależą od urządzenia.',
+  'keyLights.noDevices': 'Nie znaleziono wyjść MIDI. Podłącz urządzenie świetlne.',
+  'keyLights.unavailable':
+    'Wyjście Web MIDI jest niedostępne. Wypróbuj Chrome lub Edge na komputerze.',
+  'keyLights.blocked': 'Zezwól na urządzenia MIDI w ustawieniach witryny i spróbuj ponownie.',
+  'keyLights.error': 'Nie udało się wysłać MIDI. Podłącz ponownie lub wybierz urządzenie.',
+
+  'songGuide.open': 'Przewodnik utworu',
+  'songGuide.title': 'Przewodnik utworu',
+  'songGuide.hide': 'Ukryj',
+  'songGuide.bar': 'Takt {n}',
+  'songGuide.step': 'Krok {n} z {total}',
+  'songGuide.rest': 'Pauza',
+  'songGuide.loopLabel': 'Pętla akordów',
+  'songGuide.statement': '{label} {n} z {total}',
+  'songGuide.pattern': '{label} {n} z {total}',
+  'songGuide.fingers': 'Palcowanie',
+  'songGuide.map': 'Sekcje',
+  'songGuide.sectionJump': '{name}, takty {start}–{end}',
+  'songGuide.looping': 'Pętla taktów {start}–{end}',
+  'songGuide.learn': 'Ucz się w tej kolejności',
+  'songGuide.tempo': 'Tempo',
+  'songGuide.clean': 'Czyste przejście',
+  'songGuide.cleans': '{n} z {goal} czystych przejść',
+  'songGuide.ready': 'Trzy czyste przejścia. Spróbuj następnego tempa.',
+  'songGuide.tips': 'Wskazówki',
+  'songGuide.rh': 'PR',
+  'songGuide.lh': 'LR',
+
   'home.kicker': 'midee · wizualizator MIDI',
   'home.title.html': 'Graj <em>nuty</em>,<br/>patrz, jak rozkwitają.',
   'home.subtitle':
@@ -75,6 +126,8 @@ const pl: Messages & Record<PolishPluralKey, string> = {
 
   'customize.aria': 'Wygląd',
   'customize.title': 'Wygląd',
+  'customize.scene': 'Scena',
+  'customize.sceneClassic': 'Klasyczny',
   'customize.theme': 'Motyw',
   'customize.new': 'Nowość',
   'customize.particles': 'Cząstki',
@@ -473,6 +526,44 @@ const pl: Messages & Record<PolishPluralKey, string> = {
   'toast.updated': 'Zaktualizowano do najnowszej wersji',
 
   'onboarding.localeDetected': 'Język interfejsu: {language} · zmień w sekcji Wygląd',
+
+  'kbdRange.title': 'Zakres klawiatury',
+  'kbdRange.tip':
+    'Fortepian na ekranie ma zawsze 88 klawiszy. To okno jest tym, co gra kontroler: MIDI jest transponowane tak, by najniższy klawisz pokrywał się z oknem. Tryb czekania pomija nuty poza nim.',
+  'kbdRange.aria': 'Zakres od {low} do {high}, {count} klawiszy',
+  'kbdRange.semitoneDown': 'Przesuń zakres o półton w dół',
+  'kbdRange.semitoneUp': 'Przesuń zakres o półton w górę',
+  'kbdRange.octaveDown': 'Przesuń zakres o oktawę w dół',
+  'kbdRange.octaveUp': 'Przesuń zakres o oktawę w górę',
+  'kbdRange.start': 'Najniższy dźwięk',
+  'kbdRange.size': 'Liczba klawiszy',
+  'kbdRange.follow': 'Śledź MIDI',
+  'kbdRange.followTip': 'Przed kalibracją przesuń okno, aby objęło nuty MIDI spoza niego.',
+  'kbdRange.full': 'Całe pianino',
+  'kbdRange.presets': 'Rozmiary',
+  'kbdRange.picker': 'Przeciągnij, aby przesunąć, krawędzie zmieniają rozmiar, kliknij klawisz',
+  'kbdRange.calibrate': 'Naciśnij najniższy klawisz',
+  'kbdRange.calibrateShort': 'Najniższy',
+  'kbdRange.calibrateArmed': 'Naciśnij najniższy klawisz na klawiaturze…',
+  'kbdRange.calibrateArmedShort': 'Słucham…',
+  'kbdRange.calibrateTip':
+    'Następny klawisz MIDI zostanie zapamiętany jako najniższy dźwięk kontrolera, a okno dopasuje się do niego.',
+  'kbdRange.controllerLow': 'Skalibrowano. Najniższy klawisz to {note}.',
+  'kbdRange.controllerUnset':
+    'Bez kalibracji. Dopóki nie naciśniesz najniższego klawisza, przyjmujemy {note} — środkowe C, domyślną oktawę ROLI Piano M (ROLI nazywa ją C3). Ten klawisz gra początek okna.',
+  'kbdRange.controllerUnsetGeneric':
+    'Bez kalibracji. Naciśnij najniższy klawisz, aby wyrównać to okno z kontrolerem.',
+  'kbdRange.notCalibrated': 'Bez kalibracji',
+  'kbdRange.calibratedBadge': 'Skalibrowano {note}',
+  'kbdRange.band': 'Przeciągnij, aby przesunąć zakres. Krawędzie zmieniają rozmiar.',
+  'kbdRange.fit': 'Dopasuj do zakresu',
+  'kbdRange.fitTip':
+    'Przesuwa nuty spoza zakresu o całe oktawy, tak aby trafiły na klawisze, które możesz zagrać.',
+  'hud.hands': 'Ręce',
+  'hud.handHear': 'Słysz drugą rękę',
+  'hud.handHearTip': 'Odtwarzaj drugą rękę jako dźwięk',
+  'hud.handMute': 'Wycisz drugą rękę',
+  'hud.handMuteTip': 'Wycisz drugą rękę',
 }
 
 export default pl

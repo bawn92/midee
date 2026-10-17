@@ -1,6 +1,58 @@
 import type { Messages } from './en'
 
 const ptBR: Messages = {
+  // MIDI key lights
+  'keyLights.setupHelp': 'Ajuda de configuração',
+  'keyLights.synthesia': 'Mãos Synthesia (estimadas)',
+  'keyLights.synthesiaHint':
+    'Canais 12/13 para mão esquerda/direita. As mãos são estimadas pela altura das faixas; arquivos de uma faixa são divididos no dó central. Sem indicação de dedos.',
+  'keyLights.pianoM': 'ROLI Piano M',
+  'keyLights.pianoMHint':
+    'O firmware de fábrica do Piano M não acende as notas recebidas. Baixe o script de cores do tema e arraste-o para o dispositivo no ROLI Dashboard. Se o script do Synthesia já estiver instalado, solte este arquivo por cima. Os canais 12 e 13 continuam sendo esquerda e direita. O midee envia as cores de cada mão do tema — Sunset é amarelo à esquerda e laranja à direita — e envia de novo quando você troca o tema. As luzes seguem Ajustar ao seu alcance, a mão praticada e a calibração do teclado. Uma redefinição de fábrica no Dashboard restaura o firmware original.',
+  'keyLights.pianoMScript': 'Baixar piano-m-theme-lights.littlefoot',
+  'keyLights.keeziHint':
+    'KEEZI: conecte via KEENEKT. Use Visualizer → Synthesia para cores por mão, ou → DAW para canais do arquivo/faixas.',
+  'keyLights.title': 'Luzes do teclado',
+  'keyLights.description': 'Ilumine seu piano durante a reprodução e a prática.',
+  'keyLights.connect': 'Ativar MIDI',
+  'keyLights.device': 'Dispositivo de luzes',
+  'keyLights.off': 'Desativado',
+  'keyLights.disconnected': 'Dispositivo desconectado',
+  'keyLights.colors': 'Cores',
+  'keyLights.original': 'Canais do arquivo',
+  'keyLights.track': 'Um canal por faixa',
+  'keyLights.single': 'Canal único',
+  'keyLights.channel': 'Canal',
+  'keyLights.colorHint': 'Seu dispositivo controla as cores.',
+  'keyLights.noDevices': 'Nenhuma saída MIDI encontrada. Conecte seu dispositivo de luzes.',
+  'keyLights.unavailable':
+    'A saída Web MIDI está indisponível. Experimente Chrome ou Edge no computador.',
+  'keyLights.blocked': 'Permita dispositivos MIDI nas configurações do site e tente novamente.',
+  'keyLights.error':
+    'Não foi possível enviar MIDI. Reconecte ou selecione seu dispositivo novamente.',
+
+  'songGuide.open': 'Guia da música',
+  'songGuide.title': 'Guia da música',
+  'songGuide.hide': 'Ocultar',
+  'songGuide.bar': 'Compasso {n}',
+  'songGuide.step': 'Passo {n} de {total}',
+  'songGuide.rest': 'Pausa',
+  'songGuide.loopLabel': 'Ciclo de acordes',
+  'songGuide.statement': '{label} {n} de {total}',
+  'songGuide.pattern': '{label} {n} de {total}',
+  'songGuide.fingers': 'Dedilhado',
+  'songGuide.map': 'Seções',
+  'songGuide.sectionJump': '{name}, compassos {start}–{end}',
+  'songGuide.looping': 'Repetindo compassos {start}–{end}',
+  'songGuide.learn': 'Aprenda nesta ordem',
+  'songGuide.tempo': 'Andamento',
+  'songGuide.clean': 'Execução limpa',
+  'songGuide.cleans': '{n} de {goal} execuções limpas',
+  'songGuide.ready': 'Três execuções limpas. Tente o próximo andamento.',
+  'songGuide.tips': 'Dicas',
+  'songGuide.rh': 'MD',
+  'songGuide.lh': 'ME',
+
   // ── Home / dropzone ─────────────────────────────────────────
   'home.kicker': 'midee · visualizador MIDI',
   'home.title.html': 'Toque <em>notas</em>,<br/>veja-as florescer.',
@@ -70,6 +122,8 @@ const ptBR: Messages = {
   // ── Appearance / customize popover ──────────────────────────
   'customize.aria': 'Aparência',
   'customize.title': 'Aparência',
+  'customize.scene': 'Cena',
+  'customize.sceneClassic': 'Clássico',
   'customize.theme': 'Tema',
   'customize.new': 'Novo',
   'customize.particles': 'Partículas',
@@ -480,6 +534,45 @@ const ptBR: Messages = {
   'toast.updated': 'Atualizado para a versão mais recente',
 
   'onboarding.localeDetected': 'Mostrando em {language} · troque em Aparência',
+
+  'kbdRange.title': 'Extensão do teclado',
+  'kbdRange.tip':
+    'O piano na tela continua com 88 teclas. Esta janela é o que o controlador toca: o MIDI é transposto para a tecla mais grave coincidir com a janela. O modo espera ignora as notas fora dela.',
+  'kbdRange.aria': 'Extensão de {low} a {high}, {count} teclas',
+  'kbdRange.semitoneDown': 'Descer o intervalo um semitom',
+  'kbdRange.semitoneUp': 'Subir o intervalo um semitom',
+  'kbdRange.octaveDown': 'Descer o intervalo uma oitava',
+  'kbdRange.octaveUp': 'Subir o intervalo uma oitava',
+  'kbdRange.start': 'Nota mais grave',
+  'kbdRange.size': 'Número de teclas',
+  'kbdRange.follow': 'Seguir o MIDI',
+  'kbdRange.followTip':
+    'Antes de calibrar, desloque a janela para incluir notas MIDI que caiam fora dela.',
+  'kbdRange.full': 'Piano completo',
+  'kbdRange.presets': 'Tamanhos',
+  'kbdRange.picker': 'Arraste para mover, as bordas para redimensionar, ou clique numa tecla',
+  'kbdRange.calibrate': 'Pressione a tecla mais grave',
+  'kbdRange.calibrateShort': 'Tecla grave',
+  'kbdRange.calibrateArmed': 'Pressione a tecla mais grave do teclado…',
+  'kbdRange.calibrateArmedShort': 'Ouvindo…',
+  'kbdRange.calibrateTip':
+    'A próxima tecla MIDI vira a nota mais grave do controlador, e a janela se alinha a ela.',
+  'kbdRange.controllerLow': 'Calibrado. A tecla mais grave é {note}.',
+  'kbdRange.controllerUnset':
+    'Sem calibrar. Até você pressionar a tecla mais grave, ela é assumida como {note} — o dó central, a oitava padrão do ROLI Piano M (a ROLI chama de C3). Essa tecla toca o início desta janela.',
+  'kbdRange.controllerUnsetGeneric':
+    'Sem calibrar. Pressione a tecla mais grave para alinhar esta janela ao controlador.',
+  'kbdRange.notCalibrated': 'Sem calibrar',
+  'kbdRange.calibratedBadge': 'Calibrado {note}',
+  'kbdRange.band': 'Arraste para mover o intervalo. As bordas mudam o tamanho.',
+  'kbdRange.fit': 'Ajustar ao seu alcance',
+  'kbdRange.fitTip':
+    'Desloca em oitavas inteiras as notas fora do seu alcance para teclas que você pode tocar.',
+  'hud.hands': 'Mãos',
+  'hud.handHear': 'Ouvir a outra mão',
+  'hud.handHearTip': 'Tocar a outra mão como áudio',
+  'hud.handMute': 'Silenciar a outra mão',
+  'hud.handMuteTip': 'Silenciar a outra mão',
 }
 
 export default ptBR

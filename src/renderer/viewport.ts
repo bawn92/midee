@@ -145,8 +145,17 @@ export class Viewport {
     for (let p = pMin; p <= pMax; p++) {
       if (!isBlackKey(p)) continue
       const left = this.keyPositions.get(p - 1)
-      if (!left) continue
-      this.keyPositions.set(p, { x: left.x + blackOffset, width: blackW })
+      if (left) {
+        this.keyPositions.set(p, { x: left.x + blackOffset, width: blackW })
+        continue
+      }
+      // The window starts on this black key, so the white key to its left is
+      // off-screen. Anchor to the white key above it and clamp onto the canvas
+      // — otherwise a semitone shift onto C# would drop that key entirely and
+      // wait mode would demand a note with nothing drawn under it.
+      const right = this.keyPositions.get(p + 1)
+      const x = right ? right.x - blackW / 2 : 0
+      this.keyPositions.set(p, { x: Math.max(0, x), width: blackW })
     }
   }
 }

@@ -1,6 +1,57 @@
 import type { Messages } from './en'
 
 const ja: Messages = {
+  // MIDI key lights
+  'keyLights.setupHelp': '設定のヘルプ',
+  'keyLights.synthesia': 'Synthesiaの左右の手（推定）',
+  'keyLights.synthesiaHint':
+    '左手・右手にチャンネル12・13を使用します。手はトラックの音の高さから推定し、単一トラックは中央のドで分けます。指番号は送信しません。',
+  'keyLights.pianoM': 'ROLI Piano M',
+  'keyLights.pianoMHint':
+    'Piano M の工場出荷時ファームウェアは、受信したノートを点灯しません。テーマ用ライトのスクリプトをダウンロードし、ROLI Dashboard でデバイスにドラッグしてください。Synthesia のスクリプトが入っている場合は、このファイルで置き換えます。チャンネル 12 と 13 はこれまで通り左と右です。midee は現在のテーマの左右の色を送ります。Sunset は左が黄色、右がオレンジで、テーマを変えると送り直します。ライトは「音域に合わせる」、練習中の手、キーボードのキャリブレーションに従います。Dashboard の工場出荷時リセットで元のファームウェアに戻ります。',
+  'keyLights.pianoMScript': 'piano-m-theme-lights.littlefoot をダウンロード',
+  'keyLights.keeziHint':
+    'KEEZIはKEENEKT経由で接続します。手の色にはVisualizer → Synthesia、ファイルやトラックのチャンネルには → DAWを使用してください。',
+  'keyLights.title': 'キーライト',
+  'keyLights.description': '再生中や練習中にピアノの鍵盤を照らします。',
+  'keyLights.connect': 'MIDIを有効にする',
+  'keyLights.device': 'ライトデバイス',
+  'keyLights.off': 'オフ',
+  'keyLights.disconnected': 'デバイスが切断されています',
+  'keyLights.colors': '色',
+  'keyLights.original': 'ファイルのチャンネル',
+  'keyLights.track': 'トラックごとにチャンネルを割り当て',
+  'keyLights.single': '単一チャンネル',
+  'keyLights.channel': 'チャンネル',
+  'keyLights.colorHint': '色はデバイスで設定します。',
+  'keyLights.noDevices': 'MIDI出力が見つかりません。ライトデバイスを接続してください。',
+  'keyLights.unavailable':
+    'Web MIDI出力は利用できません。パソコンのChromeまたはEdgeをお試しください。',
+  'keyLights.blocked': 'ブラウザーのサイト設定でMIDIデバイスを許可してから、再試行してください。',
+  'keyLights.error': 'MIDIを送信できませんでした。デバイスを再接続または再選択してください。',
+
+  'songGuide.open': '曲ガイド',
+  'songGuide.title': '曲ガイド',
+  'songGuide.hide': '隠す',
+  'songGuide.bar': '{n}小節',
+  'songGuide.step': 'ステップ {n} / {total}',
+  'songGuide.rest': '休符',
+  'songGuide.loopLabel': 'コード進行',
+  'songGuide.statement': '{label} {n}/{total}',
+  'songGuide.pattern': '{label} {n}/{total}',
+  'songGuide.fingers': '運指',
+  'songGuide.map': 'セクション',
+  'songGuide.sectionJump': '{name}、{start}–{end}小節',
+  'songGuide.looping': '{start}–{end}小節をループ',
+  'songGuide.learn': 'この順で練習',
+  'songGuide.tempo': 'テンポ',
+  'songGuide.clean': 'きれいに通した',
+  'songGuide.cleans': 'きれいな通し {n}/{goal}',
+  'songGuide.ready': '3回きれいに通りました。次のテンポへ。',
+  'songGuide.tips': '練習のヒント',
+  'songGuide.rh': '右',
+  'songGuide.lh': '左',
+
   'home.kicker': 'midee · MIDI ビジュアライザー',
   'home.title.html': '<em>音符</em>を弾いて、<br/>咲かせよう。',
   'home.subtitle':
@@ -67,6 +118,8 @@ const ja: Messages = {
 
   'customize.aria': '外観',
   'customize.title': '外観',
+  'customize.scene': 'シーン',
+  'customize.sceneClassic': 'クラシック',
   'customize.theme': 'テーマ',
   'customize.new': 'NEW',
   'customize.particles': 'パーティクル',
@@ -461,6 +514,44 @@ const ja: Messages = {
   'toast.updated': '最新バージョンに更新しました',
 
   'onboarding.localeDetected': '{language} で表示中 · 「外観」で変更できます',
+
+  'kbdRange.title': '鍵盤の音域',
+  'kbdRange.tip':
+    '画面の鍵盤は常に 88 鍵です。この範囲がコントローラーの演奏音域です。MIDI は最低鍵が範囲の最低音になるよう移調されます。待機モードは範囲外の音をスキップします。',
+  'kbdRange.aria': '音域 {low} から {high}、{count} 鍵',
+  'kbdRange.semitoneDown': '音域を半音下げる',
+  'kbdRange.semitoneUp': '音域を半音上げる',
+  'kbdRange.octaveDown': '音域を1オクターブ下げる',
+  'kbdRange.octaveUp': '音域を1オクターブ上げる',
+  'kbdRange.start': '最低音',
+  'kbdRange.size': '鍵の数',
+  'kbdRange.follow': 'MIDIに追従',
+  'kbdRange.followTip':
+    'キャリブレーション前は、範囲外の MIDI ノートが来ると範囲をずらして含めます。',
+  'kbdRange.full': '88鍵',
+  'kbdRange.presets': 'サイズ',
+  'kbdRange.picker': 'ドラッグで移動、端でサイズ変更、鍵のクリックでジャンプ',
+  'kbdRange.calibrate': '一番低い鍵を押す',
+  'kbdRange.calibrateShort': '最低鍵',
+  'kbdRange.calibrateArmed': 'キーボードの一番低い鍵を押してください…',
+  'kbdRange.calibrateArmedShort': '待機中…',
+  'kbdRange.calibrateTip':
+    '次に押した MIDI 鍵をコントローラーの最低音として覚え、範囲をそこへ対応させます。',
+  'kbdRange.controllerLow': '調整済み。最低音は {note} です。',
+  'kbdRange.controllerUnset':
+    '未調整です。一番低い鍵を押すまで、その鍵は {note}（中央のド、ROLI Piano M の初期オクターブ。ROLI では C3）とみなします。その鍵がこの範囲の最低音になります。',
+  'kbdRange.controllerUnsetGeneric':
+    '未調整です。一番低い鍵を押すと、この範囲がコントローラーに揃います。',
+  'kbdRange.notCalibrated': '未調整',
+  'kbdRange.calibratedBadge': '調整済み {note}',
+  'kbdRange.band': 'ドラッグで音域を移動。端でサイズを変更。',
+  'kbdRange.fit': '音域に合わせる',
+  'kbdRange.fitTip': '音域外の音をオクターブ単位でずらし、弾ける鍵に収めます。',
+  'hud.hands': '両手',
+  'hud.handHear': 'もう一方も鳴らす',
+  'hud.handHearTip': 'もう一方の手を音で再生する',
+  'hud.handMute': 'もう一方を消す',
+  'hud.handMuteTip': 'もう一方の手を無音にする',
 }
 
 export default ja

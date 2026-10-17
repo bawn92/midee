@@ -1,10 +1,14 @@
 import { createSignal, For } from 'solid-js'
 import { render } from 'solid-js/web'
 import { LOCALES, type LocaleCode, locale, t } from '../i18n'
+import type { KeyLights } from '../midi/KeyLights'
+import type { MidiInputManager } from '../midi/MidiInputManager'
 import type { ParticleStyle, ParticleStyleInfo } from '../renderer/particleStyles'
+import { SCENES } from '../renderer/scenes'
 import { accentCSS, type Theme } from '../renderer/theme'
 import { trackEvent } from '../telemetry'
 import { icons } from './icons'
+import { KeyLightsSettings } from './KeyLightsSettings'
 import { FEEDBACK_URL, isNarrowViewport } from './utils'
 
 // Aesthetics popover — collapses theme, particles, and chord overlay (three
@@ -75,6 +79,7 @@ function TriggerView(props: TriggerProps) {
 }
 
 interface MenuProps {
+  keyLights?: { lights: KeyLights; midiInput: MidiInputManager } | undefined
   themes: readonly Theme[]
   particles: readonly ParticleStyleInfo[]
   themeIndex: () => number
@@ -121,6 +126,42 @@ function MenuView(props: MenuProps) {
       </div>
 
       <div class="ts-customize-body">
+        <div class="customize-section">
+          <div class="customize-section-head">
+            <span class="customize-section-label">{t('customize.scene')}</span>
+            <span class="customize-section-value">
+              {SCENES.find((scene) => scene.themeId === props.themes[props.themeIndex()]?.id)
+                ?.name ?? t('customize.sceneClassic')}
+            </span>
+          </div>
+          <div class="customize-scene-row">
+            <For each={SCENES}>
+              {(scene) => {
+                const index = () => props.themes.findIndex((theme) => theme.id === scene.themeId)
+                const on = () => props.themes[props.themeIndex()]?.id === scene.themeId
+                return (
+                  <button
+                    class="customize-scene-card"
+                    classList={{ 'customize-scene-card--on': on() }}
+                    type="button"
+                    aria-label={`${scene.name} scene`}
+                    aria-pressed={on()}
+                    disabled={index() < 0}
+                    onClick={() => props.onSelectTheme(index())}
+                  >
+                    <span
+                      class="customize-scene-swatch"
+                      aria-hidden="true"
+                      style={{ background: scene.preview }}
+                    />
+                    <span class="customize-scene-name">{scene.name}</span>
+                  </button>
+                )
+              }}
+            </For>
+          </div>
+        </div>
+
         <div class="customize-section">
           <div class="customize-section-head">
             <span class="customize-section-label">{t('customize.theme')}</span>
@@ -258,6 +299,8 @@ function MenuView(props: MenuProps) {
           </button>
         </div>
 
+        {props.keyLights && <KeyLightsSettings {...props.keyLights} />}
+
         <div class="customize-section customize-section--footer">
           <a
             class="customize-feedback-card"
@@ -367,6 +410,7 @@ export class CustomizeMenu {
     private themes: readonly Theme[],
     particles: readonly ParticleStyleInfo[],
     callbacks: CustomizeMenuCallbacks,
+    keyLights?: MenuProps['keyLights'],
   ) {
     const [themeIdx, setThemeIdx] = createSignal(0)
     const [particleIdx, setParticleIdx] = createSignal(0)
@@ -417,6 +461,7 @@ export class CustomizeMenu {
     this.disposeMenu = render(
       () => (
         <MenuView
+          keyLights={keyLights}
           themes={themes}
           particles={particles}
           themeIndex={themeIdx}

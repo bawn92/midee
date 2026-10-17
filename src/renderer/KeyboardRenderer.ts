@@ -2,6 +2,7 @@ import type { Application, Ticker } from 'pixi.js'
 import { Container, Graphics, RenderTexture, Sprite, Texture, TilingSprite } from 'pixi.js'
 import { isBlackKey, MIDI_MAX, MIDI_MIN } from '../core/midi/types'
 import { keyRect } from './keyGeometry'
+import { keyboardMaterial, sceneForTheme } from './scenes'
 import { liveNoteColor, type Theme } from './theme'
 import type { Viewport } from './viewport'
 
@@ -70,6 +71,13 @@ export class KeyboardRenderer {
   private practicePending: ReadonlySet<number> | null = null
   private practiceAccepted: ReadonlySet<number> | null = null
 
+  // Playable-window highlight. Defaults to the whole piano, which draws nothing.
+  private rangeLayer: Graphics
+  private caseLayer: Graphics
+  private playStart = MIDI_MIN
+  private playEnd = MIDI_MAX
+  private rangeSignature = ''
+
   // Snapshot of the last-drawn pitch→color map as a single signature string.
   // If nothing changed we skip the clear + redraw entirely (common during
   // sustained chords and idle frames).
@@ -96,13 +104,20 @@ export class KeyboardRenderer {
     this.whitePracticeHintLayer.label = 'keyboard-practice-hint-white'
     this.blackPracticeHintLayer = new Graphics()
     this.blackPracticeHintLayer.label = 'keyboard-practice-hint-black'
+    this.rangeLayer = new Graphics()
+    this.rangeLayer.label = 'keyboard-range'
+    this.caseLayer = new Graphics()
+    this.caseLayer.label = 'keyboard-case'
     // Order matters: white hints/active must sit above the white sprite but
     // below the black sprite. Black hints/active sit above the black sprite.
-    // Sprites are inserted by build() at the correct indices.
+    // The range wash sits above every key so the playable window reads on
+    // both white and black keys. Sprites are inserted by build().
     this.container.addChild(this.whitePracticeHintLayer)
     this.container.addChild(this.whiteActiveLayer)
     this.container.addChild(this.blackPracticeHintLayer)
     this.container.addChild(this.blackActiveLayer)
+    this.container.addChild(this.caseLayer)
+    this.container.addChild(this.rangeLayer)
   }
 
   // Build or rebuild the static keyboard textures.
@@ -117,9 +132,11 @@ export class KeyboardRenderer {
     // range (which determines key positions), and the three theme colours
     // that tint the white/black keys and gap. Hitting this cache path turns
     // a theme re-apply or redundant rebuildStaticLayers() into a no-op.
+    const walnut = keyboardMaterial(this.theme.id) === 'upright-walnut'
     const sig =
       `${canvasWidth}x${keyboardHeight}|${pitchMin ?? 21}-${pitchMax ?? 108}|` +
-      `${this.theme.whiteKey}.${this.theme.blackKey}.${this.theme.keyBorder}|y=${yOffset}`
+      `${this.theme.whiteKey}.${this.theme.blackKey}.${this.theme.keyBorder}|` +
+      `${walnut ? 'walnut' : 'flat'}|y=${yOffset}`
     if (sig === this.lastBuildSignature && this.whiteSprite && this.blackSprite) return
     this.lastBuildSignature = sig
 
@@ -136,7 +153,10 @@ export class KeyboardRenderer {
 
     // Background fill (shows through the 1px seams between white keys)
     const bg = new Graphics()
-    bg.rect(0, 0, canvasWidth, keyboardHeight).fill({ color: this.theme.blackKey })
+    const bed = walnut
+      ? (sceneForTheme(this.theme.id)?.keyboard.case ?? this.theme.blackKey)
+      : this.theme.blackKey
+    bg.rect(0, 0, canvasWidth, keyboardHeight).fill({ color: bed })
     whiteBake.addChild(bg)
 
     // White keys: body + ivory warmth + lighting depth.
@@ -165,11 +185,18 @@ export class KeyboardRenderer {
       // Bottom shadow — 5px, three stacked rects fading into a strong 1px
       // edge line. Gives each key the "slightly dipped at the player's
       // edge" read you'd see on a real piano under stage lighting.
-      whiteLayer.rect(x + 1, y + h - 5, w - 2, 3).fill({ color: 0x000000, alpha: 0.07 })
-      whiteLayer.rect(x + 1, y + h - 2, w - 2, 1).fill({ color: 0x000000, alpha: 0.18 })
+      // Walnut keys get a deeper front edge and a left-side shade so the
+      // key bed reads as a carved upright rather than a flat graphic.
+      const shade = walnut ? 1.7 : 1
+      whiteLayer.rect(x + 1, y + h - 8, w - 2, 4).fill({ color: 0x6b4a2f, alpha: 0.05 * shade })
+      whiteLayer.rect(x + 1, y + h - 5, w - 2, 3).fill({ color: 0x000000, alpha: 0.07 * shade })
+      whiteLayer.rect(x + 1, y + h - 2, w - 2, 1).fill({ color: 0x000000, alpha: 0.18 * shade })
       whiteLayer
         .rect(x + wRadius, y + h - 1, w - wRadius * 2, 1)
-        .fill({ color: 0x000000, alpha: 0.3 })
+        .fill({ color: 0x000000, alpha: 0.3 * shade })
+      if (walnut) {
+        whiteLayer.rect(x, y + 4, 1, h - 8).fill({ color: 0x6b4a2f, alpha: 0.16 })
+      }
     }
     whiteBake.addChild(whiteLayer)
 
@@ -237,7 +264,7 @@ export class KeyboardRenderer {
     // layers. Reinsert the sprites
     // at the correct indices so the final order is:
     //   whiteSprite, whitePracticeHintLayer, whiteActiveLayer,
-    //   blackSprite, blackPracticeHintLayer, blackActiveLayer
+    //   blackSprite, blackPracticeHintLayer, blackActiveLayer, rangeLayer
     this.whiteSprite = new Sprite(this.whiteTexture)
     this.whiteSprite.y = yOffset
     this.container.addChildAt(this.whiteSprite, 0)
@@ -251,6 +278,10 @@ export class KeyboardRenderer {
     this.whiteActiveLayer.y = yOffset
     this.blackPracticeHintLayer.y = yOffset
     this.blackActiveLayer.y = yOffset
+    this.caseLayer.y = yOffset
+    this.drawCase(canvasWidth, keyboardHeight, walnut)
+    this.rangeLayer.y = yOffset
+    this.rangeSignature = ''
     // Force a redraw of the hint layer on the next setPracticeHints call —
     // the geometry depends on the freshly-built viewport.
     this.practiceSignature = ''
@@ -303,6 +334,83 @@ export class KeyboardRenderer {
     this.activeLayerDirty = true
     // Practice hint colours follow the active theme accent.
     this.practiceSignature = ''
+    this.rangeSignature = ''
+  }
+
+  // Inclusive MIDI pitches of the controller window. The full piano draws
+  // no wash — every key is already in range.
+  setPlayableRange(start: number, end: number): void {
+    if (this.playStart === start && this.playEnd === end) return
+    this.playStart = start
+    this.playEnd = end
+    this.rangeSignature = ''
+  }
+
+  drawRange(viewport: Viewport): void {
+    const { canvasWidth, keyboardHeight, pitchMin, pitchMax } = viewport.config
+    const sig =
+      `${this.playStart}-${this.playEnd}|${canvasWidth}x${keyboardHeight}|` +
+      `${pitchMin ?? MIDI_MIN}-${pitchMax ?? MIDI_MAX}|${this.theme.accent}`
+    if (sig === this.rangeSignature) return
+    this.rangeSignature = sig
+    this.rangeLayer.clear()
+
+    const lo = pitchMin ?? MIDI_MIN
+    const hi = pitchMax ?? MIDI_MAX
+    if (this.playStart <= lo && this.playEnd >= hi) return
+
+    const positions = viewport.getAllKeyPositions()
+    const startPos = positions.get(this.playStart)
+    const endPos = positions.get(this.playEnd)
+    if (!startPos || !endPos) return
+    const x0 = startPos.x
+    const x1 = endPos.x + endPos.width
+    const accent = this.theme.accent
+    const walnut = keyboardMaterial(this.theme.id) === 'upright-walnut'
+    const dim = walnut ? 0x6b4a2f : 0x000000
+    const dimAlpha = walnut ? 0.22 : 0.34
+
+    if (x0 > 0) this.rangeLayer.rect(0, 0, x0, keyboardHeight).fill({ color: dim, alpha: dimAlpha })
+    if (x1 < canvasWidth) {
+      this.rangeLayer
+        .rect(x1, 0, canvasWidth - x1, keyboardHeight)
+        .fill({ color: dim, alpha: dimAlpha })
+    }
+    this.rangeLayer
+      .rect(x0, 0, Math.max(1, x1 - x0), keyboardHeight)
+      .fill({ color: accent, alpha: walnut ? 0.14 : 0.18 })
+    if (!walnut) {
+      this.rangeLayer.rect(x0, 0, 2, keyboardHeight).fill({ color: accent, alpha: 0.95 })
+      this.rangeLayer
+        .rect(Math.max(x0, x1 - 2), 0, 2, keyboardHeight)
+        .fill({ color: accent, alpha: 0.95 })
+      this.rangeLayer.rect(x0, 0, Math.max(1, x1 - x0), 3).fill({ color: accent, alpha: 0.9 })
+    }
+  }
+
+  // Walnut fallboard, cheeks, and key slip. Drawn above the keys and under
+  // the range glass so the playable window still reads on the case.
+  private drawCase(canvasWidth: number, keyboardHeight: number, walnut: boolean): void {
+    const g = this.caseLayer
+    g.clear()
+    if (!walnut) return
+    const scene = sceneForTheme(this.theme.id)
+    const wood = scene?.keyboard.case ?? 0x6b3e2a
+    const light = scene?.keyboard.caseLight ?? 0xc4926a
+    const rail = 24
+    const cheek = 14
+    const lip = 14
+    g.rect(0, 0, canvasWidth, rail).fill({ color: wood })
+    g.rect(0, 0, canvasWidth, 2).fill({ color: light, alpha: 0.7 })
+    g.rect(0, rail - 2, canvasWidth, 2).fill({ color: 0x2a140c, alpha: 0.45 })
+    for (let i = 0; i < 4; i++) {
+      g.rect(0, 4 + i * 3, canvasWidth, 1).fill({ color: light, alpha: 0.08 })
+    }
+    g.rect(0, 0, cheek, keyboardHeight).fill({ color: wood })
+    g.rect(canvasWidth - cheek, 0, cheek, keyboardHeight).fill({ color: wood })
+    g.rect(0, keyboardHeight - lip, canvasWidth, lip).fill({ color: 0x4a2918 })
+    g.rect(0, keyboardHeight - lip, canvasWidth, 1).fill({ color: light, alpha: 0.45 })
+    g.rect(cheek, rail, 1, keyboardHeight - rail - lip).fill({ color: light, alpha: 0.28 })
   }
 
   // Public hook for the parent renderer to swap in the current practice-mode

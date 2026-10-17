@@ -1,4 +1,6 @@
 import type { MasterClock } from '../../core/clock/MasterClock'
+import { type Hand, noteHand } from '../../core/handPractice'
+import { foldPitchIntoRange, type KeyboardRange } from '../../core/keyboardRange'
 import { MIDI_MAX, MIDI_MIN, type MidiFile } from '../../core/midi/types'
 import { createEventSignal } from '../../store/eventSignal'
 
@@ -37,13 +39,38 @@ const ENGAGE_LEAD_SEC = 0.01
 // below a typical sixteenth-note at moderate tempos.
 const EARLY_ACCEPT_SEC = 0.12
 
+// A chord tone the player cannot reach. The host sounds it when the step
+// clears. A chord made only of these never becomes a step — the clock keeps
+// running and the synth plays them on its own.
+export interface AutoPlayedNote {
+  pitch: number
+  velocity: number
+  duration: number
+}
+
+// A note the player must press. Shared with key-light guidance so consumers
+// do not reconstruct the chord or its track/channel identities independently.
+export interface PracticeNote {
+  // Sounding pitch the player must press. Folded when fit-to-range is on.
+  pitch: number
+  // Written pitch. Hand identity follows this when a fold crosses middle C.
+  sourcePitch: number
+  velocity: number
+  channel: number
+  trackIndex: number
+}
+
 export interface PracticeStep {
   // Start time of the chord step (seconds).
   time: number
   // Pitches (MIDI numbers) the user must press to advance.
   pitches: ReadonlySet<number>
-  // Furthest end time of any note in this step — handy for the HUD's "next
-  // bar" affordance even though the engine itself doesn't consume it.
+  auto: readonly AutoPlayedNote[]
+  // Required notes only. Out-of-range and other-hand tones stay in `auto`
+  // so key lights do not guide a key the player should not press.
+  notes: readonly PracticeNote[]
+  // Furthest end time of any *required* note in this step — handy for the
+  // HUD's "next bar" affordance even though the engine itself doesn't consume it.
   latestEnd: number
 }
 
@@ -80,7 +107,7 @@ export interface PracticeCallbacks {
   // Called when the engine has cleared the current step. The host should
   // resume playback from `resumeTime` — slightly past the chord onset so the
   // scheduler doesn't re-trigger the chord the user just played.
-  onWaitEnd(resumeTime: number): void
+  onWaitEnd(resumeTime: number, auto?: readonly AutoPlayedNote[]): void
 }
 
 // Outcome of `notePressed`. `articulationMs` is wall-clock between the FIRST
@@ -129,6 +156,18 @@ export class PracticeEngine {
     typeof performance !== 'undefined' ? performance.now() : Date.now()
 
   private visibleTrackIds: Set<string> | null = null
+  // Inclusive MIDI window the player can press. Notes outside it are not
+  // waited on unless fit-to-range can shift them onto a key inside it.
+  // Defaults to the 88-key piano, which is the historical behavior.
+  private playableMin = MIDI_MIN
+  private playableMax = MIDI_MAX
+  // Off until a host turns it on. Play-along reads the keyboard-range pref
+  // (on by default); direct callers keep the historical "skip" behavior.
+  private fitToRange = false
+  private handFilter: Hand = 'both'
+  // Notes for the hand not being practised. Heard (as auto) when true, dropped
+  // from the step entirely when false. Ignored while both hands are selected.
+  private otherHandAudible = true
 
   private unsubClock: (() => void) | null = null
 
@@ -147,9 +186,61 @@ export class PracticeEngine {
     this.publish()
   }
 
+  // Narrow (or restore) which pitches wait mode demands. Out-of-range notes
+  // in a chord the player *does* have to finish are recorded on the step as
+  // `auto` so the host can sound them; a chord with nothing in range is
+  // omitted and the clock plays straight through it. `fitToRange` shifts
+  // those notes by whole octaves onto a key inside the window and then waits
+  // for the shifted pitch.
+  //
+  // Mirrors `setVisibleTracks`: if a wait was holding a chord that no longer
+  // has a required pitch, the wait drops and the host decides whether to
+  // resume (PlayAlongEngine does, when the player still wants playback).
+  setPlayableRange(min: number, max: number, fitToRange?: boolean): void {
+    const lo = Number.isFinite(min) ? min : this.playableMin
+    const hi = Number.isFinite(max) ? max : this.playableMax
+    const nextMin = Math.min(lo, hi)
+    const nextMax = Math.max(lo, hi)
+    const nextFit = fitToRange ?? this.fitToRange
+    if (
+      nextMin === this.playableMin &&
+      nextMax === this.playableMax &&
+      nextFit === this.fitToRange
+    ) {
+      return
+    }
+    this.playableMin = nextMin
+    this.playableMax = nextMax
+    this.fitToRange = nextFit
+    this.commitFilterChange()
+  }
+
   setVisibleTracks(ids: Iterable<string> | null): void {
+    const next = ids ? new Set(ids) : null
+    if (sameIdSet(this.visibleTrackIds, next)) return
+    this.visibleTrackIds = next
+    this.commitFilterChange()
+  }
+
+  // `tracks` omitted keeps the current track filter. Passing it together with
+  // the hand applies both in one rebuild, so a hand switch doesn't release
+  // and re-engage the wait twice.
+  setHandFilter(filter: Hand, tracks?: Iterable<string> | null): void {
+    const nextTracks = tracks === undefined ? this.visibleTrackIds : tracks ? new Set(tracks) : null
+    if (filter === this.handFilter && sameIdSet(this.visibleTrackIds, nextTracks)) return
+    this.handFilter = filter
+    this.visibleTrackIds = nextTracks
+    this.commitFilterChange()
+  }
+
+  setOtherHandAudible(on: boolean): void {
+    if (on === this.otherHandAudible) return
+    this.otherHandAudible = on
+    this.commitFilterChange()
+  }
+
+  private commitFilterChange(): void {
     const previousWaitStep = this.waiting ? (this.steps[this.nextStepIdx] ?? null) : null
-    this.visibleTrackIds = ids ? new Set(ids) : null
     this.rebuildSteps()
     this.releaseInternalState()
     if (!this.enabled) {
@@ -277,11 +368,22 @@ export class PracticeEngine {
 
   private reengageFilteredWait(previousStep: PracticeStep): boolean {
     if (!this.enabled) return false
-    const idx = this.steps.findIndex(
-      (step) =>
-        Math.abs(step.time - previousStep.time) <= STEP_GROUPING_SEC &&
-        setsIntersect(step.pitches, previousStep.pitches),
-    )
+    // Prefer a step that still contains a pitch we were waiting on. Fit-to-range
+    // can retarget every pitch in the chord, so the same onset with a new set
+    // of pitches is still this wait — a later chord inside the grouping window
+    // is not.
+    let sameOnset = -1
+    let intersecting = -1
+    for (let i = 0; i < this.steps.length; i++) {
+      const step = this.steps[i]!
+      if (Math.abs(step.time - previousStep.time) > STEP_GROUPING_SEC) continue
+      if (setsIntersect(step.pitches, previousStep.pitches)) {
+        intersecting = i
+        break
+      }
+      if (sameOnset < 0 && Math.abs(step.time - previousStep.time) <= 0.001) sameOnset = i
+    }
+    const idx = intersecting >= 0 ? intersecting : sameOnset
     if (idx < 0) return false
     this.nextStepIdx = idx
     this.engageWait(this.steps[idx]!)
@@ -291,6 +393,7 @@ export class PracticeEngine {
   private advancePastCurrentStep(): void {
     const step = this.steps[this.nextStepIdx]
     const resumeAt = step ? step.time + RESUME_NUDGE_SEC : this.clock.currentTime
+    const auto = step && step.auto.length > 0 ? step.auto : undefined
     this.earliestRearmTime = resumeAt + REARM_BUFFER_SEC
     const nextIdx = this.nextStepIdx + 1
     this.nextStepIdx = nextIdx < this.steps.length ? nextIdx : -1
@@ -298,7 +401,10 @@ export class PracticeEngine {
     this.pending = new Set()
     this.accepted = new Set()
     this.chordStartMs = null
-    this.callbacks.onWaitEnd(resumeAt)
+    // Omit the second argument when there's nothing to sound. Callers and
+    // tests treat `onWaitEnd(time)` as the no-auto shape.
+    if (auto) this.callbacks.onWaitEnd(resumeAt, auto)
+    else this.callbacks.onWaitEnd(resumeAt)
   }
 
   private releaseInternalState(): void {
@@ -328,23 +434,31 @@ export class PracticeEngine {
       return
     }
 
-    interface Onset {
+    interface Onset extends PracticeNote {
       time: number
       pitch: number
       end: number
+      velocity: number
+      duration: number
+      playable: boolean
     }
     const onsets: Onset[] = []
-    for (const track of this.midi.tracks) {
+    for (const [trackIndex, track] of this.midi.tracks.entries()) {
       if (track.isDrum) continue
       if (this.visibleTrackIds && !this.visibleTrackIds.has(track.id)) continue
       for (const note of track.notes) {
-        // No key for it on an 88-key piano — the player can't press it, and
-        // the roll doesn't draw it, so waiting on it would stall forever.
-        if (note.pitch < MIDI_MIN || note.pitch > MIDI_MAX) continue
+        const role = this.classifyNote(note.pitch)
+        if (role.kind === 'omit') continue
         onsets.push({
           time: note.time,
-          pitch: note.pitch,
+          pitch: role.pitch,
+          sourcePitch: note.pitch,
           end: note.time + note.duration,
+          velocity: note.velocity,
+          duration: note.duration,
+          playable: role.kind === 'required',
+          channel: track.channel,
+          trackIndex,
         })
       }
     }
@@ -355,19 +469,83 @@ export class PracticeEngine {
     while (i < onsets.length) {
       const head = onsets[i]!
       const groupEnd = head.time + STEP_GROUPING_SEC
-      const pitches = new Set<number>([head.pitch])
-      let latestEnd = head.end
-      let j = i + 1
+      const pitches = new Set<number>()
+      const auto = new Map<number, AutoPlayedNote>()
+      let latestEnd = -Infinity
+      let j = i
       while (j < onsets.length && onsets[j]!.time <= groupEnd) {
-        pitches.add(onsets[j]!.pitch)
-        if (onsets[j]!.end > latestEnd) latestEnd = onsets[j]!.end
+        const onset = onsets[j]!
+        if (onset.playable) {
+          pitches.add(onset.pitch)
+          if (onset.end > latestEnd) latestEnd = onset.end
+        } else {
+          const prev = auto.get(onset.pitch)
+          if (!prev || onset.duration > prev.duration) {
+            auto.set(onset.pitch, {
+              pitch: onset.pitch,
+              velocity: onset.velocity,
+              duration: onset.duration,
+            })
+          } else if (onset.velocity > prev.velocity) {
+            prev.velocity = onset.velocity
+          }
+        }
         j++
       }
-      steps.push({ time: head.time, pitches, latestEnd })
+      // Nothing the player can press — let the clock carry these notes.
+      if (pitches.size > 0) {
+        const notes: PracticeNote[] = []
+        for (let k = i; k < j; k++) {
+          const onset = onsets[k]!
+          if (!onset.playable) continue
+          notes.push({
+            pitch: onset.pitch,
+            sourcePitch: onset.sourcePitch,
+            velocity: onset.velocity,
+            channel: onset.channel,
+            trackIndex: onset.trackIndex,
+          })
+        }
+        steps.push({ time: head.time, pitches, auto: [...auto.values()], latestEnd, notes })
+      }
       i = j
     }
 
     this.steps = steps
+  }
+
+  private isPlayablePitch(pitch: number): boolean {
+    return (
+      pitch >= MIDI_MIN &&
+      pitch <= MIDI_MAX &&
+      pitch >= this.playableMin &&
+      pitch <= this.playableMax
+    )
+  }
+
+  private playableWindow(): KeyboardRange {
+    return {
+      start: this.playableMin,
+      size: Math.max(1, this.playableMax - this.playableMin + 1),
+    }
+  }
+
+  // Hand identity uses the written pitch, so a left-hand note folded up across
+  // middle C is still the left hand. The pitch the player must press is the
+  // folded one when fit-to-range can place it on a key.
+  private classifyNote(pitch: number): { kind: 'required' | 'auto' | 'omit'; pitch: number } {
+    const matches = this.handFilter === 'both' || noteHand(pitch) === this.handFilter
+    const folded = this.fitToRange ? foldPitchIntoRange(pitch, this.playableWindow()) : null
+    const inWindow = this.isPlayablePitch(pitch)
+    const reachable = folded !== null && this.isPlayablePitch(folded.pitch)
+    const sounding = inWindow ? pitch : reachable ? folded!.pitch : pitch
+    if (!matches) {
+      if (!this.otherHandAudible) return { kind: 'omit', pitch }
+      return { kind: 'auto', pitch: sounding }
+    }
+    if (inWindow) return { kind: 'required', pitch }
+    if (reachable) return { kind: 'required', pitch: folded!.pitch }
+    return { kind: 'auto', pitch }
   }
 
   private publish(): void {
@@ -394,6 +572,13 @@ export class PracticeEngine {
     this.unsubClock?.()
     this.unsubClock = null
   }
+}
+
+function sameIdSet(a: Set<string> | null, b: Set<string> | null): boolean {
+  if (a === b) return true
+  if (!a || !b || a.size !== b.size) return false
+  for (const id of a) if (!b.has(id)) return false
+  return true
 }
 
 function setsIntersect(a: ReadonlySet<number>, b: ReadonlySet<number>): boolean {

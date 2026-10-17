@@ -61,6 +61,28 @@ describe('buildOfflineEvents', () => {
     expect(events[0]?.duration).toBe(0.4)
   })
 
+  it('folds notes into the playable range by whole octaves', () => {
+    const events = buildOfflineEvents(midi([track('a', [36])]), undefined, {
+      range: {
+        start: 48,
+        size: 24,
+        followMidi: false,
+        controllerLow: null,
+        calibrated: false,
+        fitToRange: true,
+      },
+    })
+    expect(events[0]?.note).toBe('C3')
+  })
+
+  it('omits the other hand when hand practice mutes it', () => {
+    const events = buildOfflineEvents(midi([track('a', [48, 72])]), undefined, {
+      hand: 'right',
+      otherHandAudible: false,
+    })
+    expect(events.map((event) => event.note)).toEqual(['C5'])
+  })
+
   it('returns no events when every track is disabled', () => {
     const events = buildOfflineEvents(
       midi([track('a', [60]), track('b', [64])]),

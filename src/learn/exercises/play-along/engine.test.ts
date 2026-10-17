@@ -1,8 +1,15 @@
-import { describe, expect, it, vi } from 'vitest'
-import { type MidiFile, nominalTempoMap } from '../../../core/midi/types'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { HAND_PRACTICE_STORAGE_KEY, reloadHandPractice } from '../../../core/handPractice'
+import { setKeyboardRange } from '../../../core/keyboardRange'
+import { MIDI_MIN, type MidiFile, nominalTempoMap } from '../../../core/midi/types'
 import type { AppServices } from '../../../core/services'
 import { createLearnState, type LearnState } from '../../core/LearnState'
 import { cycleSpeedPreset, PlayAlongEngine } from './engine'
+
+beforeEach(() => {
+  localStorage.removeItem(HAND_PRACTICE_STORAGE_KEY)
+  reloadHandPractice()
+})
 
 // Fake clock that speaks to the same surface the engine uses. Tests tick
 // directly by calling `emit` with a time — no RAF, no AudioContext.
@@ -64,6 +71,9 @@ function makeSynth() {
     get seekCalls() {
       return seekCalls
     },
+    audioContextTime: 10,
+    scheduleNoteOn: vi.fn(),
+    scheduleNoteOff: vi.fn(),
   }
 }
 
@@ -166,6 +176,62 @@ function makeServices(): {
 }
 
 describe('PlayAlongEngine', () => {
+  it('lights only exact step notes, excluding an earlier same-pitch voice on another channel', () => {
+    const { services, clock, learnState } = makeServices()
+    const lights = { load: vi.fn(), setGuidance: vi.fn(), setPracticeMode: vi.fn() }
+    services.keyLights = lights as unknown as NonNullable<AppServices['keyLights']>
+    const midi = makeMidi()
+    midi.tracks[0]!.notes = [
+      { pitch: 55, time: 1.94, duration: 0.5, velocity: 1 },
+      { pitch: 60, time: 1.98, duration: 0.5, velocity: 1 },
+    ]
+    midi.tracks.push({
+      ...midi.tracks[0]!,
+      id: 'next',
+      channel: 1,
+      notes: [{ pitch: 60, time: 2, duration: 0.5, velocity: 1 }],
+    })
+    const engine = new PlayAlongEngine({ services, learnState })
+    engine.attach(midi)
+    engine.seek(1.99)
+    engine.setWaitEnabled(true)
+    engine.play()
+    clock.emit(2)
+    expect(lights.setGuidance).toHaveBeenLastCalledWith([
+      expect.objectContaining({ pitch: 60, channel: 1, trackIndex: 1 }),
+    ])
+    engine.detach()
+  })
+
+  it('keeps the target chord lit and clears it on user pause and exit', () => {
+    const { services, clock, learnState } = makeServices()
+    const lights = { load: vi.fn(), setGuidance: vi.fn(), setPracticeMode: vi.fn() }
+    services.keyLights = lights as unknown as NonNullable<AppServices['keyLights']>
+    const engine = new PlayAlongEngine({ services, learnState })
+    const midi = makeMidi()
+    engine.attach(midi)
+    engine.setWaitEnabled(true)
+    expect(lights.setPracticeMode).toHaveBeenCalledWith(true)
+    engine.play()
+    clock.emit(2.01)
+    expect(lights.load).toHaveBeenCalledWith(midi)
+    expect(lights.setGuidance).toHaveBeenLastCalledWith([
+      expect.objectContaining({ pitch: 60, channel: 0, trackIndex: 0 }),
+      expect.objectContaining({ pitch: 64, channel: 0, trackIndex: 0 }),
+      expect.objectContaining({ pitch: 67, channel: 0, trackIndex: 0 }),
+    ])
+    engine.onNoteOn({ pitch: 60, velocity: 1, clockTime: 2.01, source: 'midi' })
+    expect(lights.setGuidance).toHaveBeenLastCalledWith([
+      expect.objectContaining({ pitch: 60 }),
+      expect.objectContaining({ pitch: 64 }),
+      expect.objectContaining({ pitch: 67 }),
+    ])
+    engine.pause()
+    expect(lights.setGuidance).toHaveBeenLastCalledWith(null)
+    engine.detach()
+    expect(lights.load).toHaveBeenLastCalledWith(null)
+  })
+
   it('applies speed preset to clock and synth', () => {
     const { services, clock, synth, learnState } = makeServices()
     const engine = new PlayAlongEngine({ services, learnState })
@@ -325,6 +391,44 @@ describe('PlayAlongEngine', () => {
     expect(engine.state.perfect).toBe(1)
     expect(clock.playing).toBe(true)
     expect(learnState.state.status).toBe('playing')
+  })
+
+  it('splits one track at middle C instead of giving the whole part to one hand', () => {
+    const midi: MidiFile = {
+      name: 'mixed.mid',
+      duration: 12,
+      bpm: 120,
+      timeSignature: [4, 4],
+      ...nominalTempoMap(120, [4, 4]),
+      tracks: [
+        {
+          id: 'piano',
+          name: 'Piano',
+          channel: 0,
+          instrument: 0,
+          isDrum: false,
+          colorIndex: 0,
+          notes: [
+            { pitch: 48, time: 1, duration: 0.5, velocity: 1 },
+            { pitch: 72, time: 2, duration: 0.5, velocity: 1 },
+          ],
+        },
+      ],
+    }
+    const { services, clock, learnState } = makeServices()
+    const engine = new PlayAlongEngine({ services, learnState })
+    engine.attach(midi)
+    engine.setWaitEnabled(true)
+    engine.setHand('left')
+    engine.play()
+
+    clock.emit(1.01)
+    expect(engine.practice.isWaiting).toBe(true)
+    expect([...(engine.practice.peekNextStep()?.pitches ?? [])]).toEqual([48])
+    engine.practice.notePressed(48)
+    clock.emit(2.01)
+    expect(engine.practice.isWaiting).toBe(false)
+    engine.detach()
   })
 
   it('does not resume playback on hand switch when the user is explicitly paused', () => {
@@ -863,5 +967,98 @@ describe('PlayAlongEngine loop seed width', () => {
     engine.attach(short)
     engine.toggleLoop(2)
     expect(engine.state.loopRegion).toEqual({ start: 0, end: 5 })
+  })
+})
+
+describe('PlayAlongEngine keyboard range', () => {
+  afterEach(() => {
+    setKeyboardRange({ start: MIDI_MIN, size: 88, followMidi: false, fitToRange: true })
+  })
+
+  it('keeps waiting on the folded pitches when the window moves', () => {
+    const { services, clock, learnState } = makeServices()
+    const engine = new PlayAlongEngine({ services, learnState })
+    engine.attach(makeMidi())
+    engine.setWaitEnabled(true)
+    engine.play()
+
+    clock.emit(2.01)
+    expect(engine.practice.isWaiting).toBe(true)
+    expect(clock.playing).toBe(false)
+
+    // C5–B6. The C4 chord folds up one octave and the wait follows it.
+    setKeyboardRange({ start: 72, size: 24 })
+    expect(engine.practice.isWaiting).toBe(true)
+    expect(clock.playing).toBe(false)
+    expect([...(engine.practice.peekNextStep()?.pitches ?? [])].sort()).toEqual([72, 76, 79])
+    engine.detach()
+  })
+
+  it('resumes playback when fit is off and the waited notes leave the range', () => {
+    const { services, clock, learnState } = makeServices()
+    const engine = new PlayAlongEngine({ services, learnState })
+    setKeyboardRange({ fitToRange: false })
+    engine.attach(makeMidi())
+    engine.setWaitEnabled(true)
+    engine.play()
+
+    clock.emit(2.01)
+    expect(engine.practice.isWaiting).toBe(true)
+
+    setKeyboardRange({ start: 72, size: 24, fitToRange: false })
+    expect(engine.practice.isWaiting).toBe(false)
+    expect(clock.playing).toBe(true)
+    expect(learnState.state.status).toBe('playing')
+    engine.detach()
+  })
+
+  it('sounds the out-of-range member of a chord when fit-to-range is off', () => {
+    const { services, clock, synth, learnState } = makeServices()
+    const engine = new PlayAlongEngine({ services, learnState })
+    // C4–B4. The second chord's C5 (72) is one step above the window.
+    setKeyboardRange({ start: 60, size: 12, fitToRange: false })
+    engine.attach(makeMidi())
+    engine.setWaitEnabled(true)
+    engine.play()
+
+    clock.emit(2.01)
+    engine.practice.notePressed(60)
+    engine.practice.notePressed(64)
+    engine.practice.notePressed(67)
+    expect(synth.scheduleNoteOn).not.toHaveBeenCalled()
+
+    clock.emit(4.01)
+    expect(engine.practice.isWaiting).toBe(true)
+    expect([...(engine.practice.peekNextStep()?.pitches ?? [])].sort()).toEqual([65, 69])
+    engine.practice.notePressed(65)
+    const outcome = engine.practice.notePressed(69)
+    expect(outcome.kind).toBe('advanced')
+    expect(synth.scheduleNoteOn).toHaveBeenCalledWith(72, 1, 10)
+    expect(synth.scheduleNoteOff).toHaveBeenCalledWith(72, 10.5)
+    engine.detach()
+  })
+
+  it('waits on a note folded into the range when fit-to-range is on', () => {
+    const { services, clock, synth, learnState } = makeServices()
+    const engine = new PlayAlongEngine({ services, learnState })
+    setKeyboardRange({ start: 60, size: 12, fitToRange: true })
+    engine.attach(makeMidi())
+    engine.setWaitEnabled(true)
+    engine.play()
+
+    clock.emit(2.01)
+    engine.practice.notePressed(60)
+    engine.practice.notePressed(64)
+    engine.practice.notePressed(67)
+
+    clock.emit(4.01)
+    // C5 (72) folds down to C4 (60), so the player has to play it.
+    expect([...(engine.practice.peekNextStep()?.pitches ?? [])].sort()).toEqual([60, 65, 69])
+    engine.practice.notePressed(60)
+    engine.practice.notePressed(65)
+    const outcome = engine.practice.notePressed(69)
+    expect(outcome.kind).toBe('advanced')
+    expect(synth.scheduleNoteOn).not.toHaveBeenCalled()
+    engine.detach()
   })
 })

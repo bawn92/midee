@@ -1,20 +1,27 @@
 import { batch } from 'solid-js'
 import { createStore, type SetStoreFunction } from 'solid-js/store'
+import {
+  getHandPractice,
+  type Hand,
+  noteHand,
+  subscribeHandPractice,
+} from '../../../core/handPractice'
 import type { BusNoteEvent } from '../../../core/input/InputBus'
+import { getKeyboardRange, subscribeKeyboardRange } from '../../../core/keyboardRange'
 import type { MidiFile } from '../../../core/midi/types'
 import type { AppServices } from '../../../core/services'
 import { watch } from '../../../store/watch'
 import type { LearnState } from '../../core/LearnState'
 import { classifyArticulation } from '../../core/scoring'
 import { type LoopRegion, makeRegionFromBars, wrapIfAtEnd } from '../../engines/LoopRegion'
-import { PracticeEngine } from '../../engines/PracticeEngine'
+import { type AutoPlayedNote, PracticeEngine } from '../../engines/PracticeEngine'
 
 // Composes wait-mode (PracticeEngine) with loop-region + a
 // graded score model. UI reads off `engine.state.*`; nothing here touches
 // the DOM. Lifecycle: `attach(midi)` then `setEnabled(true)`; `detach()` to
 // release.
 
-export type HandFilter = 'left' | 'right' | 'both'
+export type HandFilter = Hand
 export const DEFAULT_SPEED_PRESETS = [40, 60, 80, 100, 120] as const
 
 // Step through the presets, wrapping at both ends. `current` is resolved by
@@ -90,6 +97,8 @@ export class PlayAlongEngine {
   readonly services: EngineOptions['services']
 
   private unsubs: Array<() => void> = []
+  private rangeUnsub: (() => void) | null = null
+  private handUnsub: (() => void) | null = null
   private active = false
   // Cached so `setHand` can re-apply filters without touching PracticeEngine
   // internals.
@@ -133,13 +142,17 @@ export class PlayAlongEngine {
         this.opts.services.clock.pause()
         this.opts.learnState.setState('status', 'paused')
       },
-      onWaitEnd: (resumeAt: number) => {
+      onWaitEnd: (resumeAt: number, auto?: readonly AutoPlayedNote[]) => {
         // Always seek so internal state + scheduler align, but only resume
         // transport if the user actually wants playback.
         this.opts.services.clock.seek(resumeAt)
         if (this.state.userWantsToPlay) {
           this.opts.services.clock.play()
           this.opts.learnState.setState('status', 'playing')
+          // The resume lands just after the chord, so the scheduler skips it.
+          // Required pitches are the notes the player just played; the rest
+          // of the chord would otherwise go silent.
+          this.soundAuto(auto)
         }
       },
     })
@@ -163,7 +176,9 @@ export class PlayAlongEngine {
 
     // Now build practice steps + apply filters against the correct time.
     this.practice.loadMidi(midi)
-    this.applyHand(midi)
+    this.bindPlayableRange()
+    this.bindHandPractice(midi)
+    services.keyLights?.load(midi)
     this.applySpeed()
     batch(() => {
       this.setState({ duration: midi?.duration ?? 0, currentTime: initial })
@@ -174,6 +189,15 @@ export class PlayAlongEngine {
     // store — see docs/done/SOLID_MIGRATION_PLAN.md §2.) Status watch keeps
     // `isPlaying` aligned with Learn's transport.
     this.unsubs.push(
+      this.practice.status.subscribe((status) => {
+        const lights = services.keyLights
+        if (!lights) return
+        if (!status.waiting || !this.state.userWantsToPlay || !status.step || !midi) {
+          lights.setGuidance(null)
+          return
+        }
+        lights.setGuidance(status.step.notes)
+      }),
       services.clock.subscribe((t) => this.onTick(t)),
       watch(
         () => learnState.state.status,
@@ -183,6 +207,11 @@ export class PlayAlongEngine {
   }
 
   detach(): void {
+    this.rangeUnsub?.()
+    this.rangeUnsub = null
+    this.handUnsub?.()
+    this.handUnsub = null
+    this.opts.services.keyLights?.load(null)
     this.active = false
     this.currentMidi = null
     this.pressedPitches.clear()
@@ -216,6 +245,7 @@ export class PlayAlongEngine {
 
   pause(): void {
     this.setState('userWantsToPlay', false)
+    this.opts.services.keyLights?.setGuidance(null)
     this.opts.services.clock.pause()
     this.opts.learnState.setState('status', 'paused')
   }
@@ -298,6 +328,7 @@ export class PlayAlongEngine {
   }
 
   setWaitEnabled(enabled: boolean): void {
+    this.opts.services.keyLights?.setPracticeMode(enabled)
     this.practice.setEnabled(enabled)
   }
 
@@ -391,6 +422,51 @@ export class PlayAlongEngine {
 
   // ── Internal ──────────────────────────────────────────────────────────
 
+  private bindPlayableRange(): void {
+    this.rangeUnsub?.()
+    const apply = (range: ReturnType<typeof getKeyboardRange>): void => {
+      this.practice.setPlayableRange(range.start, range.start + range.size - 1, range.fitToRange)
+      // A range change can drop the chord we were waiting on. Keep going
+      // when the player still wants playback, same as a hand-filter switch.
+      this.resumeAfterPracticeFilterChange()
+    }
+    apply(getKeyboardRange())
+    this.rangeUnsub = subscribeKeyboardRange(apply)
+  }
+
+  // The transport control and this HUD share one persisted choice. Applying it
+  // here, rather than only inside the Learn buttons, keeps Play and Learn on
+  // the same hand.
+  private bindHandPractice(midi: import('../../../core/midi/types').MidiFile | null): void {
+    this.handUnsub?.()
+    const prefs = getHandPractice()
+    this.practice.setOtherHandAudible(prefs.otherHandAudible)
+    if (prefs.hand !== this.state.hand) this.setState('hand', prefs.hand)
+    this.applyHand(midi)
+    this.handUnsub = subscribeHandPractice((next) => {
+      this.practice.setOtherHandAudible(next.otherHandAudible)
+      if (next.hand === this.state.hand) return
+      this.setHand(next.hand)
+    })
+  }
+
+  // Notes the resume seek steps past. Triggered on the audio clock so they
+  // land with the chord the player just finished, then release on their own.
+  private soundAuto(notes: readonly AutoPlayedNote[] | undefined): void {
+    if (!notes || notes.length === 0) return
+    const synth = this.opts.services.synth
+    if (typeof synth.scheduleNoteOn !== 'function' || typeof synth.scheduleNoteOff !== 'function') {
+      return
+    }
+    const t0 = synth.audioContextTime
+    if (!Number.isFinite(t0)) return
+    const speed = this.services.clock.speed > 0 ? this.services.clock.speed : 1
+    for (const n of notes) {
+      synth.scheduleNoteOn(n.pitch, n.velocity, t0)
+      synth.scheduleNoteOff(n.pitch, t0 + Math.max(0.05, n.duration) / speed)
+    }
+  }
+
   private applySpeed(): void {
     const base = this.state.speedPct / 100
     this.opts.services.clock.speed = base
@@ -399,24 +475,26 @@ export class PlayAlongEngine {
 
   private applyHand(midi: import('../../../core/midi/types').MidiFile | null): void {
     if (!midi) return
-    // Clear stale held-eligible entries — switching hands invalidates the
-    // current chord's held window because `setVisibleTracks` rebuilds the
-    // step list against the new filter.
+    // Clear stale held-eligible entries — switching hands rebuilds the step
+    // list, so a held window from the previous hand no longer matches.
     this.heldEligible.clear()
     const filter = this.state.hand
     if (filter === 'both') {
-      this.practice.setVisibleTracks(null)
+      this.practice.setHandFilter('both', null)
       this.opts.services.renderer.setPracticeTrackFocus(null)
       return
     }
+    // A track stays in view when it contains the chosen hand. Notes of the
+    // other hand on that track are filtered per note (middle C), so one piano
+    // track can still be practised one hand at a time. The focus list is what
+    // fades a part that belongs entirely to the other hand.
     const visible = midi.tracks
       .filter((track) => {
         if (track.isDrum) return false
-        const avg = averagePitch(track.notes)
-        return filter === 'left' ? avg < 60 : avg >= 60
+        return track.notes.some((note) => noteHand(note.pitch) === filter)
       })
       .map((t) => t.id)
-    this.practice.setVisibleTracks(visible)
+    this.practice.setHandFilter(filter, visible)
     this.opts.services.renderer.setPracticeTrackFocus(visible)
   }
 
@@ -492,11 +570,4 @@ export class PlayAlongEngine {
       this.setState('heldTicks', this.state.heldTicks + held)
     }
   }
-}
-
-function averagePitch(notes: { pitch: number }[]): number {
-  if (notes.length === 0) return 60
-  let sum = 0
-  for (const n of notes) sum += n.pitch
-  return sum / notes.length
 }

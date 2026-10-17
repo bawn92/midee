@@ -1,6 +1,8 @@
 import { Container, Graphics, type Renderer } from 'pixi.js'
 import { GlowFilter } from 'pixi-filters'
-import type { MidiTrack } from '../core/midi/types'
+import { getHandPractice, noteMatchesHand } from '../core/handPractice'
+import { getKeyboardRange, placedPitch } from '../core/keyboardRange'
+import { MIDI_MAX, MIDI_MIN, type MidiTrack } from '../core/midi/types'
 import {
   ACTIVE_NOTE_ALPHA,
   BakedGlow,
@@ -39,6 +41,9 @@ export class NoteRenderer {
   private materialClip = new Graphics()
   private clipWidth = 0
   private clipHeight = 0
+  // Octave-folded notes. A layer of its own so the mark stays visible when the
+  // note body is drawn by a material mesh instead of the track Graphics.
+  private foldGraphics = new Graphics()
 
   // `renderer` is only used by the baked glow to render its halo textures.
   constructor(
@@ -68,7 +73,9 @@ export class NoteRenderer {
     this.glowGraphics = new Graphics()
     this.glowContainer.addChild(this.glowGraphics)
     this.applyGlowMode(glowSettings().mode)
+    this.foldGraphics.label = 'note-fold'
     this.container.addChild(this.glowContainer)
+    this.container.addChild(this.foldGraphics)
     this.container.addChild(this.labels.container)
     this.updateTheme(theme)
   }
@@ -126,6 +133,7 @@ export class NoteRenderer {
     const baked = glowMode === 'baked' ? this.bakedGlow : null
     baked?.begin(this.theme.noteGlowDistance, this.theme.noteGlowStrength, noteRadius)
     this.glowGraphics.clear()
+    this.foldGraphics.clear()
     if (
       this.material &&
       (this.clipWidth !== viewport.config.canvasWidth || this.clipHeight !== nowLineY)
@@ -138,6 +146,8 @@ export class NoteRenderer {
     this.material?.begin()
     const labels = this.labels.isActive ? this.labels : null
     labels?.begin()
+    const rangePrefs = getKeyboardRange()
+    const practiceHand = getHandPractice().hand
 
     let activeCount = 0
     let sumR = 0,
@@ -165,12 +175,6 @@ export class NoteRenderer {
       const [lo, hi] = visibleNoteRange(track.notes, visStart, visEnd)
       for (let ni = lo; ni < hi; ni++) {
         const note = track.notes[ni]!
-        // No key under this pitch (off the 88 keys, or a narrowed viewport) —
-        // skip rather than paint a zero-width bar at x = 0.
-        if (!viewport.hasKey(note.pitch)) continue
-
-        const x = viewport.pitchToX(note.pitch)
-        const w = Math.max(viewport.pitchWidth(note.pitch) - 1, 2)
         const timeDelta = note.time - currentTime
         const noteBottom = Math.min(viewport.timeOffsetToY(timeDelta), nowLineY)
         const noteTop = viewport.timeOffsetToY(timeDelta + note.duration)
@@ -178,9 +182,28 @@ export class NoteRenderer {
         const h = Math.max(noteBottom - noteTop, 3)
         const y = noteTop
 
+        const placement = track.isDrum ? null : placedPitch(note.pitch, rangePrefs)
+        const drawPitch = placement?.pitch ?? note.pitch
+        const shifted = placement !== null && placement.octaves !== 0
+        const handDim =
+          !track.isDrum && practiceHand !== 'both' && !noteMatchesHand(note.pitch, practiceHand)
+        const dimmed = practiceInactive || handDim
+
+        // Inside the piano but outside the keys this frame can draw: a narrow
+        // marker on the near edge. A note folded into the window is drawn on
+        // its new key instead.
+        if (!viewport.hasKey(drawPitch)) {
+          if (!shifted && note.pitch >= MIDI_MIN && note.pitch <= MIDI_MAX) {
+            this.paintUnreachable(g, note.pitch, y, h, viewport, noteColor, dimmed)
+          }
+          continue
+        }
+
+        const x = viewport.pitchToX(drawPitch)
+        const w = Math.max(viewport.pitchWidth(drawPitch) - 1, 2)
+
         // Velocity → alpha (0.5 minimum so faint notes are still visible)
-        const alpha =
-          (0.5 + note.velocity * 0.5) * (practiceInactive ? PRACTICE_INACTIVE_ALPHA_SCALE : 1)
+        const alpha = (0.5 + note.velocity * 0.5) * (dimmed ? PRACTICE_INACTIVE_ALPHA_SCALE : 1)
 
         const active =
           !practiceInactive && note.time <= currentTime && note.time + note.duration > currentTime
@@ -205,11 +228,14 @@ export class NoteRenderer {
           g.fill({ color: noteColor, alpha })
         }
 
-        labels?.place(note.pitch, x, w, noteBottom, h, noteColor, alpha)
+        labels?.place(drawPitch, x, w, noteBottom, h, noteColor, alpha)
+        if (shifted && placement) {
+          this.paintShiftMark(x, y, w, h, placement.octaves, alpha)
+        }
 
         if (
           !this.material &&
-          !practiceInactive &&
+          !dimmed &&
           note.time <= currentTime &&
           note.time + note.duration >= currentTime
         ) {
@@ -226,6 +252,7 @@ export class NoteRenderer {
 
     labels?.end()
     this.material?.end()
+    this.raiseFoldMarks()
 
     if (activeCount > 0) {
       const avgColor =
@@ -239,6 +266,64 @@ export class NoteRenderer {
       baked?.end(null)
       this.glowContainer.visible = false
     }
+  }
+
+  // A note moved by whole octaves keeps its colour and gains a light outline
+  // plus a small chevron showing which way it moved.
+  private paintShiftMark(
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    octaves: number,
+    alpha: number,
+  ): void {
+    const markAlpha = Math.min(1, alpha + 0.25)
+    this.foldGraphics.roundRect(x + 0.5, y + 0.5, Math.max(1, w - 1), Math.max(1, h - 1), 2)
+    this.foldGraphics.stroke({ color: 0xfff6e4, width: 1.25, alpha: markAlpha * 0.9 })
+    if (h < 8 || w < 4) return
+    const cx = x + w / 2
+    const up = octaves > 0
+    const tipY = up ? y + 2.5 : y + h - 2.5
+    const baseY = tipY + (up ? 4.5 : -4.5)
+    this.foldGraphics.poly([cx, tipY, cx - 2.6, baseY, cx + 2.6, baseY])
+    this.foldGraphics.fill({ color: 0xfff6e4, alpha: markAlpha })
+  }
+
+  // The material mesh is inserted in front of the track graphics whenever the
+  // theme changes. Park the octave marks just under the pitch labels so they
+  // stay on top of either note body.
+  private raiseFoldMarks(): void {
+    const index = this.container.children.indexOf(this.labels.container)
+    if (index >= 0) this.container.addChildAt(this.foldGraphics, index)
+  }
+
+  // Out-of-range notes stay visible so the song doesn't appear to skip, but
+  // they don't look like something to play: a slim pale marker pinned to the
+  // edge the pitch fell off, fanned a few pixels so a cluster doesn't become
+  // one blob. No glow, no label, no particle — those belong to real keys.
+  private paintUnreachable(
+    g: Graphics,
+    pitch: number,
+    y: number,
+    h: number,
+    viewport: Viewport,
+    noteColor: number,
+    practiceInactive: boolean,
+  ): void {
+    const min = viewport.config.pitchMin ?? MIDI_MIN
+    const max = viewport.config.pitchMax ?? MIDI_MAX
+    const below = pitch < min
+    const distance = below ? min - pitch : pitch - max
+    const slot = Math.min(Math.max(distance, 0), 4)
+    const w = 6
+    const canvasW = viewport.config.canvasWidth
+    const x = below ? 3 + slot * 3 : canvasW - w - 3 - slot * 3
+    const alpha = practiceInactive ? 0.12 : 0.55
+    g.roundRect(x, y, w, h, 2)
+    g.fill({ color: 0xc5c8dc, alpha: alpha * 0.55 })
+    g.roundRect(x + 1, y, Math.max(2, w - 2), h, 2)
+    g.fill({ color: noteColor, alpha })
   }
 
   updateTheme(theme: Theme): void {
@@ -277,6 +362,7 @@ export class NoteRenderer {
       g.clear()
     })
     this.glowGraphics.clear()
+    this.foldGraphics.clear()
     this.glowContainer.visible = false
     this.labels.clear()
     this.material?.clear()

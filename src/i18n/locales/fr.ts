@@ -4,6 +4,58 @@ import type { Messages } from './en'
 // missing. Technical terms (MIDI, MP4, BPM, fps) stay as-is across locales.
 
 const fr: Messages = {
+  // MIDI key lights
+  'keyLights.setupHelp': 'Aide à la configuration',
+  'keyLights.synthesia': 'Mains Synthesia (estimées)',
+  'keyLights.synthesiaHint':
+    'Canaux 12/13 pour les mains gauche/droite. Les mains sont estimées selon la hauteur des pistes ; les fichiers à une piste sont séparés au do central. Sans doigtés.',
+  'keyLights.pianoM': 'ROLI Piano M',
+  'keyLights.pianoMHint':
+    'Le firmware d’usine du Piano M n’allume pas les notes reçues. Téléchargez le script de couleurs du thème et déposez-le sur l’appareil dans ROLI Dashboard. Si le script Synthesia est déjà installé, déposez ce fichier par-dessus. Les canaux 12 et 13 restent la gauche et la droite. midee envoie les couleurs de mains du thème — Sunset est jaune à gauche et orange à droite — et les renvoie quand vous changez de thème. Les lumières suivent Ajuster à votre tessiture, la main travaillée et la calibration du clavier. Une réinitialisation d’usine dans Dashboard restaure le firmware d’origine.',
+  'keyLights.pianoMScript': 'Télécharger piano-m-theme-lights.littlefoot',
+  'keyLights.keeziHint':
+    'KEEZI : connectez via KEENEKT. Utilisez Visualizer → Synthesia pour les mains, ou → DAW pour les canaux du fichier/des pistes.',
+  'keyLights.title': 'Lumières du clavier',
+  'keyLights.description': 'Éclairez votre piano pendant la lecture et la pratique.',
+  'keyLights.connect': 'Activer MIDI',
+  'keyLights.device': 'Appareil lumineux',
+  'keyLights.off': 'Désactivé',
+  'keyLights.disconnected': 'Appareil déconnecté',
+  'keyLights.colors': 'Couleurs',
+  'keyLights.original': 'Canaux du fichier',
+  'keyLights.track': 'Un canal par piste',
+  'keyLights.single': 'Canal unique',
+  'keyLights.channel': 'Canal',
+  'keyLights.colorHint': 'Votre appareil détermine les couleurs.',
+  'keyLights.noDevices': 'Aucune sortie MIDI. Connectez votre appareil lumineux.',
+  'keyLights.unavailable':
+    'La sortie Web MIDI est indisponible. Essayez Chrome ou Edge sur ordinateur.',
+  'keyLights.blocked': 'Autorisez les appareils MIDI dans les paramètres du site, puis réessayez.',
+  'keyLights.error':
+    'Impossible d’envoyer du MIDI. Reconnectez ou sélectionnez à nouveau votre appareil.',
+
+  'songGuide.open': 'Guide du morceau',
+  'songGuide.title': 'Guide du morceau',
+  'songGuide.hide': 'Masquer',
+  'songGuide.bar': 'Mesure {n}',
+  'songGuide.step': 'Étape {n} sur {total}',
+  'songGuide.rest': 'Silence',
+  'songGuide.loopLabel': 'Cycle d’accords',
+  'songGuide.statement': '{label} {n} sur {total}',
+  'songGuide.pattern': '{label} {n} sur {total}',
+  'songGuide.fingers': 'Doigtés',
+  'songGuide.map': 'Sections',
+  'songGuide.sectionJump': '{name}, mesures {start}–{end}',
+  'songGuide.looping': 'Boucle des mesures {start}–{end}',
+  'songGuide.learn': 'Apprendre dans cet ordre',
+  'songGuide.tempo': 'Tempo',
+  'songGuide.clean': 'Passage propre',
+  'songGuide.cleans': '{n} sur {goal} passages propres',
+  'songGuide.ready': 'Trois passages propres. Essayez le tempo suivant.',
+  'songGuide.tips': 'Conseils',
+  'songGuide.rh': 'MD',
+  'songGuide.lh': 'MG',
+
   // ── Home / dropzone ─────────────────────────────────────────
   'home.kicker': 'midee · visualiseur MIDI',
   'home.title.html': 'Jouez des <em>notes</em>,<br/>voyez-les éclore.',
@@ -73,6 +125,8 @@ const fr: Messages = {
   // ── Appearance / customize popover ──────────────────────────
   'customize.aria': 'Apparence',
   'customize.title': 'Apparence',
+  'customize.scene': 'Scène',
+  'customize.sceneClassic': 'Classique',
   'customize.theme': 'Thème',
   'customize.new': 'Nouveau',
   'customize.particles': 'Particules',
@@ -487,6 +541,45 @@ const fr: Messages = {
   'toast.updated': 'Mis à jour vers la dernière version',
 
   'onboarding.localeDetected': 'Affichage en {language} · changez dans Apparence',
+
+  'kbdRange.title': 'Tessiture du clavier',
+  'kbdRange.tip':
+    'Le piano à l’écran reste à 88 touches. Cette fenêtre est ce que joue votre contrôleur : le MIDI est transposé pour que sa touche la plus grave corresponde à la fenêtre. Le mode attente ignore les notes hors de celle-ci.',
+  'kbdRange.aria': 'Tessiture de {low} à {high}, {count} touches',
+  'kbdRange.semitoneDown': 'Descendre la tessiture d’un demi-ton',
+  'kbdRange.semitoneUp': 'Monter la tessiture d’un demi-ton',
+  'kbdRange.octaveDown': 'Descendre la tessiture d’une octave',
+  'kbdRange.octaveUp': 'Monter la tessiture d’une octave',
+  'kbdRange.start': 'Note la plus grave',
+  'kbdRange.size': 'Nombre de touches',
+  'kbdRange.follow': 'Suivre le MIDI',
+  'kbdRange.followTip':
+    'Avant le calibrage, décale la fenêtre pour inclure les notes MIDI qui tombent en dehors.',
+  'kbdRange.full': 'Piano complet',
+  'kbdRange.presets': 'Tailles',
+  'kbdRange.picker': 'Glissez pour déplacer, les bords pour redimensionner, ou cliquez une touche',
+  'kbdRange.calibrate': 'Appuyez sur votre touche la plus grave',
+  'kbdRange.calibrateShort': 'Touche grave',
+  'kbdRange.calibrateArmed': 'Appuyez sur la touche la plus grave du clavier…',
+  'kbdRange.calibrateArmedShort': 'Écoute…',
+  'kbdRange.calibrateTip':
+    'La prochaine touche MIDI devient la note la plus grave du contrôleur, et la fenêtre s’aligne dessus.',
+  'kbdRange.controllerLow': 'Calibré. La touche la plus grave est {note}.',
+  'kbdRange.controllerUnset':
+    'Non calibré. Tant que vous n’appuyez pas sur votre touche la plus grave, elle est supposée être {note} — le do médium, l’octave par défaut du ROLI Piano M (ROLI l’appelle C3). Cette touche joue le début de la fenêtre.',
+  'kbdRange.controllerUnsetGeneric':
+    'Non calibré. Appuyez sur votre touche la plus grave pour aligner cette fenêtre sur votre contrôleur.',
+  'kbdRange.notCalibrated': 'Non calibré',
+  'kbdRange.calibratedBadge': 'Calibré {note}',
+  'kbdRange.band': 'Glissez pour déplacer la tessiture. Les bords changent la taille.',
+  'kbdRange.fit': 'Ajuster à votre tessiture',
+  'kbdRange.fitTip':
+    'Décale d’octaves entières les notes hors de votre tessiture pour les ramener sur des touches jouables.',
+  'hud.hands': 'Mains',
+  'hud.handHear': 'Entendre l’autre main',
+  'hud.handHearTip': 'Jouer l’autre main en audio',
+  'hud.handMute': 'Couper l’autre main',
+  'hud.handMuteTip': 'Rendre l’autre main muette',
 }
 
 export default fr

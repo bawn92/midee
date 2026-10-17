@@ -4,6 +4,7 @@ import type { LiveLooperState } from '../midi/LiveLooper'
 import type { MidiDeviceStatus } from '../midi/MidiInputManager'
 import { type AppMode, TRANSPOSE_LIMIT } from '../store/state'
 import { FloatingHud } from './FloatingHud'
+import { HandPracticeButtons } from './HandPracticeControl'
 import { icons } from './icons'
 
 export const ZOOM_MIN = 80
@@ -531,6 +532,10 @@ export function HudView(props: HudProps) {
             +
           </button>
         </div>
+
+        <div class="hud-divider" />
+
+        <HandPracticeButtons variant="transport" />
 
         <div class="hud-divider" />
 

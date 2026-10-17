@@ -146,6 +146,43 @@ interface MockNode {
   tint?: number
 }
 
+describe('notes outside the keyboard range', () => {
+  it('draws them as slim edge markers instead of dropping them', () => {
+    const viewport = new Viewport({
+      canvasWidth: 800,
+      canvasHeight: 500,
+      keyboardHeight: 100,
+      pixelsPerSecond: 100,
+      pitchMin: 60,
+      pitchMax: 72,
+    })
+    const spanned: MidiTrack = {
+      ...track,
+      id: 'span',
+      notes: [
+        { pitch: 48, time: 2, duration: 1, velocity: 1 },
+        { pitch: 64, time: 2, duration: 1, velocity: 1 },
+        { pitch: 96, time: 2, duration: 1, velocity: 1 },
+      ],
+    }
+    const renderer = new NoteRenderer(sunsetTheme, pixiRenderer)
+    renderer.setTracks([spanned])
+    renderer.draw([spanned], 2.2, viewport, new Set(['span']), null)
+    const g = (
+      renderer.container as unknown as {
+        children: Array<{ label: string; roundRect: ReturnType<typeof vi.fn> }>
+      }
+    ).children.find((c) => c.label === 'notes-span')!
+    const widths = g.roundRect.mock.calls.map((call) => call[2] as number)
+    const xs = g.roundRect.mock.calls.map((call) => call[0] as number)
+    // In-range C (64) is a full key. 48 hugs the left edge, 96 the right.
+    expect(widths.some((w) => w > 40)).toBe(true)
+    expect(xs.some((x) => x < 20)).toBe(true)
+    expect(xs.some((x) => x > 760)).toBe(true)
+    renderer.destroy()
+  })
+})
+
 describe('glow mode switch', () => {
   afterEach(() => setGlowMode('baked', 'average'))
 

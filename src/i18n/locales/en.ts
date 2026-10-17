@@ -13,6 +13,56 @@
 //    key with interpolation instead so word order is translator-controlled.
 
 export const en = {
+  // MIDI key lights
+  'keyLights.setupHelp': 'Setup help',
+  'keyLights.synthesia': 'Synthesia hands (estimated)',
+  'keyLights.synthesiaHint':
+    'Uses channels 12/13 for left/right hands. Hands are estimated by track pitch; single-track files split at middle C. No finger hints.',
+  'keyLights.pianoM': 'ROLI Piano M',
+  'keyLights.pianoMHint':
+    'Factory Piano M firmware does not light incoming notes. Download the theme-lights script and drag it onto the device in ROLI Dashboard. If the Synthesia script is already on the Piano M, drop this file on top of it. Channels 12 and 13 stay left and right. midee sends the theme’s hand colours — Sunset is yellow on the left and orange on the right — and sends them again when you change theme. Lights follow Fit to your range, the hand you are practising, and your keyboard calibration. A factory reset in Dashboard restores the factory firmware.',
+  'keyLights.pianoMScript': 'Download piano-m-theme-lights.littlefoot',
+  'keyLights.keeziHint':
+    'KEEZI: connect through KEENEKT. Use Visualizer → Synthesia for hand colors, or → DAW for file/track channels.',
+  'keyLights.title': 'Key Lights',
+  'keyLights.description': 'Light up your piano during playback and practice.',
+  'keyLights.connect': 'Enable MIDI',
+  'keyLights.device': 'Light device',
+  'keyLights.off': 'Off',
+  'keyLights.disconnected': 'Device disconnected',
+  'keyLights.colors': 'Colors',
+  'keyLights.original': 'File channels',
+  'keyLights.track': 'One channel per track',
+  'keyLights.single': 'Single channel',
+  'keyLights.channel': 'Channel',
+  'keyLights.colorHint': 'Your device controls the colors.',
+  'keyLights.noDevices': 'No MIDI outputs found. Connect your light device.',
+  'keyLights.unavailable': 'Web MIDI output is unavailable. Try Chrome or Edge on desktop.',
+  'keyLights.blocked': 'Allow MIDI devices in your browser’s site settings, then try again.',
+  'keyLights.error': 'Could not send MIDI. Reconnect or reselect your light device.',
+
+  'songGuide.open': 'Song guide',
+  'songGuide.title': 'Song guide',
+  'songGuide.hide': 'Hide',
+  'songGuide.bar': 'Bar {n}',
+  'songGuide.step': 'Step {n} of {total}',
+  'songGuide.rest': 'Rest',
+  'songGuide.loopLabel': 'Chord loop',
+  'songGuide.statement': '{label} {n} of {total}',
+  'songGuide.pattern': '{label} {n} of {total}',
+  'songGuide.fingers': 'Fingering',
+  'songGuide.map': 'Sections',
+  'songGuide.sectionJump': '{name}, bars {start}–{end}',
+  'songGuide.looping': 'Looping bars {start}–{end}',
+  'songGuide.learn': 'Learn in this order',
+  'songGuide.tempo': 'Tempo',
+  'songGuide.clean': 'Clean run',
+  'songGuide.cleans': '{n} of {goal} clean runs',
+  'songGuide.ready': 'Three clean runs. Try the next tempo.',
+  'songGuide.tips': 'Practice tips',
+  'songGuide.rh': 'RH',
+  'songGuide.lh': 'LH',
+
   // ── Home / dropzone ─────────────────────────────────────────
   // The title contains inline <em> markup — one of the rare keys allowed
   // to carry HTML (rendered via innerHTML). We do this so word order stays
@@ -91,6 +141,8 @@ export const en = {
   // ── Appearance / customize popover ──────────────────────────
   'customize.aria': 'Appearance',
   'customize.title': 'Appearance',
+  'customize.scene': 'Scene',
+  'customize.sceneClassic': 'Classic',
   'customize.theme': 'Theme',
   'customize.new': 'New',
   'customize.particles': 'Particles',
@@ -515,6 +567,46 @@ export const en = {
   // Shown once on first visit if a non-English locale was auto-detected,
   // so the user knows they CAN switch and where to do it.
   'onboarding.localeDetected': 'Showing in {language} · change in Appearance',
+
+  // ── Keyboard range ─────────────────────────────────────────
+  'kbdRange.title': 'Keyboard range',
+  'kbdRange.tip':
+    'The on-screen piano stays 88 keys. This window is what your controller plays: MIDI is transposed so its lowest key matches the window. Wait mode skips notes outside it.',
+  'kbdRange.aria': 'Keyboard range {low} to {high}, {count} keys',
+  'kbdRange.semitoneDown': 'Shift range down a semitone',
+  'kbdRange.semitoneUp': 'Shift range up a semitone',
+  'kbdRange.octaveDown': 'Shift range down an octave',
+  'kbdRange.octaveUp': 'Shift range up an octave',
+  'kbdRange.start': 'Lowest key',
+  'kbdRange.size': 'Number of keys',
+  'kbdRange.follow': 'Follow MIDI',
+  'kbdRange.followTip':
+    'Before the controller is calibrated, slide the window to include MIDI notes that fall outside it.',
+  'kbdRange.full': 'Full piano',
+  'kbdRange.presets': 'Presets',
+  'kbdRange.picker': 'Drag to move, edges to resize, or click a key',
+  'kbdRange.calibrate': 'Press your lowest key',
+  'kbdRange.calibrateShort': 'Lowest key',
+  'kbdRange.calibrateArmed': 'Press the lowest key on your keyboard…',
+  'kbdRange.calibrateArmedShort': 'Listening…',
+  'kbdRange.calibrateTip':
+    'The next MIDI key you press is saved as the controller’s lowest note, and the window maps onto it.',
+  'kbdRange.controllerLow': 'Calibrated. Lowest key is {note}.',
+  'kbdRange.controllerUnset':
+    'Not calibrated. Until you press your lowest key, it is assumed to be {note} — middle C, the ROLI Piano M’s default octave (ROLI labels that key C3). That key plays the start of this window.',
+  'kbdRange.controllerUnsetGeneric':
+    'Not calibrated. Press your lowest key so this window lines up with your controller.',
+  'kbdRange.notCalibrated': 'Not calibrated',
+  'kbdRange.calibratedBadge': 'Calibrated {note}',
+  'kbdRange.band': 'Drag to move the keyboard range. The side edges resize it.',
+  'kbdRange.fit': 'Fit to your range',
+  'kbdRange.fitTip':
+    'Shift notes outside your range by whole octaves so they land on keys you can play.',
+  'hud.hands': 'Hands',
+  'hud.handHear': 'Hear the other hand',
+  'hud.handHearTip': 'Play the other hand as audio',
+  'hud.handMute': 'Mute the other hand',
+  'hud.handMuteTip': 'Silence the other hand',
 } as const
 
 // Keys come from the English source; values are any string so translations

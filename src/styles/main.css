@@ -22,9 +22,8 @@
   --text-muted: #b0b4d4;
   --text-dim: #6c7298;
 
-  /* Pre-JS defaults for the accent triplet — match the Sunset theme, which
-     is the current app default. Overwritten by applyTheme() on load; these
-     values only matter for the first paint frame and the favicon. */
+  /* Classic dark chrome. Golden Hour overrides these from
+     src/renderer/scenes/goldenHour.css while that scene is active. */
   --accent: #f97316;
   --accent-soft: rgba(249, 115, 22, 0.16);
   --accent-glow: rgba(249, 115, 22, 0.3);
@@ -199,6 +198,8 @@ body {
   -webkit-backdrop-filter: blur(34px) saturate(132%);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 28px;
+  max-height: calc(100vh - 56px);
+  overflow: auto;
   box-shadow:
     0 28px 72px rgba(0, 0, 0, 0.68),
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
@@ -306,7 +307,7 @@ body {
 
 .samples-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 10px;
   width: 100%;
 }
@@ -4466,6 +4467,74 @@ body.coachmark-open #top-strip.strip--dim {
   color: var(--accent);
 }
 
+.hud-hands {
+  gap: 4px;
+  flex-shrink: 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.hud-hand-track {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  gap: 2px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.hud-hand,
+.hud-hand-audio {
+  font: 600 11px / 1 var(--font);
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.hud-hand {
+  min-width: 28px;
+  padding: 5px 7px;
+}
+
+.hud-hand.is-active {
+  color: #0a0a14;
+  background: var(--accent);
+}
+
+.hud-hand-audio {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 22px;
+  padding: 0;
+}
+
+.hud-hand-audio:disabled,
+.pa-hand-audio:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.hud-hand:focus-visible,
+.hud-hand-audio:focus-visible,
+.pa-hand-audio:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.pa-hand-audio {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  padding: 6px 7px;
+}
+
 /* Disable controls during export */
 #hud.hud--exporting .btn-play,
 #hud.hud--exporting .btn-skip,
@@ -4484,11 +4553,11 @@ body.coachmark-open #top-strip.strip--dim {
 ───────────────────────────────────────── */
 
 #key-hint {
-  position: absolute;
-  bottom: calc(var(--keyboard-h) + var(--hud-gap) + env(safe-area-inset-bottom));
-  left: calc(20px + env(safe-area-inset-left));
+  position: relative;
   z-index: 14;
   pointer-events: none;
+  /* Out of the column until Live shows it, so Play/Learn don't reserve a gap. */
+  display: none;
   opacity: 0;
   transform: translateY(6px);
   transition:
@@ -4497,6 +4566,7 @@ body.coachmark-open #top-strip.strip--dim {
 }
 
 #key-hint.kh--visible {
+  display: block;
   opacity: 1;
   transform: none;
 }
@@ -4775,7 +4845,8 @@ body.coachmark-open #top-strip.strip--dim {
 }
 
 @media (max-width: 640px) {
-  #key-hint {
+  #key-hint,
+  #key-hint.kh--visible {
     display: none;
   }
 }
@@ -4856,6 +4927,532 @@ body.canvas-hidden #kbd-resizer {
 #kbd-resizer.kbd-resizer--active .kbd-resizer-grip {
   background: var(--accent);
   box-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* ─────────────────────────────────────────
+   LOWER LEFT
+   Keyboard range and the Live shortcuts card share this corner. A column
+   (shortcuts nearest the keys, range bar above it) keeps both fully visible.
+   The 64px lift matches the 56px main HUD plus an 8px gap, so in Play — where
+   the shortcuts card is hidden — the range still clears the HUD.
+───────────────────────────────────────── */
+
+#lower-left {
+  position: absolute;
+  left: calc(20px + env(safe-area-inset-left));
+  bottom: calc(var(--keyboard-h) + var(--hud-gap) + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-start;
+  gap: 10px;
+  pointer-events: none;
+}
+
+/* ─────────────────────────────────────────
+   KEYBOARD RANGE
+   Which keys the physical controller covers. Lives in #lower-left.
+───────────────────────────────────────── */
+
+.kbd-range-mount {
+  position: relative;
+  z-index: 18;
+  pointer-events: none;
+}
+
+/* Shortcuts card hidden or collapsed to its reopen button: lift the bar
+   clear of the bottom HUD. An open card is taller than the HUD, so the
+   column's own gap is enough. */
+#lower-left:not(:has(#key-hint.kh--visible:not(.kh--collapsed))) .kbd-range-mount {
+  margin-bottom: 64px;
+}
+
+#kbd-range {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: none;
+}
+
+#kbd-range.kbd-range--hidden,
+body.canvas-hidden #kbd-range {
+  display: none;
+}
+
+.kbd-range-bar,
+.kbd-range-panel {
+  pointer-events: auto;
+}
+
+.kbd-range-bar,
+.kbd-range-presets {
+  border: none;
+  margin: 0;
+  min-inline-size: 0;
+}
+
+.kbd-range-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 14px;
+  background: rgba(7, 9, 18, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.kbd-range-step,
+.kbd-range-label,
+.kbd-range-stepper button,
+.kbd-range-preset,
+.kbd-range-follow,
+.kbd-range-calibrate,
+.kbd-range-full {
+  font-family: var(--font);
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.kbd-range-step {
+  height: 28px;
+  min-width: 28px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.kbd-range-step:hover:not(:disabled),
+.kbd-range-label:hover,
+.kbd-range-stepper button:hover:not(:disabled),
+.kbd-range-preset:hover,
+.kbd-range-follow:hover,
+.kbd-range-calibrate:hover,
+.kbd-range-full:hover:not(:disabled) {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.kbd-range-step:disabled,
+.kbd-range-stepper button:disabled,
+.kbd-range-full:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.kbd-range-step:focus-visible,
+.kbd-range-label:focus-visible,
+.kbd-range-stepper button:focus-visible,
+.kbd-range-preset:focus-visible,
+.kbd-range-follow:focus-visible,
+.kbd-range-calibrate:focus-visible,
+.kbd-range-full:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.kbd-range-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  height: 28px;
+  padding: 0 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.kbd-range-notes {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.kbd-range-label[data-custom] .kbd-range-notes {
+  color: var(--accent);
+}
+
+.kbd-range-count {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.kbd-range-panel {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  width: 272px;
+  /* Set from the bar's position so the panel stays under the top strip. */
+  max-height: var(--kbd-range-room, min(420px, 70svh));
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(10, 10, 18, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(28px) saturate(150%);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+/* When the shortcuts card leaves little room above the bar, open the detail
+   panel to the right of the column, still clear of the bottom HUD. */
+#lower-left:has(.kbd-range--beside) .kbd-range-mount,
+#lower-left:has(.kbd-range--beside) #kbd-range {
+  position: static;
+}
+
+#lower-left:has(.kbd-range--beside) .kbd-range-panel {
+  left: calc(100% + 10px);
+  bottom: 64px;
+  width: min(272px, calc(100vw - 100% - 40px));
+  max-height: calc(
+    100svh -
+    var(--keyboard-h) -
+    var(--hud-gap) -
+    148px -
+    env(safe-area-inset-top) -
+    env(safe-area-inset-bottom)
+  );
+}
+
+/* Short windows: the open shortcuts card already fills the corner, so cap it
+   and let it scroll instead of pushing the range bar under the top strip. */
+@media (max-height: 560px) {
+  #key-hint.kh--visible:not(.kh--collapsed) .kh-body {
+    max-height: calc(
+      100svh -
+      var(--keyboard-h) -
+      var(--hud-gap) -
+      148px -
+      env(safe-area-inset-top) -
+      env(safe-area-inset-bottom)
+    );
+    overflow: auto;
+  }
+}
+
+/* Portrait phones dock the HUD under the top strip, so the range can sit
+   on the keys. The shortcuts card is already hidden under 640px. */
+@media (max-width: 640px) and (orientation: portrait) {
+  #lower-left:not(:has(#key-hint.kh--visible:not(.kh--collapsed))) .kbd-range-mount {
+    margin-bottom: 0;
+  }
+}
+
+.kbd-range-hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+
+.kbd-range-picker-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kbd-range-picker-label {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Full 88-key overview. Every semitone is the same width so the window snaps
+   to keys. Black keys are shorter so it still reads as a piano. */
+.kbd-range-picker {
+  position: relative;
+  height: 48px;
+  border-radius: 8px;
+  background: #14141c;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  touch-action: none;
+  user-select: none;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.kbd-range-key {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: calc(100% / 88);
+  background: #f4f0e6;
+  box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.16);
+  pointer-events: none;
+}
+
+.kbd-range-key--black {
+  height: 58%;
+  bottom: auto;
+  z-index: 1;
+  background: #2a2a34;
+  border-radius: 0 0 2px 2px;
+  box-shadow: none;
+}
+
+.kbd-range-window {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  background: color-mix(in srgb, var(--accent) 32%, transparent);
+  box-shadow: inset 0 0 0 2px var(--accent);
+  cursor: grab;
+  touch-action: none;
+}
+
+.kbd-range-picker--dragging .kbd-range-window,
+.kbd-range-window:active {
+  cursor: grabbing;
+}
+
+.kbd-range-window:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 2px var(--accent),
+    0 0 0 3px var(--accent-soft);
+}
+
+.kbd-range-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 16px;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.kbd-range-handle--start {
+  left: 0;
+}
+
+.kbd-range-handle--end {
+  right: 0;
+}
+
+.kbd-range-handle::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+  border-radius: 2px;
+  background: #fff;
+}
+
+.kbd-range-handle--start::after {
+  left: 4px;
+}
+
+.kbd-range-handle--end::after {
+  right: 4px;
+}
+
+.kbd-range-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.kbd-range-row-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.kbd-range-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.kbd-range-stepper button {
+  width: 26px;
+  height: 26px;
+  font-size: 14px;
+}
+
+.kbd-range-value {
+  min-width: 42px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.kbd-range-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 0;
+}
+
+.kbd-range-preset {
+  height: 24px;
+  padding: 0 7px;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid var(--border);
+}
+
+.kbd-range-preset[aria-pressed="true"] {
+  color: #0a0a14;
+  background: var(--accent);
+  border-color: transparent;
+}
+
+.kbd-range-follow,
+.kbd-range-calibrate,
+.kbd-range-full {
+  height: auto;
+  min-height: 28px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: left;
+  border: 1px solid var(--border);
+}
+
+.kbd-range-follow[aria-pressed="true"],
+.kbd-range-calibrate[aria-pressed="true"],
+.kbd-range-calibrate-bar[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: var(--accent-soft);
+}
+
+.kbd-range-cal-status {
+  margin: -4px 0 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text-dim);
+}
+
+.kbd-range-cal-status.is-unset {
+  color: #f0b429;
+  font-weight: 600;
+}
+
+.kbd-range-cal-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  margin-left: 4px;
+  padding: 0 8px;
+  border-radius: 8px;
+  background: #f0b429;
+  color: #1a1206;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.kbd-range-cal-badge.is-set {
+  background: transparent;
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 65%, transparent);
+}
+
+.kbd-range-band-mount {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+
+#kbd-range-band {
+  position: fixed;
+  z-index: 6;
+  pointer-events: none;
+  touch-action: none;
+}
+
+#kbd-range-band[hidden] {
+  display: none !important;
+}
+
+.kbd-range-band-move {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 8px;
+  height: 26px;
+  padding: 0 8px;
+  pointer-events: auto;
+  cursor: grab;
+  border: none;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 32%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 75%, transparent);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.kbd-range-band-move:active,
+#kbd-range-band.kbd-range-band--dragging .kbd-range-band-move {
+  cursor: grabbing;
+}
+
+.kbd-range-band-move:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+}
+
+.kbd-range-band-edge {
+  position: absolute;
+  top: 8px;
+  bottom: 6px;
+  width: 16px;
+  pointer-events: auto;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.kbd-range-band-edge--start {
+  left: -4px;
+}
+
+.kbd-range-band-edge--end {
+  right: -4px;
+}
+
+.kbd-range-band-edge::before {
+  content: "";
+  position: absolute;
+  top: 18px;
+  bottom: 8px;
+  left: 6px;
+  width: 4px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+body.canvas-hidden #kbd-range-band {
+  display: none;
 }
 
 /* ─────────────────────────────────────────
@@ -7754,6 +8351,62 @@ body.appearance-open #top-strip.strip--dim {
   overscroll-behavior: contain;
 }
 
+.key-lights-settings {
+  display: grid;
+  gap: 10px;
+}
+
+.key-lights-settings p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.key-lights-field {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.key-lights-field select {
+  width: 100%;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  color-scheme: dark;
+}
+
+.key-lights-field select:disabled {
+  opacity: 0.5;
+}
+
+.key-lights-help summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.key-lights-help summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.key-lights-help-body {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.key-lights-script {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 650;
+}
+
 .customize-section {
   display: flex;
   flex-direction: column;
@@ -8725,4 +9378,376 @@ body.appearance-open #top-strip.strip--dim {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* ─────────────────────────────────────────
+   SONG GUIDE
+   Sits under the top strip. In Play and Live the card is centered; in Learn
+   it moves to the left so it clears the top practice HUD. The card stops
+   above the keyboard HUD, and the collapsed tab is only a small pill.
+───────────────────────────────────────── */
+
+.song-guide {
+  position: absolute;
+  top: calc(78px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(420px, calc(100vw - 28px));
+  z-index: 14;
+  pointer-events: none;
+  font-family: var(--font, system-ui, sans-serif);
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.song-guide--side {
+  top: calc(152px + env(safe-area-inset-top));
+  left: calc(16px + env(safe-area-inset-left));
+  transform: none;
+  width: min(320px, calc(50vw - 28px));
+}
+
+.song-guide-tab,
+.song-guide-card,
+.song-guide-looping,
+.song-guide-close {
+  pointer-events: auto;
+}
+
+.song-guide-tab {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(7, 7, 15, 0.92);
+  color: inherit;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  backdrop-filter: blur(24px);
+}
+
+.song-guide-card {
+  pointer-events: auto;
+  max-height: min(
+    460px,
+    calc(100vh - 78px - var(--keyboard-h, 120px) - var(--hud-gap, 16px) - 96px)
+  );
+  overflow: auto;
+  padding: 14px 14px 12px;
+  border-radius: 20px;
+  background: rgba(7, 7, 15, 0.93);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(40px) saturate(160%);
+}
+
+.song-guide--side .song-guide-card {
+  max-height: calc(100vh - 152px - var(--keyboard-h, 120px) - 210px);
+}
+
+.song-guide-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.song-guide-kicker {
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.song-guide-name {
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.song-guide-close,
+.song-guide-looping,
+.song-guide-ranges button,
+.song-guide-tempo button,
+.song-guide-clean button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.song-guide-close {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
+.song-guide-now {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  align-items: baseline;
+  margin-top: 10px;
+  font-size: 12px;
+}
+
+.song-guide-bar {
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.song-guide-section {
+  font-weight: 700;
+}
+
+.song-guide-step {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.song-guide-chord {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin-top: 8px;
+}
+
+.song-guide-chord-name {
+  font-family: var(--font-display, var(--font, system-ui, sans-serif));
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 500;
+}
+
+.song-guide-loop {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-inline-size: 0;
+}
+
+.song-guide-chip {
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.song-guide-chip--on {
+  color: #0b0b12;
+  background: #e9d5ff;
+  font-weight: 700;
+}
+
+.song-guide-meta,
+.song-guide-fact,
+.song-guide-fingers,
+.song-guide-warn,
+.song-guide-endurance,
+.song-guide-ready {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.song-guide-fact {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.song-guide-warn {
+  color: #fcd34d;
+}
+
+.song-guide-endurance,
+.song-guide-ready {
+  color: #a7f3d0;
+}
+
+.song-guide-fingers span {
+  color: rgba(255, 255, 255, 0.4);
+  margin-right: 6px;
+}
+
+.song-guide-map {
+  position: relative;
+  display: flex;
+  gap: 2px;
+  height: 14px;
+  margin: 12px 0 0;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+
+.song-guide-seg {
+  min-width: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  opacity: 0.55;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.song-guide-seg--on {
+  opacity: 1;
+  outline: 1px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 1px;
+}
+
+.song-guide-playhead {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  margin-left: -1px;
+  background: white;
+  pointer-events: none;
+}
+
+.song-guide-looping {
+  display: inline-flex;
+  margin-top: 8px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
+.song-guide-learn {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.song-guide-learn h3 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.song-guide-learn ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 150px;
+  overflow: auto;
+}
+
+.song-guide-learn li {
+  padding: 6px 8px;
+  border-radius: 10px;
+}
+
+.song-guide-learn--on {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.song-guide-learn-title {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.song-guide-learn p {
+  margin: 2px 0 6px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.song-guide-ranges,
+.song-guide-tempo,
+.song-guide-clean {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.song-guide-ranges button,
+.song-guide-tempo button,
+.song-guide-clean button {
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.song-guide-tempo {
+  margin-top: 10px;
+}
+
+.song-guide-tempo > span,
+.song-guide-clean span {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.song-guide-tempo > div {
+  display: flex;
+  gap: 4px;
+}
+
+.song-guide-tempo--on {
+  background: #e9d5ff !important;
+  color: #0b0b12 !important;
+  border-color: transparent !important;
+  font-weight: 700;
+}
+
+.song-guide-clean {
+  margin-top: 8px;
+}
+
+.song-guide-tips {
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.song-guide-tips summary {
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.song-guide-tips ul {
+  margin: 6px 0 0;
+  padding-left: 16px;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.song-guide-badges {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 12;
+}
+
+.song-guide-badge {
+  position: fixed;
+  transform: translate(-50%, 0);
+  min-width: 16px;
+  padding: 2px 3px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(8, 8, 16, 0.88);
+  font-family: var(--font, system-ui, sans-serif);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+  color: white;
+  pointer-events: none;
 }

@@ -1,4 +1,6 @@
 import { getContext, getTransport, immediate, Part, start as toneStart } from 'tone'
+import { getHandPractice, type Hand, noteHand } from '../core/handPractice'
+import { getKeyboardRange, placedPitch } from '../core/keyboardRange'
 import { audibleDuration, type MidiFile } from '../core/midi/types'
 import { createEventSignal } from '../store/eventSignal'
 import type { AudioEngine } from './AudioEngine'
@@ -21,6 +23,10 @@ interface NoteEvent {
   duration: number
   velocity: number
   trackId: string
+  // Written pitch, before fit-to-range. The hand gate uses this so a note
+  // folded across middle C stays with the hand that played it.
+  pitch: number
+  hand: 'left' | 'right' | null
 }
 
 export class SynthEngine implements AudioEngine {
@@ -59,6 +65,10 @@ export class SynthEngine implements AudioEngine {
   // notes already in flight finish their natural decay (we don't track per-track
   // voice handles, and stealing them mid-note would click).
   private disabledTrackIds = new Set<string>()
+  // Checked at trigger time, same as the track mute, so Hear/Mute doesn't
+  // rebuild the Part. Drums are `null` and always pass.
+  private practiceHand: Hand = getHandPractice().hand
+  private otherHandAudible = getHandPractice().otherHandAudible
 
   async load(source: MidiFile | AudioBuffer): Promise<void> {
     if (!(source instanceof AudioBuffer)) {
@@ -77,6 +87,18 @@ export class SynthEngine implements AudioEngine {
 
   getDisabledTrackIds(): ReadonlySet<string> {
     return this.disabledTrackIds
+  }
+
+  setHandGate(hand: Hand, otherHandAudible: boolean): void {
+    this.practiceHand = hand
+    this.otherHandAudible = otherHandAudible
+  }
+
+  // The pause-resume shortcut replays the Part built at the last `play()`.
+  // Fit-to-range changes the pitches in that Part, so the next play must
+  // rebuild even when the playhead has not moved.
+  invalidateScheduledPitches(): void {
+    this.scheduledFromTime = -1
   }
 
   // Kick off piano sample download in the background — safe to call at app
@@ -178,13 +200,16 @@ export class SynthEngine implements AudioEngine {
       }
       for (let i = lo; i < notes.length; i++) {
         const note = notes[i]!
+        const placed = track.isDrum ? null : placedPitch(note.pitch, getKeyboardRange())
         partEvents.push([
           note.time - fromTime,
           {
-            note: midiToNoteName(note.pitch),
+            note: midiToNoteName(placed?.pitch ?? note.pitch),
             duration: audibleDuration(note),
             velocity: note.velocity,
             trackId: track.id,
+            pitch: note.pitch,
+            hand: track.isDrum ? null : noteHand(note.pitch),
           },
         ])
       }
@@ -199,6 +224,14 @@ export class SynthEngine implements AudioEngine {
       // effect without rebuilding the Part. setInstrument() releases the old
       // voice so overlapping notes from the previous instrument don't linger.
       if (this.disabledTrackIds.has(ev.trackId)) return
+      if (
+        ev.hand &&
+        this.practiceHand !== 'both' &&
+        !this.otherHandAudible &&
+        ev.hand !== this.practiceHand
+      ) {
+        return
+      }
       const inst = this.instruments.get(this.currentId)
       const speed = this._speed > 0 ? this._speed : 1
       inst?.triggerAttackRelease(ev.note, ev.duration / speed, time, ev.velocity)

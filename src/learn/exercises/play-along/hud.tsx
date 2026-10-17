@@ -3,6 +3,7 @@ import { t } from '../../../i18n'
 import { watch } from '../../../store/watch'
 import { formatSpeed } from '../../../ui/ControlsView'
 import { FloatingHud } from '../../../ui/FloatingHud'
+import { HandPracticeButtons } from '../../../ui/HandPracticeControl'
 import { createMountHandle } from '../../ui/mountComponent'
 import { cycleSpeedPreset, type PlayAlongEngine } from './engine'
 
@@ -386,39 +387,7 @@ function PlayAlongHudView(props: PlayAlongHudOptions) {
             {formatSpeed(engine.state.speedPct / 100)}
           </button>
 
-          <fieldset class="pa-hud__segmented" aria-label={t('learn.pa.handsAria')}>
-            <span class="pa-hud__seg-label">{t('learn.pa.handsLabel')}</span>
-            <div class="pa-hud__seg-track">
-              {(['left', 'right', 'both'] as const).map((h) => (
-                <button
-                  class="pa-hud__seg"
-                  classList={{ 'is-active': engine.state.hand === h }}
-                  type="button"
-                  data-tip={
-                    h === 'left'
-                      ? t('learn.pa.handLeftTip')
-                      : h === 'right'
-                        ? t('learn.pa.handRightTip')
-                        : t('learn.pa.handBothTip')
-                  }
-                  aria-label={
-                    h === 'both'
-                      ? t('learn.pa.handBothAria')
-                      : h === 'left'
-                        ? t('learn.pa.handLeftAria')
-                        : t('learn.pa.handRightAria')
-                  }
-                  onClick={() => engine.setHand(h)}
-                >
-                  {h === 'left'
-                    ? t('learn.pa.handLeftLabel')
-                    : h === 'right'
-                      ? t('learn.pa.handRightLabel')
-                      : t('learn.pa.handBothLabel')}
-                </button>
-              ))}
-            </div>
-          </fieldset>
+          <HandPracticeButtons variant="learn" />
 
           <div
             class="pa-hud__loop"

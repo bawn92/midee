@@ -57,7 +57,10 @@ export class BeatGrid {
       const y = Math.round(viewport.timeOffsetToY(times[i]! - currentTime))
       if (y < 0 || y > rollHeight) continue
       g.rect(0, y, canvasWidth, 1)
-      g.fill({ color: 0xffffff, alpha: this.isBar[i] ? theme.barLineAlpha : theme.beatLineAlpha })
+      g.fill({
+        color: theme.gridColor ?? 0xffffff,
+        alpha: this.isBar[i] ? theme.barLineAlpha : theme.beatLineAlpha,
+      })
     }
   }
 
