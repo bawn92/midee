@@ -15,7 +15,7 @@ You do not need a DAW just to jam, sketch a phrase, or make something beautiful 
 ## Quick steps
 
 1. Connect your MIDI keyboard by USB.
-2. Open [midee.app](/).
+2. Open [the app](/).
 3. Choose **Live**.
 4. Allow MIDI access if your browser asks.
 5. Play your controller.

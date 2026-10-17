@@ -54,11 +54,11 @@ If learning piano is the main thing, Synthesia is probably the right fit.
 
 midee didn't start as a Synthesia clone - it started because there was no browser-native tool that turned a MIDI into a nice-looking video without uploading anything or installing anything.
 
-- **Zero install.** Open [midee.app](/) and it's running. No account, no download. If you want to share a link with a friend who's never heard of it, they can try it in five seconds.
+- **Zero install.** Open [the app](/) and it's running. No account, no download. If you want to share a link with a friend who's never heard of it, they can try it in five seconds.
 - **Built-in MP4 export.** This is the thing Synthesia doesn't do. Hit record inside midee and you get a frame-accurate 1080p MP4 with audio baked in. 720p, 1080p, vertical for TikTok and Reels, square, or native resolution. Rendered locally in your browser via WebCodecs - no server, no upload.
 - **Beautiful out of the box.** Five themes (Dark, Midnight, Neon, Sunset, Ocean), sampled piano plus multiple synth and acoustic voices, and a rotating roster of particle styles. Your picks persist across reloads.
 - **Learn mode.** Drop a MIDI into play-along practice, turn on wait mode, slow it down, focus hands, loop hard sections, and track accuracy. Learn also includes sight reading and interval training.
-- **Free and open source.** No paywall, no unlock code for custom MIDIs. The [source code is on GitHub](https://github.com/aayushdutt/midee) and PRs are welcome.
+- **Free and open source.** No paywall, no unlock code for custom MIDIs. The source ships with the app and PRs are welcome.
 - **Live mode + loop station.** Plug in a MIDI keyboard (Web MIDI) or use your laptop keyboard. Loop a phrase bar-snapped to the metronome. Record a session and export to `.mid` or straight to video.
 - **Fully client-side.** Your MIDI file and the rendered video never leave your browser. There's no server to store, mine, or leak them.
 

@@ -323,10 +323,6 @@ type EventMap = {
     action: 'again' | 'next' | 'dismissed'
   }
 
-  // Feedback portal (self-hosted Fider) outbound clicks. `source` identifies
-  // which surface drove the click.
-  feedback_clicked: { source: 'customize_menu' | 'post_session' }
-
   // Transport / playback controls. seeked fires on commit (not per scrub
   // frame); the slider-driven *_changed events fire via trackEventSettled so a
   // single drag yields one event with the final value.

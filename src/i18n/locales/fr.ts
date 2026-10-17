@@ -37,6 +37,7 @@ const fr: Messages = {
   'songGuide.open': 'Guide du morceau',
   'songGuide.title': 'Guide du morceau',
   'songGuide.hide': 'Masquer',
+  'songGuide.more': 'Plus',
   'songGuide.bar': 'Mesure {n}',
   'songGuide.step': 'Étape {n} sur {total}',
   'songGuide.rest': 'Silence',
@@ -79,10 +80,6 @@ const fr: Messages = {
   'home.midi.blocked': 'Activez MIDI depuis la barre du haut',
   'home.midi.unavailable': 'Web MIDI indisponible dans ce navigateur',
   'home.midi.disconnected': 'Aucun périphérique MIDI - clavier et souris fonctionnent aussi',
-  'home.metaLink.blog': 'Lire le blog',
-  'home.metaLink.github': 'Code source sur GitHub',
-  'home.metaLink.discord': 'Rejoindre la communauté Discord',
-  'home.metaLinks.aria': 'liens midee',
   'home.aria': 'accueil midee',
 
   // ── Top strip (primary nav) ─────────────────────────────────
@@ -135,8 +132,6 @@ const fr: Messages = {
   'customize.noteLabels': 'Noms des notes',
   'customize.noteLabels.sub': 'Étiquette les notes qui tombent · jouer en même temps',
   'customize.language': 'Langue',
-  'feedback.menu': 'Avis & suggestions',
-  'feedback.postSession': 'Une idée pour l’améliorer ? Dites-le-nous',
 
   // ── HUD — tooltips ──────────────────────────────────────────
   'hud.play': 'Lecture / Pause',
@@ -543,6 +538,9 @@ const fr: Messages = {
   'onboarding.localeDetected': 'Affichage en {language} · changez dans Apparence',
 
   'kbdRange.title': 'Tessiture du clavier',
+  'kbdRange.more': 'Calibration et taille',
+  'kbdRange.allKeys': 'Les 88',
+  'kbdRange.focusKeys': 'Cadrer',
   'kbdRange.tip':
     'Le piano à l’écran reste à 88 touches. Cette fenêtre est ce que joue votre contrôleur : le MIDI est transposé pour que sa touche la plus grave corresponde à la fenêtre. Le mode attente ignore les notes hors de celle-ci.',
   'kbdRange.aria': 'Tessiture de {low} à {high}, {count} touches',

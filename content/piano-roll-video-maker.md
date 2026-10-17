@@ -14,7 +14,7 @@ If you have ever seen a video where piano notes fall toward a keyboard in sync w
 
 ## Quick steps
 
-1. Open [midee.app](/).
+1. Open [the app](/).
 2. Drag in a `.mid` or `.midi` file.
 3. Pick a theme and instrument.
 4. Preview the falling notes.

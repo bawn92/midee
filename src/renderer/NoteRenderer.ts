@@ -200,7 +200,12 @@ export class NoteRenderer {
         }
 
         const x = viewport.pitchToX(drawPitch)
-        const w = Math.max(viewport.pitchWidth(drawPitch) - 1, 2)
+        const rawW = Math.max(viewport.pitchWidth(drawPitch) - 1, 2)
+        const pill = this.theme.noteStyle === 'pill'
+        const inset = pill ? 1 : 0
+        const w = Math.max(2, rawW - inset)
+        const drawX = x + inset / 2
+        const radius = pill ? Math.min(noteRadius, w / 2, h / 2) : noteRadius
 
         // Velocity → alpha (0.5 minimum so faint notes are still visible)
         const alpha = (0.5 + note.velocity * 0.5) * (dimmed ? PRACTICE_INACTIVE_ALPHA_SCALE : 1)
@@ -223,8 +228,16 @@ export class NoteRenderer {
             note.pitch + note.time,
             active,
           )
+        } else if (pill) {
+          g.roundRect(drawX + 0.5, y + 2, w, h, radius)
+          g.fill({ color: 0x6b3e2a, alpha: alpha * 0.22 })
+          g.roundRect(drawX, y, w, h, radius)
+          g.fill({ color: noteColor, alpha })
+          const cap = Math.min(radius, Math.max(3, h * 0.42), 8)
+          g.roundRect(drawX + 1.5, y + 1, Math.max(1, w - 3), cap, Math.min(radius, cap / 2))
+          g.fill({ color: 0xffffff, alpha: 0.24 * (0.45 + note.velocity * 0.55) })
         } else {
-          g.roundRect(x, y, w, h, noteRadius)
+          g.roundRect(drawX, y, w, h, noteRadius)
           g.fill({ color: noteColor, alpha })
         }
 
@@ -239,9 +252,9 @@ export class NoteRenderer {
           note.time <= currentTime &&
           note.time + note.duration >= currentTime
         ) {
-          this.glowGraphics.roundRect(x, y, w, h, noteRadius)
+          this.glowGraphics.roundRect(drawX, y, w, h, radius)
           this.glowGraphics.fill({ color: noteColor, alpha: ACTIVE_NOTE_ALPHA })
-          baked?.add(x, y, w, h, noteColor)
+          baked?.add(drawX, y, w, h, noteColor)
           sumR += colorR
           sumG += colorG
           sumB += colorB

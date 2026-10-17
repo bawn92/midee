@@ -41,6 +41,7 @@ const pl: Messages & Record<PolishPluralKey, string> = {
   'songGuide.open': 'Przewodnik utworu',
   'songGuide.title': 'Przewodnik utworu',
   'songGuide.hide': 'Ukryj',
+  'songGuide.more': 'Więcej',
   'songGuide.bar': 'Takt {n}',
   'songGuide.step': 'Krok {n} z {total}',
   'songGuide.rest': 'Pauza',
@@ -82,10 +83,6 @@ const pl: Messages & Record<PolishPluralKey, string> = {
   'home.midi.blocked': 'Włącz MIDI na górnym pasku',
   'home.midi.unavailable': 'Web MIDI niedostępne w tej przeglądarce',
   'home.midi.disconnected': 'Brak kontrolera MIDI - klawiatura i myszka też działają',
-  'home.metaLink.blog': 'Przeczytaj bloga',
-  'home.metaLink.github': 'Kod na GitHubie',
-  'home.metaLink.discord': 'Dołącz do społeczności na Discordzie',
-  'home.metaLinks.aria': 'Linki midee',
   'home.aria': 'Strona główna midee',
 
   'topStrip.home': 'Start',
@@ -136,8 +133,6 @@ const pl: Messages & Record<PolishPluralKey, string> = {
   'customize.noteLabels': 'Nazwy dźwięków',
   'customize.noteLabels.sub': 'Podpisuje spadające nuty · graj razem',
   'customize.language': 'Język',
-  'feedback.menu': 'Opinie i propozycje funkcji',
-  'feedback.postSession': 'Chcesz, żeby działało inaczej? Napisz nam',
 
   'hud.play': 'Odtwórz / Pauza',
   'hud.skipBack': 'Cofnij 10 s',
@@ -528,6 +523,9 @@ const pl: Messages & Record<PolishPluralKey, string> = {
   'onboarding.localeDetected': 'Język interfejsu: {language} · zmień w sekcji Wygląd',
 
   'kbdRange.title': 'Zakres klawiatury',
+  'kbdRange.more': 'Kalibracja i zakres',
+  'kbdRange.allKeys': 'Wszystkie 88',
+  'kbdRange.focusKeys': 'Dopasuj',
   'kbdRange.tip':
     'Fortepian na ekranie ma zawsze 88 klawiszy. To okno jest tym, co gra kontroler: MIDI jest transponowane tak, by najniższy klawisz pokrywał się z oknem. Tryb czekania pomija nuty poza nim.',
   'kbdRange.aria': 'Zakres od {low} do {high}, {count} klawiszy',

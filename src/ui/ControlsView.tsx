@@ -1,4 +1,4 @@
-import { createEffect, onCleanup, onMount } from 'solid-js'
+import { createEffect, onCleanup, onMount, Show } from 'solid-js'
 import { t } from '../i18n'
 import type { LiveLooperState } from '../midi/LiveLooper'
 import type { MidiDeviceStatus } from '../midi/MidiInputManager'
@@ -91,6 +91,7 @@ export interface HudProps {
   closed: () => boolean
   onClose: () => void
   onReopen: () => void
+  context?: () => { kicker: string; title: string }
 }
 
 export interface KeyHintProps {
@@ -406,6 +407,14 @@ export function HudView(props: HudProps) {
             onClick={() => props.onPlay()}
             innerHTML={props.playing() ? icons.pause() : icons.play()}
           />
+          <Show when={props.context?.().title}>
+            <div class="hud-piece">
+              <span class="hud-piece-title" id="hud-piece-title">
+                {props.context?.().title}
+              </span>
+              <span class="hud-piece-bpm">{props.metroBpm()} BPM</span>
+            </div>
+          </Show>
           <button
             type="button"
             class="btn-skip"

@@ -245,6 +245,7 @@ export class Controls {
             }
           />
           <HudView
+            context={() => uiStore.context}
             mode={mode}
             status={status}
             showPlayHud={() => mode() === 'play' && hasFile() && status() !== 'loading'}

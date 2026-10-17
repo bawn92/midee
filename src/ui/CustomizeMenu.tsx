@@ -6,10 +6,9 @@ import type { MidiInputManager } from '../midi/MidiInputManager'
 import type { ParticleStyle, ParticleStyleInfo } from '../renderer/particleStyles'
 import { SCENES } from '../renderer/scenes'
 import { accentCSS, type Theme } from '../renderer/theme'
-import { trackEvent } from '../telemetry'
 import { icons } from './icons'
 import { KeyLightsSettings } from './KeyLightsSettings'
-import { FEEDBACK_URL, isNarrowViewport } from './utils'
+import { isNarrowViewport } from './utils'
 
 // Aesthetics popover — collapses theme, particles, and chord overlay (three
 // previously-separate topbar pills) into one trigger. Reduces topbar noise
@@ -300,48 +299,6 @@ function MenuView(props: MenuProps) {
         </div>
 
         {props.keyLights && <KeyLightsSettings {...props.keyLights} />}
-
-        <div class="customize-section customize-section--footer">
-          <a
-            class="customize-feedback-card"
-            href={FEEDBACK_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => trackEvent('feedback_clicked', { source: 'customize_menu' })}
-          >
-            <span class="customize-feedback-icon" aria-hidden="true">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.9"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 9.6 9.6 0 0 1-4-.9L3 21l1.9-5.5a8.38 8.38 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z" />
-              </svg>
-            </span>
-            <span class="customize-feedback-label">{t('feedback.menu')}</span>
-            <svg
-              class="customize-feedback-arrow"
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M7 17L17 7" />
-              <path d="M8 7h9v9" />
-            </svg>
-          </a>
-        </div>
       </div>
     </div>
   )

@@ -221,4 +221,4 @@ If you're shipping a browser app that needs to produce a video file - a recorder
 
 ---
 
-*[midee](/) is the MIDI visualizer I built this pipeline for. It's free, open source, and runs entirely in your browser. [Source on GitHub](https://github.com/aayushdutt/midee).*
+*[midee](/) is the MIDI visualizer I built this pipeline for. It's free, open source, and runs entirely in your browser. the source ships with the app.*

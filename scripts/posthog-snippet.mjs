@@ -2,7 +2,7 @@
 // Mirrors the SPA's init in src/main.tsx + super-props in src/telemetry.ts
 // (`registerAnalyticsContext`) so a reader who lands on a blog post and
 // later opens the app stays the same distinct_id, with the same device /
-// landing context attached. Same-origin — midee.app cookies are shared,
+// landing context attached. Same-origin cookies are shared,
 // no cross-domain config needed.
 //
 // Why eager here vs deferred in the SPA: the SPA hides PostHog behind

@@ -8,7 +8,7 @@ phrases, learn songs, and bounce takes out as a 1080p MP4.
 Everything runs locally in one browser tab. No install, no upload, no server,
 no watermark.
 
-> [**midee.app**](https://midee.app) - open it and drop a file.
+Open the app and drop a file.
 
 ---
 

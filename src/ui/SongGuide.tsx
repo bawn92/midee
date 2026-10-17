@@ -170,102 +170,109 @@ export function SongGuidePanel(props: {
             )}
           </Show>
 
-          <fieldset class="song-guide-map">
-            <legend class="sr-visually-hidden">{t('songGuide.map')}</legend>
-            <For each={view().guide.sections}>
-              {(section) => (
-                <button
-                  type="button"
-                  class="song-guide-seg"
-                  classList={{ 'song-guide-seg--on': snap().section?.id === section.id }}
-                  style={{
-                    'flex-grow': String(section.endBar - section.startBar + 1),
-                    background: section.color,
-                  }}
-                  title={`${section.name} · ${section.startBar}–${section.endBar}`}
-                  aria-label={t('songGuide.sectionJump', {
-                    name: section.name,
-                    start: section.startBar,
-                    end: section.endBar,
-                  })}
-                  onClick={() => props.onJump(section.startBar, section.endBar)}
-                />
-              )}
-            </For>
-            <span
-              class="song-guide-playhead"
-              style={{ left: `${((snap().bar - 0.5) / view().guide.barCount) * 100}%` }}
-            />
-          </fieldset>
-          <Show when={view().looping}>
-            {(label) => (
-              <button type="button" class="song-guide-looping" onClick={() => props.onClearLoop()}>
-                {label()}
-              </button>
-            )}
-          </Show>
-
-          <section class="song-guide-learn">
-            <h3>{t('songGuide.learn')}</h3>
-            <ol>
-              <For each={view().guide.steps}>
-                {(step) => (
-                  <li classList={{ 'song-guide-learn--on': snap().step?.id === step.id }}>
-                    <div class="song-guide-learn-title">
-                      <span>
-                        {step.order}. {step.title}
-                      </span>
-                    </div>
-                    <p>{step.detail}</p>
-                    <div class="song-guide-ranges">
-                      <For each={step.ranges}>
-                        {(range) => (
-                          <button
-                            type="button"
-                            onClick={() => props.onJump(range.startBar, range.endBar)}
-                          >
-                            {range.label ?? `${range.startBar}–${range.endBar}`}
-                          </button>
-                        )}
-                      </For>
-                    </div>
-                  </li>
+          <details class="song-guide-more">
+            <summary>{t('songGuide.more')}</summary>
+            <fieldset class="song-guide-map">
+              <legend class="sr-visually-hidden">{t('songGuide.map')}</legend>
+              <For each={view().guide.sections}>
+                {(section) => (
+                  <button
+                    type="button"
+                    class="song-guide-seg"
+                    classList={{ 'song-guide-seg--on': snap().section?.id === section.id }}
+                    style={{
+                      'flex-grow': String(section.endBar - section.startBar + 1),
+                      background: section.color,
+                    }}
+                    title={`${section.name} · ${section.startBar}–${section.endBar}`}
+                    aria-label={t('songGuide.sectionJump', {
+                      name: section.name,
+                      start: section.startBar,
+                      end: section.endBar,
+                    })}
+                    onClick={() => props.onJump(section.startBar, section.endBar)}
+                  />
                 )}
               </For>
-            </ol>
-            <div class="song-guide-tempo">
-              <span>{t('songGuide.tempo')}</span>
-              <div>
-                <For each={GUIDE_TEMPOS}>
-                  {(tempo) => (
-                    <button
-                      type="button"
-                      classList={{ 'song-guide-tempo--on': view().tempo === tempo }}
-                      data-tempo={tempo}
-                      onClick={() => props.onTempo(tempo)}
-                    >
-                      {tempo}
-                    </button>
+              <span
+                class="song-guide-playhead"
+                style={{ left: `${((snap().bar - 0.5) / view().guide.barCount) * 100}%` }}
+              />
+            </fieldset>
+            <Show when={view().looping}>
+              {(label) => (
+                <button
+                  type="button"
+                  class="song-guide-looping"
+                  onClick={() => props.onClearLoop()}
+                >
+                  {label()}
+                </button>
+              )}
+            </Show>
+
+            <section class="song-guide-learn">
+              <h3>{t('songGuide.learn')}</h3>
+              <ol>
+                <For each={view().guide.steps}>
+                  {(step) => (
+                    <li classList={{ 'song-guide-learn--on': snap().step?.id === step.id }}>
+                      <div class="song-guide-learn-title">
+                        <span>
+                          {step.order}. {step.title}
+                        </span>
+                      </div>
+                      <p>{step.detail}</p>
+                      <div class="song-guide-ranges">
+                        <For each={step.ranges}>
+                          {(range) => (
+                            <button
+                              type="button"
+                              onClick={() => props.onJump(range.startBar, range.endBar)}
+                            >
+                              {range.label ?? `${range.startBar}–${range.endBar}`}
+                            </button>
+                          )}
+                        </For>
+                      </div>
+                    </li>
                   )}
                 </For>
+              </ol>
+              <div class="song-guide-tempo">
+                <span>{t('songGuide.tempo')}</span>
+                <div>
+                  <For each={GUIDE_TEMPOS}>
+                    {(tempo) => (
+                      <button
+                        type="button"
+                        classList={{ 'song-guide-tempo--on': view().tempo === tempo }}
+                        data-tempo={tempo}
+                        onClick={() => props.onTempo(tempo)}
+                      >
+                        {tempo}
+                      </button>
+                    )}
+                  </For>
+                </div>
               </div>
-            </div>
-            <div class="song-guide-clean">
-              <button type="button" onClick={() => props.onClean()} disabled={!snap().step}>
-                {t('songGuide.clean')}
-              </button>
-              <span>{t('songGuide.cleans', { n: view().cleans, goal: CLEAN_GOAL })}</span>
-            </div>
-            <Show when={view().cleans >= CLEAN_GOAL && view().tempo < 120}>
-              <p class="song-guide-ready">{t('songGuide.ready')}</p>
-            </Show>
-            <details class="song-guide-tips">
-              <summary>{t('songGuide.tips')}</summary>
-              <ul>
-                <For each={view().guide.tips}>{(tip) => <li>{tip}</li>}</For>
-              </ul>
-            </details>
-          </section>
+              <div class="song-guide-clean">
+                <button type="button" onClick={() => props.onClean()} disabled={!snap().step}>
+                  {t('songGuide.clean')}
+                </button>
+                <span>{t('songGuide.cleans', { n: view().cleans, goal: CLEAN_GOAL })}</span>
+              </div>
+              <Show when={view().cleans >= CLEAN_GOAL && view().tempo < 120}>
+                <p class="song-guide-ready">{t('songGuide.ready')}</p>
+              </Show>
+              <details class="song-guide-tips">
+                <summary>{t('songGuide.tips')}</summary>
+                <ul>
+                  <For each={view().guide.tips}>{(tip) => <li>{tip}</li>}</For>
+                </ul>
+              </details>
+            </section>
+          </details>
         </div>
       </Show>
     </aside>

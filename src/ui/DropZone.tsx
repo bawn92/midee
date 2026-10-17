@@ -196,33 +196,6 @@ function DropZoneView(props: DropZoneProps) {
           </div>
           <div class="home-drop-hint" innerHTML={t('home.dropHint.html')} />
         </div>
-        <nav class="home-meta-links" aria-label={t('home.metaLinks.aria')}>
-          <a
-            href="/blog/"
-            class="home-meta-link"
-            aria-label={t('home.metaLink.blog')}
-            data-tip={t('home.metaLink.blog')}
-            innerHTML={icons.blog()}
-          />
-          <a
-            href="https://github.com/aayushdutt/midee"
-            class="home-meta-link"
-            aria-label={t('home.metaLink.github')}
-            data-tip={t('home.metaLink.github')}
-            target="_blank"
-            rel="noopener noreferrer"
-            innerHTML={icons.github()}
-          />
-          <a
-            href="https://discord.gg/UaH5qWSNdy"
-            class="home-meta-link"
-            aria-label={t('home.metaLink.discord')}
-            data-tip={t('home.metaLink.discord')}
-            target="_blank"
-            rel="noopener noreferrer"
-            innerHTML={icons.discord()}
-          />
-        </nav>
         <input
           type="file"
           id="midi-input"

@@ -46,6 +46,7 @@ test('song guide follows the untitled piece and can loop a section', async ({ pa
   await expect.poll(async () => page.locator('.song-guide-badge').count()).toBeGreaterThan(0)
   await page.screenshot({ path: '/opt/cursor/artifacts/screenshots/song-guide-melody.png' })
 
+  await guide.locator('.song-guide-more > summary').click()
   await guide.getByRole('button', { name: /Climax, bars 189/ }).click()
   await expect(guide.locator('.song-guide-looping')).toContainText('189')
   await expect(guide).toHaveAttribute('data-section', 'climax')

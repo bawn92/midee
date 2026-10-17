@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-test.use({ viewport: { width: 1280, height: 860 } })
+test.use({ viewport: { width: 1280, height: 800 } })
 
 test('Golden Hour play view shows the living-room scene with a song loaded', async ({ page }) => {
   await page.addInitScript(() => {
@@ -82,6 +82,22 @@ test('Golden Hour play view shows the living-room scene with a song loaded', asy
 
   await page.screenshot({
     path: '/opt/cursor/artifacts/screenshots/golden-hour-play.png',
+    fullPage: false,
+  })
+  await page.screenshot({
+    path: '/opt/cursor/artifacts/screenshots/golden-hour-play-1280x800.png',
+    fullPage: false,
+  })
+
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.evaluate(() => {
+    const el = document.activeElement
+    if (el instanceof HTMLElement) el.blur()
+  })
+  await page.mouse.move(8, 8)
+  await expect(page.locator('#kbd-range-band')).toBeVisible()
+  await page.screenshot({
+    path: '/opt/cursor/artifacts/screenshots/golden-hour-play-1440x900.png',
     fullPage: false,
   })
 })

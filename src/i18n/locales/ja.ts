@@ -33,6 +33,7 @@ const ja: Messages = {
   'songGuide.open': '曲ガイド',
   'songGuide.title': '曲ガイド',
   'songGuide.hide': '隠す',
+  'songGuide.more': '詳細',
   'songGuide.bar': '{n}小節',
   'songGuide.step': 'ステップ {n} / {total}',
   'songGuide.rest': '休符',
@@ -74,10 +75,6 @@ const ja: Messages = {
   'home.midi.blocked': '上部バーから MIDI を有効にしてください',
   'home.midi.unavailable': 'このブラウザーでは Web MIDI を利用できません',
   'home.midi.disconnected': 'MIDI デバイスなし · キーボードとマウスでも弾けます',
-  'home.metaLink.blog': 'ブログを読む',
-  'home.metaLink.github': 'GitHub でソースを見る',
-  'home.metaLink.discord': 'Discord コミュニティに参加',
-  'home.metaLinks.aria': 'midee のリンク',
   'home.aria': 'midee ホーム',
 
   'topStrip.home': 'ホーム',
@@ -128,8 +125,6 @@ const ja: Messages = {
   'customize.noteLabels': '音名表示',
   'customize.noteLabels.sub': '落ちてくるノートに音名を表示 · 合わせて演奏',
   'customize.language': '言語',
-  'feedback.menu': 'フィードバックと機能リクエスト',
-  'feedback.postSession': 'もっとこうしたい？ご意見をお寄せください',
 
   'hud.play': '再生 / 一時停止',
   'hud.skipBack': '10 秒戻る',
@@ -516,6 +511,9 @@ const ja: Messages = {
   'onboarding.localeDetected': '{language} で表示中 · 「外観」で変更できます',
 
   'kbdRange.title': '鍵盤の音域',
+  'kbdRange.more': '調律と音域',
+  'kbdRange.allKeys': '88鍵すべて',
+  'kbdRange.focusKeys': 'フォーカス',
   'kbdRange.tip':
     '画面の鍵盤は常に 88 鍵です。この範囲がコントローラーの演奏音域です。MIDI は最低鍵が範囲の最低音になるよう移調されます。待機モードは範囲外の音をスキップします。',
   'kbdRange.aria': '音域 {low} から {high}、{count} 鍵',

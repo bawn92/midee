@@ -3,8 +3,9 @@ import { expect, type Page, test } from '@playwright/test'
 
 const FIXTURE_MID = fileURLToPath(new URL('../fixtures/multi-track.mid', import.meta.url))
 
-// The on-screen piano stays 88 keys. The controller window is a highlight on
-// those keys, draggable, and snapped to the layout for its size (C for 24).
+// The logical piano stays 88 keys. By default the view centres on the
+// controller window (about four octaves). "All 88" widens it again. The
+// window is a highlight, draggable, and snapped to the layout for its size.
 
 async function readWindow(page: Page) {
   return page.evaluate(() => {
@@ -42,19 +43,32 @@ test('24-key window highlights part of the full piano and snaps to C', async ({ 
   await page.setViewportSize({ width: 1280, height: 800 })
   await page.goto('/')
   await page.locator('#home-live').click()
-  await page.locator('#kbd-range-label').click()
+  await page.locator('.kbd-range-advanced > summary').click()
   await page.locator('.kbd-range-preset', { hasText: /^24$/ }).click()
-  await page.locator('#kbd-range-label').click()
+
+  await expect.poll(async () => {
+    const placed = await readWindow(page)
+    if (!placed.band || !placed.canvas) return 0
+    return placed.band.width / placed.canvas.width
+  }).toBeGreaterThan(0.38)
 
   const placed = await readWindow(page)
   expect(placed.notes).toBe('C3–B4')
   expect(placed.bandHidden).toBe(false)
   expect(placed.canvas!.width).toBeGreaterThan(1200)
   const fraction = placed.band!.width / placed.canvas!.width
-  expect(fraction).toBeGreaterThan(0.2)
-  expect(fraction).toBeLessThan(0.35)
+  expect(fraction).toBeLessThan(0.65)
   expect(overlaps(placed.band, placed.bar)).toBe(false)
   expect(overlaps(placed.band, placed.hint)).toBe(false)
+
+  await page.locator('#kbd-view-all').click()
+  await expect.poll(async () => {
+    const wide = await readWindow(page)
+    if (!wide.band || !wide.canvas) return 0
+    return wide.band.width / wide.canvas.width
+  }).toBeLessThan(0.35)
+  const wide = await readWindow(page)
+  expect(wide.band!.width / wide.canvas!.width).toBeGreaterThan(0.2)
 
   // Keys under the highlight still hit the piano, so they can be played.
   // Only the drag handle takes the pointer.
@@ -73,7 +87,7 @@ test('24-key window highlights part of the full piano and snaps to C', async ({ 
   expect(hit.handle).toBe('kbd-range-band-move')
   expect(hit.key).toBe('pianoroll')
 
-  await page.locator('#kbd-range-up').click()
+  await page.locator('#kbd-range-panel').getByRole('button', { name: 'Shift range up a semitone' }).click()
   expect((await readWindow(page)).notes).toBe('C#3–C5')
 
   const move = page.locator('.kbd-range-band-move')

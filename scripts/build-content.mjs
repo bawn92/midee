@@ -24,7 +24,7 @@ const layout = readFileSync(resolve(contentDir, '_layout.html'), 'utf8')
 // ~360 ms render-blocking on first load.
 const { fontFaces, fontPreload } = renderFontTags(resolve(distDir, 'assets'))
 
-const SITE = 'https://midee.app'
+const SITE = ''
 
 marked.setOptions({ gfm: true, breaks: false })
 
@@ -387,7 +387,7 @@ function writeRssFeed(posts) {
       <guid isPermaLink="true">${url}</guid>
       <pubDate>${pubDate}</pubDate>
       <description>${escapeXml(p.description)}</description>
-      <author>hello@midee.app (Aayush Dutt)</author>
+      <author>midee</author>
     </item>`
   }).join('\n')
 

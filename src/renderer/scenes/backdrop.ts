@@ -17,34 +17,43 @@ export function paintSceneBackdrop(
 
   const wash = ctx.createLinearGradient(0, 0, w * 0.15, h)
   wash.addColorStop(0, scene.background.top)
-  wash.addColorStop(0.55, scene.background.mid)
+  wash.addColorStop(0.42, scene.background.mid)
   wash.addColorStop(1, scene.background.bottom)
   ctx.fillStyle = wash
+  ctx.fillRect(0, 0, w, h)
+
+  const bloom = ctx.createRadialGradient(w * 0.46, h * 0.4, 24, w * 0.5, h * 0.46, w * 0.48)
+  bloom.addColorStop(0, 'rgba(255, 236, 196, 0.62)')
+  bloom.addColorStop(0.42, 'rgba(255, 210, 150, 0.22)')
+  bloom.addColorStop(1, 'rgba(255, 210, 150, 0)')
+  ctx.fillStyle = bloom
   ctx.fillRect(0, 0, w, h)
 
   if (scene.background.decor === 'window-leaf') paintLeafShadow(ctx, w, h)
 
   const vignette = ctx.createRadialGradient(w * 0.5, h * 0.42, w * 0.2, w * 0.5, h * 0.45, w * 0.72)
   vignette.addColorStop(0, 'rgba(255, 244, 226, 0)')
-  vignette.addColorStop(1, 'rgba(122, 72, 40, 0.16)')
+  vignette.addColorStop(1, 'rgba(122, 72, 40, 0.12)')
   ctx.fillStyle = vignette
   ctx.fillRect(0, 0, w, h)
 }
 
 function paintLeafShadow(ctx: CanvasRenderingContext2D, w: number, h: number): void {
   ctx.save()
-  ctx.filter = 'blur(18px)'
+  ctx.filter = 'blur(16px)'
   // Hang from the top-right corner so the shadow falls across the wall,
-  // past the floating top strip, like a plant in the late sun.
-  ctx.translate(w * 0.98, -8)
-  const reach = Math.min(h * 0.32, 260)
+  // past the floating transport, like a plant in the late sun.
+  ctx.translate(w * 0.94, 8)
+  const reach = Math.min(h * 0.62, 460)
   const leaves: Array<[number, number, number, number, number]> = [
-    [-40, reach * 0.32, -0.85, 190, 0.24],
-    [8, reach * 0.58, -0.35, 160, 0.2],
-    [-110, reach * 0.66, 0.45, 140, 0.17],
-    [-20, reach * 0.92, -1.05, 120, 0.15],
-    [36, reach * 0.4, 0.2, 100, 0.16],
-    [-150, reach * 0.48, 0.75, 80, 0.13],
+    [-30, reach * 0.18, -0.7, 280, 0.42],
+    [20, reach * 0.36, -0.2, 240, 0.36],
+    [-150, reach * 0.42, 0.55, 220, 0.34],
+    [-70, reach * 0.62, -1.05, 190, 0.3],
+    [40, reach * 0.58, 0.35, 170, 0.28],
+    [-200, reach * 0.28, 0.9, 150, 0.26],
+    [-110, reach * 0.78, -0.4, 140, 0.24],
+    [10, reach * 0.12, 0.15, 120, 0.32],
   ]
   for (const [x, y, rot, scale, alpha] of leaves) {
     ctx.save()

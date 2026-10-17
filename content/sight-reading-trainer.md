@@ -14,7 +14,7 @@ It is built for the skill that falling-note visualizers do not fully teach: read
 
 ## How it works
 
-1. Open [midee.app](/).
+1. Open [the app](/).
 2. Go to **Learn**.
 3. Start **Sight Reading**.
 4. Choose a clef mode if needed.

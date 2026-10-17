@@ -33,6 +33,7 @@ const es: Messages = {
   'songGuide.open': 'Guía del tema',
   'songGuide.title': 'Guía del tema',
   'songGuide.hide': 'Ocultar',
+  'songGuide.more': 'Más',
   'songGuide.bar': 'Compás {n}',
   'songGuide.step': 'Paso {n} de {total}',
   'songGuide.rest': 'Silencio',
@@ -75,10 +76,6 @@ const es: Messages = {
   'home.midi.blocked': 'Activa MIDI desde la barra superior',
   'home.midi.unavailable': 'Web MIDI no disponible en este navegador',
   'home.midi.disconnected': 'Sin dispositivo MIDI - el teclado y el ratón también funcionan',
-  'home.metaLink.blog': 'Leer el blog',
-  'home.metaLink.github': 'Código en GitHub',
-  'home.metaLink.discord': 'Únete a la comunidad de Discord',
-  'home.metaLinks.aria': 'enlaces de midee',
   'home.aria': 'inicio de midee',
 
   // ── Top strip (primary nav) ─────────────────────────────────
@@ -131,8 +128,6 @@ const es: Messages = {
   'customize.noteLabels': 'Nombres de notas',
   'customize.noteLabels.sub': 'Etiqueta las notas que caen · toca junto',
   'customize.language': 'Idioma',
-  'feedback.menu': 'Opiniones y sugerencias',
-  'feedback.postSession': '¿Te gustaría que funcionara distinto? Cuéntanos',
 
   // ── HUD — tooltips ──────────────────────────────────────────
   'hud.play': 'Reproducir / Pausar',
@@ -536,6 +531,9 @@ const es: Messages = {
   'onboarding.localeDetected': 'Mostrando en {language} · cambia en Apariencia',
 
   'kbdRange.title': 'Tesitura del teclado',
+  'kbdRange.more': 'Calibración y tamaño',
+  'kbdRange.allKeys': 'Las 88',
+  'kbdRange.focusKeys': 'Enfocar',
   'kbdRange.tip':
     'El piano en pantalla sigue mostrando 88 teclas. Esta ventana es lo que toca tu controlador: el MIDI se transpone para que su tecla más grave coincida con la ventana. El modo espera omite las notas fuera de ella.',
   'kbdRange.aria': 'Tesitura de {low} a {high}, {count} teclas',

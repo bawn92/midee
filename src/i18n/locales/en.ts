@@ -44,6 +44,7 @@ export const en = {
   'songGuide.open': 'Song guide',
   'songGuide.title': 'Song guide',
   'songGuide.hide': 'Hide',
+  'songGuide.more': 'More',
   'songGuide.bar': 'Bar {n}',
   'songGuide.step': 'Step {n} of {total}',
   'songGuide.rest': 'Rest',
@@ -91,10 +92,6 @@ export const en = {
   'home.midi.blocked': 'Enable MIDI from the top bar',
   'home.midi.unavailable': 'Web MIDI unavailable in this browser',
   'home.midi.disconnected': 'No MIDI device - keyboard & mouse work too',
-  'home.metaLink.blog': 'Read the blog',
-  'home.metaLink.github': 'Source on GitHub',
-  'home.metaLink.discord': 'Join the Discord community',
-  'home.metaLinks.aria': 'midee links',
   'home.aria': 'midee home',
 
   // ── Top strip (primary nav) ─────────────────────────────────
@@ -151,8 +148,6 @@ export const en = {
   'customize.noteLabels': 'Note names',
   'customize.noteLabels.sub': 'Label the falling notes · play along',
   'customize.language': 'Language',
-  'feedback.menu': 'Feedback & feature requests',
-  'feedback.postSession': 'Wish this worked differently? Tell us',
 
   // ── HUD — tooltips (data-tip) ───────────────────────────────
   'hud.play': 'Play / Pause',
@@ -570,6 +565,9 @@ export const en = {
 
   // ── Keyboard range ─────────────────────────────────────────
   'kbdRange.title': 'Keyboard range',
+  'kbdRange.more': 'Calibration and size',
+  'kbdRange.allKeys': 'All 88',
+  'kbdRange.focusKeys': 'Fit view',
   'kbdRange.tip':
     'The on-screen piano stays 88 keys. This window is what your controller plays: MIDI is transposed so its lowest key matches the window. Wait mode skips notes outside it.',
   'kbdRange.aria': 'Keyboard range {low} to {high}, {count} keys',

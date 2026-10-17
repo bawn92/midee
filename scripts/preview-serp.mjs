@@ -38,10 +38,18 @@ const description = metaByName('description') ?? ''
 const canonical =
   (html.match(/<link[^>]*rel="canonical"[^>]*>/i)?.[0] &&
     attr(html.match(/<link[^>]*rel="canonical"[^>]*>/i)?.[0] ?? '', 'href')) ||
-  'https://midee.app'
+  '/'
 const ogTitle = metaByProp('og:title') ?? title
 const ogDescription = metaByProp('og:description') ?? description
-const ogSiteName = metaByProp('og:site_name') ?? new URL(canonical).hostname
+const ogSiteName =
+  metaByProp('og:site_name') ??
+  (() => {
+    try {
+      return new URL(canonical).hostname
+    } catch {
+      return ''
+    }
+  })()
 const ogImageUrl = metaByProp('og:image') ?? ''
 
 // ── Inline referenced assets as data URIs ──────────────────────────

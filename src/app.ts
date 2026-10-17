@@ -63,6 +63,11 @@ import { sessionToMidiFile } from './midi/SessionToMidi'
 import type { LearnController } from './modes/LearnController'
 import { setNextLiveOpts } from './modes/LiveMode'
 import { MODE_CAPTURES_LIVE, type ModeContext } from './modes/ModeController'
+import {
+  focusPitchWindow,
+  keyboardFocusEnabled,
+  subscribeKeyboardFocus,
+} from './renderer/keyboardFocus'
 import { PianoRollRenderer } from './renderer/PianoRollRenderer'
 import { ALL_PARTICLE_STYLES, PARTICLE_STYLES, type ParticleStyle } from './renderer/particleStyles'
 import { applySceneClass } from './renderer/scenes'
@@ -298,6 +303,7 @@ export class App {
     this.renderer.setLoopNoteStore(this.loopNotes)
     this.applyKeyboardRange(getKeyboardRange())
     this.unsubs.push(subscribeKeyboardRange((prefs) => this.applyKeyboardRange(prefs)))
+    this.unsubs.push(subscribeKeyboardFocus(() => this.applyKeyboardRange(getKeyboardRange())))
     this.applyHandPractice(getHandPractice())
     this.unsubs.push(subscribeHandPractice((prefs) => this.applyHandPractice(prefs)))
 
@@ -914,9 +920,11 @@ export class App {
   }
 
   private applyKeyboardRange(range: KeyboardRangePrefs): void {
-    // The roll keeps all 88 keys. The range is a highlight plus the MIDI map.
-    // Fit-to-range is read while drawing, so a window move repaints note positions
-    // even when the highlight's endpoints did not change.
+    // The logical piano stays 88 keys. Focus only changes which of them are
+    // on screen. Fit-to-range is read while drawing, so a window move
+    // repaints note positions even when the highlight's endpoints did not change.
+    const view = focusPitchWindow(range, keyboardFocusEnabled())
+    this.renderer.aimPitchRange(view.min, view.max)
     this.renderer.setPlayableRange(range.start, range.start + range.size - 1)
     this.renderer.refreshPlacement()
     this.refreshSoundingPitches()

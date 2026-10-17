@@ -98,9 +98,10 @@ html.scene-golden-hour .float-hud {
 }
 
 html.scene-golden-hour #hud.float-hud {
-  top: calc(78px + env(safe-area-inset-top));
+  top: calc(52px + env(safe-area-inset-top));
   bottom: auto;
-  height: 58px;
+  height: 60px;
+  max-width: min(680px, calc(100vw - 36px));
 }
 
 html.scene-golden-hour .btn-play {
@@ -122,7 +123,7 @@ html.scene-golden-hour .hud-hand.is-active {
 }
 
 html.scene-golden-hour .song-guide {
-  top: calc(150px + env(safe-area-inset-top));
+  top: calc(124px + env(safe-area-inset-top));
   left: calc(18px + env(safe-area-inset-left));
   transform: none;
   width: min(340px, calc(50vw - 36px));
@@ -130,7 +131,7 @@ html.scene-golden-hour .song-guide {
 }
 
 html.scene-golden-hour .song-guide--side {
-  top: calc(150px + env(safe-area-inset-top));
+  top: calc(124px + env(safe-area-inset-top));
   left: calc(18px + env(safe-area-inset-left));
   width: min(320px, calc(50vw - 36px));
 }
@@ -156,7 +157,31 @@ html.scene-golden-hour .song-guide-card {
 }
 
 html.scene-golden-hour .song-guide-kicker {
-  color: #a98462;
+  color: #8a6244;
+  font-size: 13px;
+}
+
+html.scene-golden-hour .song-guide-name,
+html.scene-golden-hour .song-guide-chord-name {
+  color: #5c3b28;
+  font-size: 22px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+html.scene-golden-hour .song-guide-card {
+  padding: 16px 18px 14px;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+html.scene-golden-hour .song-guide-more > summary,
+html.scene-golden-hour .kbd-range-advanced > summary {
+  cursor: pointer;
+  color: #8a6244;
+  font-size: 13px;
+  font-weight: 650;
+  margin-top: 8px;
 }
 
 html.scene-golden-hour .song-guide-kicker::before {
@@ -210,7 +235,7 @@ html.scene-golden-hour #lower-left {
 html.scene-golden-hour #lower-left .kbd-range-mount,
 html.scene-golden-hour #lower-left:has(.kbd-range--beside) .kbd-range-mount {
   position: fixed;
-  top: calc(150px + env(safe-area-inset-top));
+  top: calc(124px + env(safe-area-inset-top));
   right: calc(18px + env(safe-area-inset-right));
   left: auto;
   bottom: auto;
@@ -252,7 +277,7 @@ html.scene-golden-hour #lower-left:has(.kbd-range--beside) .kbd-range-panel {
   /* Stay under the card and above the keyboard plus the bottom HUD. */
   max-height: min(
     420px,
-    calc(100svh - 316px - var(--keyboard-h, 120px) - env(safe-area-inset-bottom))
+    calc(100svh - 200px - var(--keyboard-h, 120px) - env(safe-area-inset-bottom))
   );
   overflow: auto;
   padding: 12px;
@@ -278,7 +303,7 @@ html.scene-golden-hour [data-tip]::after {
   box-shadow: 0 8px 20px rgba(107, 74, 47, 0.16);
 }
 
-html.scene-golden-hour .kbd-range-picker-label::before {
+html.scene-golden-hour .kbd-range-kicker::before {
   content: "";
   display: inline-block;
   width: 16px;
@@ -369,4 +394,195 @@ html.scene-golden-hour .kbd-range-band-edge--start::after,
 html.scene-golden-hour .kbd-range-band-edge--end::after {
   top: auto;
   bottom: -8px;
+}
+
+/* One quiet icon header, then the transport pill. Labels stay in the DOM. */
+html.scene-golden-hour #top-strip {
+  top: calc(8px + env(safe-area-inset-top));
+  height: 42px;
+  grid-template-columns: auto auto auto;
+  padding: 0 6px;
+  gap: 4px;
+}
+
+html.scene-golden-hour #ts-status,
+html.scene-golden-hour .ts-mode-label,
+html.scene-golden-hour .ts-home-name,
+html.scene-golden-hour #ts-open > span + span,
+html.scene-golden-hour #ts-tracks > span + span,
+html.scene-golden-hour #ts-learn-this > span + span,
+html.scene-golden-hour #ts-record > span + span,
+html.scene-golden-hour .ts-midi-label,
+html.scene-golden-hour .ts-customize-label {
+  display: none;
+}
+
+.hud-piece {
+  display: none;
+}
+
+html.scene-golden-hour #hud .hud-piece {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  max-width: 200px;
+  margin: 0 8px 0 4px;
+  line-height: 1.15;
+}
+
+html.scene-golden-hour .hud-piece-title {
+  font-size: 14px;
+  font-weight: 750;
+  color: #5c3b28;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html.scene-golden-hour .hud-piece-bpm {
+  font-size: 12px;
+  color: #8a6244;
+}
+
+html.scene-golden-hour #hud .btn-skip,
+html.scene-golden-hour #hud .hud-divider,
+html.scene-golden-hour #hud .ctrl-group,
+html.scene-golden-hour #hud #hud-drag,
+html.scene-golden-hour #hud .float-hud__handle {
+  display: none;
+}
+
+html.scene-golden-hour #hud.hud--play:not(.hud--live) .hud-metro,
+html.scene-golden-hour #hud.hud--play:not(.hud--live) #hud-loop {
+  display: flex;
+}
+
+html.scene-golden-hour #hud .scrubber-wrap {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: -2px;
+  width: auto;
+  height: 8px;
+}
+
+html.scene-golden-hour #hud .scrubber-wrap .time-display {
+  display: none;
+}
+
+.kbd-range-kicker {
+  display: none;
+}
+
+html.scene-golden-hour .kbd-range-kicker {
+  display: inline-flex;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 750;
+  color: #5c3b28;
+}
+
+html.scene-golden-hour .kbd-range-bar .kbd-range-step,
+html.scene-golden-hour .kbd-range-calibrate-bar,
+html.scene-golden-hour .kbd-range-bar .kbd-range-notes,
+html.scene-golden-hour .kbd-range-bar .kbd-range-count {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+html.scene-golden-hour .kbd-range-face {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "low slider high"
+    "count view view";
+  align-items: center;
+  gap: 6px 10px;
+}
+
+html.scene-golden-hour .kbd-range-face-note {
+  font-size: 26px;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  color: #5c3b28;
+}
+
+html.scene-golden-hour .kbd-range-face-note:first-child {
+  grid-area: low;
+}
+
+html.scene-golden-hour .kbd-range-face-note:nth-of-type(2) {
+  grid-area: high;
+}
+
+html.scene-golden-hour .kbd-range-face .kbd-range-picker-wrap {
+  grid-area: slider;
+}
+
+html.scene-golden-hour .kbd-range-face-count {
+  grid-area: count;
+  color: #8a6244;
+  font-size: 13px;
+}
+
+html.scene-golden-hour .kbd-range-view {
+  grid-area: view;
+  justify-self: end;
+  border: 0;
+  background: rgba(231, 181, 106, 0.45);
+  color: #5c3b28;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font: 650 12px / 1.2 var(--font);
+  cursor: pointer;
+}
+
+html.scene-golden-hour .kbd-range-picker-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+html.scene-golden-hour .kbd-range-picker {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(107, 74, 47, 0.16);
+}
+
+html.scene-golden-hour .kbd-range-key {
+  display: none;
+}
+
+html.scene-golden-hour .kbd-range-window {
+  top: -4px;
+  height: 16px;
+  border-radius: 999px;
+  background: #e7b56a;
+  box-shadow: none;
+}
+
+html.scene-golden-hour .kbd-range-handle {
+  display: none;
+}
+
+html.scene-golden-hour .kbd-range-window::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #fff8ec;
+  border: 2px solid #c4843a;
+  box-shadow: 0 2px 6px rgba(107, 74, 47, 0.2);
 }

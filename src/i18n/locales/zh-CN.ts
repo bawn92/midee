@@ -32,6 +32,7 @@ const zhCN: Messages = {
   'songGuide.open': '乐曲指南',
   'songGuide.title': '乐曲指南',
   'songGuide.hide': '隐藏',
+  'songGuide.more': '更多',
   'songGuide.bar': '第 {n} 小节',
   'songGuide.step': '第 {n} 步，共 {total} 步',
   'songGuide.rest': '休止',
@@ -72,10 +73,6 @@ const zhCN: Messages = {
   'home.midi.blocked': '请在顶部栏启用 MIDI',
   'home.midi.unavailable': '当前浏览器不支持 Web MIDI',
   'home.midi.disconnected': '未连接 MIDI 设备 · 键盘和鼠标也能用',
-  'home.metaLink.blog': '阅读博客',
-  'home.metaLink.github': 'GitHub 源码',
-  'home.metaLink.discord': '加入 Discord 社区',
-  'home.metaLinks.aria': 'midee 链接',
   'home.aria': 'midee 首页',
 
   'topStrip.home': '首页',
@@ -126,8 +123,6 @@ const zhCN: Messages = {
   'customize.noteLabels': '音名标注',
   'customize.noteLabels.sub': '在下落的音符上标注音名 · 跟着弹奏',
   'customize.language': '语言',
-  'feedback.menu': '反馈与功能建议',
-  'feedback.postSession': '希望这里不一样？告诉我们',
 
   'hud.play': '播放 / 暂停',
   'hud.skipBack': '后退 10 秒',
@@ -505,6 +500,9 @@ const zhCN: Messages = {
   'onboarding.localeDetected': '当前显示为 {language} · 可在“外观”中切换',
 
   'kbdRange.title': '键盘音域',
+  'kbdRange.more': '校准与音域',
+  'kbdRange.allKeys': '全部 88 键',
+  'kbdRange.focusKeys': '聚焦',
   'kbdRange.tip':
     '屏幕钢琴始终显示 88 键。这个窗口是控制器实际演奏的范围：MIDI 会移调，使最低键对应该窗口的最低音。等待模式会跳过窗口外的音符。',
   'kbdRange.aria': '键盘音域 {low} 至 {high}，共 {count} 键',

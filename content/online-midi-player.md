@@ -14,7 +14,7 @@ It is built for the small, common moment: you found a MIDI file, downloaded an a
 
 ## Quick steps
 
-1. Open [midee.app](/).
+1. Open [the app](/).
 2. Drag a `.mid` or `.midi` file onto the page.
 3. Press play.
 4. Leave the tab open if you want it playing while you work.

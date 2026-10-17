@@ -39,7 +39,14 @@ export const KEYBOARD_HEIGHT_MAX = 360
 function computeInitialKeyboardHeight(): number {
   if (typeof window === 'undefined' || !window.matchMedia) return DEFAULT_KEYBOARD_HEIGHT
   const isCoarse = window.matchMedia('(pointer: coarse)').matches
-  if (!isCoarse) return DEFAULT_KEYBOARD_HEIGHT
+  const scene =
+    typeof document !== 'undefined' &&
+    document.documentElement.classList.contains('scene-golden-hour')
+  if (!isCoarse) {
+    if (!scene) return DEFAULT_KEYBOARD_HEIGHT
+    const vh = window.innerHeight || 800
+    return Math.min(220, Math.max(170, Math.round(vh * 0.26)))
+  }
   const vh = window.innerHeight || 800
   const isPortrait = window.matchMedia('(orientation: portrait)').matches
   if (isPortrait) {
@@ -279,9 +286,9 @@ export class PianoRollRenderer {
         g.fill({ color: grid, alpha: 0.1 })
       }
       // The piano sits on the floor of the room: a soft shadow just above the keys.
-      g.rect(0, rollHeight - 36, canvasWidth, 36)
-      g.fill({ color: 0x6b4a2f, alpha: 0.07 })
-      g.rect(0, rollHeight - 14, canvasWidth, 14)
+      g.ellipse(canvasWidth / 2, rollHeight - 6, canvasWidth * 0.42, 22)
+      g.fill({ color: 0x6b3e2a, alpha: 0.16 })
+      g.rect(0, rollHeight - 22, canvasWidth, 22)
       g.fill({ color: 0x6b4a2f, alpha: 0.1 })
     } else {
       this.clearSceneBackdrop()
@@ -347,15 +354,16 @@ export class PianoRollRenderer {
     const warm = sceneForTheme(this.theme.id) !== null
     const lift = warm ? 3 : 1
 
-    // Layered soft glow above the now-line
-    g.rect(0, y - 18, w, 18)
-    g.fill({ color: glow, alpha: 0.02 * lift })
-    g.rect(0, y - 8, w, 8)
-    g.fill({ color: glow, alpha: 0.045 * lift })
-    g.rect(0, y - 3, w, 3)
-    g.fill({ color: glow, alpha: 0.08 * lift })
+    // Layered soft glow above the now-line. The living-room line is a
+    // golden band the notes fall into, not a hairline.
+    g.rect(0, y - (warm ? 28 : 18), w, warm ? 28 : 18)
+    g.fill({ color: glow, alpha: (warm ? 0.05 : 0.02) * lift })
+    g.rect(0, y - (warm ? 12 : 8), w, warm ? 12 : 8)
+    g.fill({ color: glow, alpha: (warm ? 0.12 : 0.045) * lift })
+    g.rect(0, y - (warm ? 4 : 3), w, warm ? 5 : 3)
+    g.fill({ color: warm ? 0xfff1c8 : glow, alpha: warm ? 0.55 : 0.08 * lift })
 
-    g.rect(0, y, w, warm ? 2.5 : 1.5)
+    g.rect(0, y, w, warm ? 3 : 1.5)
     g.fill({ color: this.theme.nowLine, alpha: this.theme.nowLineAlpha })
   }
 
@@ -409,12 +417,23 @@ export class PianoRollRenderer {
     this.presentFrame()
   }
 
-  // Narrows or widens the visible pitch range. Used during vertical/square
-  // export so the keyboard zooms onto the piece's actual range instead of
-  // squeezing all 88 keys into a 1080px-wide canvas.
+  // Narrows or widens the visible pitch range immediately. Export framing
+  // uses this so a capture never waits on a focus change.
   setPitchRange(min: number, max: number): void {
     this.viewport.update({ pitchMin: min, pitchMax: max })
     this.rebuildStaticLayers()
+  }
+
+  // The logical piano stays 88 keys. This only changes how many of them are
+  // on screen. Applied immediately: the render loop is often idle, and a
+  // deferred ease would leave the full piano up until the next note.
+  aimPitchRange(min: number, max: number): void {
+    if (this.exportMode) return
+    const curMin = this.viewport.config.pitchMin ?? 21
+    const curMax = this.viewport.config.pitchMax ?? 108
+    if (curMin === min && curMax === max) return
+    this.setPitchRange(min, max)
+    this.presentFrame()
   }
 
   get pitchRange(): { min: number; max: number } {
@@ -866,8 +885,8 @@ export class PianoRollRenderer {
     return this.app.canvas as HTMLCanvasElement
   }
 
-  // Highlight which of the 88 keys the controller window covers. Does not
-  // change the roll's pitch viewport — export framing still owns that.
+  // Highlight which keys the controller window covers. The pitch viewport
+  // is owned by focus (aimPitchRange) and, during a capture, by export.
   setPlayableRange(start: number, end: number): void {
     this.keyboardRenderer.setPlayableRange(start, end)
     if (!this.exportMode) this.presentFrame()

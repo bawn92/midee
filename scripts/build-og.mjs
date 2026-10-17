@@ -285,7 +285,7 @@ ${scene()}
 <rect width="1200" height="630" fill="url(#vignette)"/>
 ${body}
 <rect x="80" y="562" width="1040" height="1" fill="#fff" opacity="0.07"/>
-<text x="80" y="596" font-family="JetBrains Mono" font-size="15" font-weight="500" fill="${INK_DIM}" letter-spacing="0.5">midee.app</text>
+<text x="80" y="596" font-family="Inter" font-size="15" font-weight="500" fill="${INK_DIM}" letter-spacing="0.5">MIDI studio</text>
 <text x="1120" y="596" font-family="Inter" font-size="14" font-weight="500" fill="${INK_DIM}" text-anchor="end">Free · Open source · No upload</text>
 </svg>`
 

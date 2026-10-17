@@ -14,7 +14,7 @@ This is the most Synthesia-like part of midee: falling notes, live input, practi
 
 ## How play-along practice works
 
-1. Open [midee.app](/).
+1. Open [the app](/).
 2. Load a MIDI file.
 3. Choose **Learn this piece** or open Learn mode.
 4. Start **Play along**.

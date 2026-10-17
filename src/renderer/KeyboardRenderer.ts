@@ -45,6 +45,45 @@ function getIvoryNoiseCanvas(): HTMLCanvasElement {
   return c
 }
 
+// Walnut keys are drawn as a top face plus a front lip so the key has
+// thickness. Geometry stays inside keyRect, which hit-testing still uses.
+function drawWalnutWhite(
+  g: Graphics,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  radius: number,
+): void {
+  const front = Math.max(18, Math.round(h * 0.22))
+  const topH = Math.max(8, h - front)
+  g.roundRect(x, y, w, topH + 6, radius).fill({ color: 0xfff6ea })
+  g.rect(x + 2, y + 2, w - 4, 4).fill({ color: 0xffffff, alpha: 0.55 })
+  g.rect(x, y + 4, 2, topH - 6).fill({ color: 0xd7c2a8, alpha: 0.55 })
+  g.roundRect(x, y + topH, w, front, 2).fill({ color: 0xe4cdb4 })
+  g.rect(x + 1, y + topH, w - 2, 2).fill({ color: 0xffffff, alpha: 0.72 })
+  g.rect(x + 1, y + h - 4, w - 2, 4).fill({ color: 0xb08968, alpha: 0.9 })
+}
+
+function drawWalnutBlack(
+  g: Graphics,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  radius: number,
+): void {
+  const bodyH = Math.max(8, h - 3)
+  g.roundRect(x + 1, y + 5, w, bodyH, radius).fill({ color: 0x1a0c08, alpha: 0.55 })
+  g.roundRect(x, y, w, bodyH, radius).fill({ color: 0x2a1610 })
+  const cap = Math.max(5, Math.round(bodyH * 0.16))
+  g.roundRect(x + 1, y + 1, w - 2, cap, Math.min(radius, 2)).fill({ color: 0x6a4636 })
+  g.rect(x + 2, y + 1, w - 4, 2).fill({ color: 0xfff1d8, alpha: 0.38 })
+  g.rect(x, y + 3, 1, bodyH - 8).fill({ color: 0xffffff, alpha: 0.16 })
+  g.rect(x + w - 1, y + 3, 1, bodyH - 8).fill({ color: 0x000000, alpha: 0.4 })
+  g.rect(x + 1, y + bodyH - 2, w - 2, 2).fill({ color: 0x000000, alpha: 0.45 })
+}
+
 export class KeyboardRenderer {
   readonly container: Container
 
@@ -167,35 +206,33 @@ export class KeyboardRenderer {
       if (!pos) continue
       const { x, y, w, h, radius: wRadius } = keyRect(p, pos, keyboardHeight)
 
-      // Body
-      whiteLayer.roundRect(x, y, w, h, wRadius).fill({ color: this.theme.whiteKey })
-
-      // Ivory warmth wash — pure white keys read sterile; real ivory has a
-      // cream undertone. A ~4% cream overlay shifts the whole material
-      // toward "instrument" without tinting any one area obviously.
-      whiteLayer.roundRect(x, y, w, h, wRadius).fill({ color: 0xfff1d8, alpha: 0.05 })
-
-      // Top highlight — 4px, stacked rects simulate a soft gradient. Inset
-      // by the corner radius so the highlight respects the key's rounded
-      // corners and doesn't bleed into the seam between keys.
-      whiteLayer.rect(x + wRadius, y, w - wRadius * 2, 1).fill({ color: 0xffffff, alpha: 0.35 })
-      whiteLayer.rect(x + 1, y + 1, w - 2, 2).fill({ color: 0xffffff, alpha: 0.18 })
-      whiteLayer.rect(x + 1, y + 3, w - 2, 2).fill({ color: 0xffffff, alpha: 0.08 })
-
-      // Bottom shadow — 5px, three stacked rects fading into a strong 1px
-      // edge line. Gives each key the "slightly dipped at the player's
-      // edge" read you'd see on a real piano under stage lighting.
-      // Walnut keys get a deeper front edge and a left-side shade so the
-      // key bed reads as a carved upright rather than a flat graphic.
-      const shade = walnut ? 1.7 : 1
-      whiteLayer.rect(x + 1, y + h - 8, w - 2, 4).fill({ color: 0x6b4a2f, alpha: 0.05 * shade })
-      whiteLayer.rect(x + 1, y + h - 5, w - 2, 3).fill({ color: 0x000000, alpha: 0.07 * shade })
-      whiteLayer.rect(x + 1, y + h - 2, w - 2, 1).fill({ color: 0x000000, alpha: 0.18 * shade })
-      whiteLayer
-        .rect(x + wRadius, y + h - 1, w - wRadius * 2, 1)
-        .fill({ color: 0x000000, alpha: 0.3 * shade })
       if (walnut) {
-        whiteLayer.rect(x, y + 4, 1, h - 8).fill({ color: 0x6b4a2f, alpha: 0.16 })
+        drawWalnutWhite(whiteLayer, x, y, w, h, wRadius)
+      } else {
+        // Body
+        whiteLayer.roundRect(x, y, w, h, wRadius).fill({ color: this.theme.whiteKey })
+
+        // Ivory warmth wash — pure white keys read sterile; real ivory has a
+        // cream undertone. A ~4% cream overlay shifts the whole material
+        // toward "instrument" without tinting any one area obviously.
+        whiteLayer.roundRect(x, y, w, h, wRadius).fill({ color: 0xfff1d8, alpha: 0.05 })
+
+        // Top highlight — 4px, stacked rects simulate a soft gradient. Inset
+        // by the corner radius so the highlight respects the key's rounded
+        // corners and doesn't bleed into the seam between keys.
+        whiteLayer.rect(x + wRadius, y, w - wRadius * 2, 1).fill({ color: 0xffffff, alpha: 0.35 })
+        whiteLayer.rect(x + 1, y + 1, w - 2, 2).fill({ color: 0xffffff, alpha: 0.18 })
+        whiteLayer.rect(x + 1, y + 3, w - 2, 2).fill({ color: 0xffffff, alpha: 0.08 })
+
+        // Bottom shadow — 5px, three stacked rects fading into a strong 1px
+        // edge line. Gives each key the "slightly dipped at the player's
+        // edge" read you'd see on a real piano under stage lighting.
+        whiteLayer.rect(x + 1, y + h - 8, w - 2, 4).fill({ color: 0x6b4a2f, alpha: 0.05 })
+        whiteLayer.rect(x + 1, y + h - 5, w - 2, 3).fill({ color: 0x000000, alpha: 0.07 })
+        whiteLayer.rect(x + 1, y + h - 2, w - 2, 1).fill({ color: 0x000000, alpha: 0.18 })
+        whiteLayer
+          .rect(x + wRadius, y + h - 1, w - wRadius * 2, 1)
+          .fill({ color: 0x000000, alpha: 0.3 })
       }
     }
     whiteBake.addChild(whiteLayer)
@@ -227,31 +264,35 @@ export class KeyboardRenderer {
       if (!pos) continue
       const { x, y, w, h, radius: bRadius } = keyRect(p, pos, keyboardHeight)
 
-      // Body
-      blackLayer.roundRect(x, y, w, h, bRadius).fill({ color: this.theme.blackKey })
+      if (walnut) {
+        drawWalnutBlack(blackLayer, x, y, w, h, bRadius)
+      } else {
+        // Body
+        blackLayer.roundRect(x, y, w, h, bRadius).fill({ color: this.theme.blackKey })
 
-      // Top bevel — hints at the rounded physical top of a real black key.
-      blackLayer.rect(x + bRadius, y, w - bRadius * 2, 1).fill({ color: 0xffffff, alpha: 0.28 })
-      blackLayer.rect(x + 1, y + 1, w - 2, 2).fill({ color: 0xffffff, alpha: 0.12 })
+        // Top bevel — hints at the rounded physical top of a real black key.
+        blackLayer.rect(x + bRadius, y, w - bRadius * 2, 1).fill({ color: 0xffffff, alpha: 0.28 })
+        blackLayer.rect(x + 1, y + 1, w - 2, 2).fill({ color: 0xffffff, alpha: 0.12 })
 
-      // Bottom lip — where the finger rests on a physical piano. A thin
-      // bright edge catches light and sells the 3D form cheaply.
-      blackLayer.rect(x + 1, y + h - 3, w - 2, 2).fill({ color: 0xffffff, alpha: 0.1 })
-      blackLayer
-        .rect(x + bRadius, y + h - 1, w - bRadius * 2, 1)
-        .fill({ color: 0xffffff, alpha: 0.22 })
+        // Bottom lip — where the finger rests on a physical piano. A thin
+        // bright edge catches light and sells the 3D form cheaply.
+        blackLayer.rect(x + 1, y + h - 3, w - 2, 2).fill({ color: 0xffffff, alpha: 0.1 })
+        blackLayer
+          .rect(x + bRadius, y + h - 1, w - bRadius * 2, 1)
+          .fill({ color: 0xffffff, alpha: 0.22 })
 
-      // Side-edge rails — reflective highlights along the left and right
-      // edges, running the full length. Directional asymmetry (left
-      // brighter than right) sells a light source from the upper-left.
-      const railY = y + bRadius
-      const railH = h - bRadius * 2
-      // Left rail (toward the light source)
-      blackLayer.rect(x, railY, 1, railH).fill({ color: 0xffffff, alpha: 0.44 })
-      blackLayer.rect(x + 1, railY, 1, railH).fill({ color: 0xffffff, alpha: 0.2 })
-      // Right rail (opposite side, dimmer)
-      blackLayer.rect(x + w - 1, railY, 1, railH).fill({ color: 0xffffff, alpha: 0.28 })
-      blackLayer.rect(x + w - 2, railY, 1, railH).fill({ color: 0xffffff, alpha: 0.12 })
+        // Side-edge rails — reflective highlights along the left and right
+        // edges, running the full length. Directional asymmetry (left
+        // brighter than right) sells a light source from the upper-left.
+        const railY = y + bRadius
+        const railH = h - bRadius * 2
+        // Left rail (toward the light source)
+        blackLayer.rect(x, railY, 1, railH).fill({ color: 0xffffff, alpha: 0.44 })
+        blackLayer.rect(x + 1, railY, 1, railH).fill({ color: 0xffffff, alpha: 0.2 })
+        // Right rail (opposite side, dimmer)
+        blackLayer.rect(x + w - 1, railY, 1, railH).fill({ color: 0xffffff, alpha: 0.28 })
+        blackLayer.rect(x + w - 2, railY, 1, railH).fill({ color: 0xffffff, alpha: 0.12 })
+      }
     }
     blackBake.addChild(blackLayer)
 
@@ -397,19 +438,27 @@ export class KeyboardRenderer {
     const scene = sceneForTheme(this.theme.id)
     const wood = scene?.keyboard.case ?? 0x6b3e2a
     const light = scene?.keyboard.caseLight ?? 0xc4926a
-    const rail = 24
-    const cheek = 14
-    const lip = 14
-    g.rect(0, 0, canvasWidth, rail).fill({ color: wood })
-    g.rect(0, 0, canvasWidth, 2).fill({ color: light, alpha: 0.7 })
-    g.rect(0, rail - 2, canvasWidth, 2).fill({ color: 0x2a140c, alpha: 0.45 })
-    for (let i = 0; i < 4; i++) {
-      g.rect(0, 4 + i * 3, canvasWidth, 1).fill({ color: light, alpha: 0.08 })
+    const rail = 36
+    const cheek = 22
+    const lip = 12
+    g.roundRect(0, 0, canvasWidth, rail, 8).fill({ color: wood })
+    g.roundRect(8, 3, canvasWidth - 16, 7, 4).fill({ color: light, alpha: 0.42 })
+    g.rect(0, rail - 3, canvasWidth, 3).fill({ color: 0x2a140c, alpha: 0.55 })
+    for (let i = 0; i < 5; i++) {
+      g.rect(cheek, 12 + i * 4, canvasWidth - cheek * 2, 1).fill({ color: light, alpha: 0.07 })
     }
-    g.rect(0, 0, cheek, keyboardHeight).fill({ color: wood })
-    g.rect(canvasWidth - cheek, 0, cheek, keyboardHeight).fill({ color: wood })
-    g.rect(0, keyboardHeight - lip, canvasWidth, lip).fill({ color: 0x4a2918 })
-    g.rect(0, keyboardHeight - lip, canvasWidth, 1).fill({ color: light, alpha: 0.45 })
+    g.roundRect(0, 0, cheek, keyboardHeight, 14).fill({ color: wood })
+    g.roundRect(canvasWidth - cheek, 0, cheek, keyboardHeight, 14).fill({ color: wood })
+    g.roundRect(2, 4, 6, keyboardHeight - 16, 4).fill({ color: light, alpha: 0.22 })
+    g.roundRect(canvasWidth - 8, 4, 6, keyboardHeight - 16, 4).fill({
+      color: 0x2a140c,
+      alpha: 0.28,
+    })
+    g.roundRect(0, keyboardHeight - lip, canvasWidth, lip, 6).fill({ color: 0x4a2918 })
+    g.rect(cheek, keyboardHeight - lip, canvasWidth - cheek * 2, 1).fill({
+      color: light,
+      alpha: 0.4,
+    })
     g.rect(cheek, rail, 1, keyboardHeight - rail - lip).fill({ color: light, alpha: 0.28 })
   }
 

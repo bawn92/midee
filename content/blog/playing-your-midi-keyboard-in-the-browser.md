@@ -120,7 +120,7 @@ Workaround: the first MIDI note can unlock the audio context, if you wire it tha
 
 ### Held notes across tab switches
 
-If you're holding a key when you switch tabs, the browser may stop dispatching events to the background tab. The note-off never arrives, and when you switch back, the note is still ringing. Defensive code in the app should release all held notes on `visibilitychange` and `blur` events. midee handles this in [`src/app.ts`](https://github.com/aayushdutt/midee/blob/master/src/app.ts) - it's ~5 lines, but it's the difference between a polished experience and a phantom-held-note bug.
+If you're holding a key when you switch tabs, the browser may stop dispatching events to the background tab. The note-off never arrives, and when you switch back, the note is still ringing. Defensive code in the app should release all held notes on `visibilitychange` and `blur` events. midee handles this in `src/app.ts` - it's ~5 lines, but it's the difference between a polished experience and a phantom-held-note bug.
 
 ### Permission prompts
 
@@ -153,4 +153,4 @@ For quick jamming, practice, and turning a MIDI into a nice video to share, the 
 
 ---
 
-*midee is a free, open-source MIDI visualizer and loop station built around this stack. [Source on GitHub](https://github.com/aayushdutt/midee).*
+*midee is a free, open-source MIDI visualizer and loop station built around this stack. the source ships with the app.*

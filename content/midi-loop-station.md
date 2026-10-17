@@ -14,7 +14,7 @@ It is designed for the moment before a DAW: when you want to catch a musical ide
 
 ## How the loop station works
 
-1. Open [midee.app](/) and enter Live mode.
+1. Open [the app](/) and enter Live mode.
 2. Turn on the metronome if you want a tempo reference.
 3. Press **Loop**.
 4. Play a phrase. Recording starts on the first note.

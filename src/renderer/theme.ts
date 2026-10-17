@@ -28,6 +28,8 @@ export interface Theme {
   noteRadius: number
   noteGlowStrength: number
   noteGlowDistance: number
+  // Wide capsules with a soft inner highlight. Omitted themes keep flat bars.
+  noteStyle?: 'pill'
 
   whiteKey: number
   whiteKeyActive: number // color of white key when pressed

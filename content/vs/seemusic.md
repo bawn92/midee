@@ -49,12 +49,12 @@ If you're a teacher making polished demonstration videos daily or a full-time mu
 
 midee is the browser-first, design-forward, open-source option for everyone who doesn't need the full SeeMusic kit.
 
-- **No install, no license key.** Open [midee.app](/), drag in a `.mid`, and you're rendering. Works on Chromebooks, locked-down work laptops, Linux - anywhere SeeMusic doesn't run.
+- **No install, no license key.** Open [the app](/), drag in a `.mid`, and you're rendering. Works on Chromebooks, locked-down work laptops, Linux - anywhere SeeMusic doesn't run.
 - **No watermark, ever.** midee's MP4 export is clean on the free tier because there *is* no paid tier.
 - **Fully client-side.** Your MIDI file and the rendered video never leave your browser.
 - **Vertical export out of the box.** TikTok/Reels 9:16, square 1:1, 1080p, 720p, or native aspect ratio - all free, all built-in.
 - **Loop station + live play.** Jam with a MIDI controller, loop a phrase bar-snapped to the metronome, layer takes, record sessions. This is the one category where midee does something SeeMusic doesn't.
-- **Open source.** The [source is on GitHub](https://github.com/aayushdutt/midee). Fork it, submit themes and particle styles, audit the code.
+- **Open source.** The source ships with the app. Fork it, submit themes and particle styles, audit the code.
 
 ## When to pick which
 
