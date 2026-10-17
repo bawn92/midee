@@ -125,6 +125,8 @@ const fr: Messages = {
   // ── Appearance / customize popover ──────────────────────────
   'customize.aria': 'Apparence',
   'customize.title': 'Apparence',
+  'customize.scene': 'Scène',
+  'customize.sceneClassic': 'Classique',
   'customize.theme': 'Thème',
   'customize.new': 'Nouveau',
   'customize.particles': 'Particules',

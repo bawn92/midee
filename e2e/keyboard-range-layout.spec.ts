@@ -61,9 +61,16 @@ function assertClear(layout: Layout, label: string): void {
       true,
     )
     expect(overlaps(bar, layout.hint), `${label}: range overlaps shortcuts`).toBe(false)
-    expect(bar.bottom, `${label}: range sits above shortcuts`).toBeLessThanOrEqual(
-      layout.hint.top - 6,
-    )
+    // The lower-left column stacks the bar above the card. A scene parks the
+    // bar in the opposite corner, so that vertical rule only applies when
+    // the two still share a column.
+    const sharesColumn =
+      bar.left < layout.hint.right - 0.5 && bar.right > layout.hint.left + 0.5
+    if (sharesColumn) {
+      expect(bar.bottom, `${label}: range sits above shortcuts`).toBeLessThanOrEqual(
+        layout.hint.top - 6,
+      )
+    }
   }
   if (layout.panel) {
     expect(insideViewport(layout.panel, layout.vw, layout.vh), `${label}: range panel on screen`).toBe(

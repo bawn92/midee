@@ -4,6 +4,7 @@ import { LOCALES, type LocaleCode, locale, t } from '../i18n'
 import type { KeyLights } from '../midi/KeyLights'
 import type { MidiInputManager } from '../midi/MidiInputManager'
 import type { ParticleStyle, ParticleStyleInfo } from '../renderer/particleStyles'
+import { SCENES } from '../renderer/scenes'
 import { accentCSS, type Theme } from '../renderer/theme'
 import { trackEvent } from '../telemetry'
 import { icons } from './icons'
@@ -125,6 +126,42 @@ function MenuView(props: MenuProps) {
       </div>
 
       <div class="ts-customize-body">
+        <div class="customize-section">
+          <div class="customize-section-head">
+            <span class="customize-section-label">{t('customize.scene')}</span>
+            <span class="customize-section-value">
+              {SCENES.find((scene) => scene.themeId === props.themes[props.themeIndex()]?.id)
+                ?.name ?? t('customize.sceneClassic')}
+            </span>
+          </div>
+          <div class="customize-scene-row">
+            <For each={SCENES}>
+              {(scene) => {
+                const index = () => props.themes.findIndex((theme) => theme.id === scene.themeId)
+                const on = () => props.themes[props.themeIndex()]?.id === scene.themeId
+                return (
+                  <button
+                    class="customize-scene-card"
+                    classList={{ 'customize-scene-card--on': on() }}
+                    type="button"
+                    aria-label={`${scene.name} scene`}
+                    aria-pressed={on()}
+                    disabled={index() < 0}
+                    onClick={() => props.onSelectTheme(index())}
+                  >
+                    <span
+                      class="customize-scene-swatch"
+                      aria-hidden="true"
+                      style={{ background: scene.preview }}
+                    />
+                    <span class="customize-scene-name">{scene.name}</span>
+                  </button>
+                )
+              }}
+            </For>
+          </div>
+        </div>
+
         <div class="customize-section">
           <div class="customize-section-head">
             <span class="customize-section-label">{t('customize.theme')}</span>

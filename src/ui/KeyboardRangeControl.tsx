@@ -75,9 +75,17 @@ function KeyboardRangeView(props: { store: AppStore }) {
     }
     // The detail panel opens upward. Keep it between the bar and the top
     // strip when the shortcuts card has already pushed the bar up.
+    // A scene pins the card itself (top-right, panel below). Toggling the
+    // beside layout from that spot flips the card between the two corners
+    // every frame, so the bar never settles.
+    const scenePinned = (): boolean => /(^|\s)scene-/.test(document.documentElement.className)
     const fitPanel = (): void => {
       const bar = root.querySelector('.kbd-range-bar')
       if (!bar) return
+      if (scenePinned()) {
+        root.classList.remove('kbd-range--beside')
+        return
+      }
       // Leave a gap under the top strip, plus the 8px the panel sits above the bar.
       const strip = document.getElementById('top-strip')
       const limit = strip ? Math.ceil(strip.getBoundingClientRect().bottom) + 12 : 80
@@ -91,7 +99,7 @@ function KeyboardRangeView(props: { store: AppStore }) {
     const dock = root.closest('#lower-left')
     if (dock) ro?.observe(dock)
     const mo = new MutationObserver(fitPanel)
-    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] })
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class'] })
     window.addEventListener('resize', fitPanel)
     document.addEventListener('pointerdown', onDoc, true)
     document.addEventListener('keydown', onKey)

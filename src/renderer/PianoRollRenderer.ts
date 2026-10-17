@@ -1,4 +1,4 @@
-import { Application, Graphics, Sprite, type Ticker } from 'pixi.js'
+import { Application, Graphics, Sprite, Texture, type Ticker } from 'pixi.js'
 import type { MasterClock } from '../core/clock/MasterClock'
 import { getHandPractice, noteMatchesHand } from '../core/handPractice'
 import { getKeyboardRange, placedPitch } from '../core/keyboardRange'
@@ -14,7 +14,10 @@ import { makeMaterialAtmosphere } from './materialAtmosphere'
 import { NoteRenderer } from './NoteRenderer'
 import { type ParticleStyle, ParticleSystem } from './ParticleSystem'
 import { layersAnimating, type RenderContext, type RenderLayer } from './RenderLayer'
-import { darkTheme, getTrackColor, liveNoteColor, type Theme } from './theme'
+import { sceneForTheme } from './scenes'
+import { paintSceneBackdrop } from './scenes/backdrop'
+import { goldenHourTheme } from './scenes/goldenHour'
+import { getTrackColor, liveNoteColor, type Theme } from './theme'
 import { Viewport, visibleNoteRange } from './viewport'
 
 // Must match the `--keyboard-h` value in main.css :root and the reset value
@@ -91,13 +94,15 @@ export class PianoRollRenderer {
   private mistStrike: EmberMistStrike | null = null
   private materialAtmosphere: Sprite | null = null
   private atmosphereThemeId: string | null = null
+  private sceneBackdrop: Sprite | null = null
+  private sceneBackdropKey = ''
 
   private midi: MidiFile | null = null
   private liveNoteStore: LiveNoteStore | null = null
   private loopNoteStore: LiveNoteStore | null = null
   private visibleTrackIds = new Set<string>()
   private practiceFocusTrackIds: Set<string> | null = null
-  private theme: Theme = darkTheme
+  private theme: Theme = goldenHourTheme
   private pixelsPerSecond = DEFAULT_PIXELS_PER_SECOND
   private keyboardHeight = DEFAULT_KEYBOARD_HEIGHT
   private lastRenderTime = 0
@@ -154,7 +159,7 @@ export class PianoRollRenderer {
       canvas,
       width: window.innerWidth,
       height: window.innerHeight,
-      backgroundColor: darkTheme.background,
+      backgroundColor: goldenHourTheme.background,
       antialias: true,
       // Cap the raster resolution at 2×: a dpr-3 phone would rasterize 2.25×
       // the pixels of 2× for no visible gain on falling rectangles, and the
@@ -259,19 +264,66 @@ export class PianoRollRenderer {
     }
     g.clear()
 
-    g.rect(0, 0, canvasWidth, canvasHeight)
-    g.fill({ color: this.theme.background })
-
-    // Subtle vertical lines at C notes
-    for (let pitch = 24; pitch <= 108; pitch += 12) {
-      const x = this.viewport.pitchToX(pitch)
-      g.rect(x, 0, 1, rollHeight)
-      g.fill({ color: 0xffffff, alpha: 0.025 })
+    const scene = sceneForTheme(this.theme.id)
+    if (scene) {
+      this.syncSceneBackdrop(scene.themeId, canvasWidth, canvasHeight)
+      const grid = this.theme.gridColor ?? 0xc48a62
+      for (let pitch = 24; pitch <= 108; pitch += 12) {
+        const x = this.viewport.pitchToX(pitch)
+        g.rect(x, 0, 1, rollHeight)
+        g.fill({ color: grid, alpha: 0.22 })
+      }
+      const step = 48
+      for (let y = step; y < rollHeight; y += step) {
+        g.rect(0, y, canvasWidth, 1)
+        g.fill({ color: grid, alpha: 0.1 })
+      }
+      // The piano sits on the floor of the room: a soft shadow just above the keys.
+      g.rect(0, rollHeight - 36, canvasWidth, 36)
+      g.fill({ color: 0x6b4a2f, alpha: 0.07 })
+      g.rect(0, rollHeight - 14, canvasWidth, 14)
+      g.fill({ color: 0x6b4a2f, alpha: 0.1 })
+    } else {
+      this.clearSceneBackdrop()
+      g.rect(0, 0, canvasWidth, canvasHeight)
+      g.fill({ color: this.theme.background })
+      for (let pitch = 24; pitch <= 108; pitch += 12) {
+        const x = this.viewport.pitchToX(pitch)
+        g.rect(x, 0, 1, rollHeight)
+        g.fill({ color: 0xffffff, alpha: 0.025 })
+      }
     }
 
     // Separator line between roll and keyboard
     g.rect(0, rollHeight, canvasWidth, 1)
-    g.fill({ color: this.theme.keyBorder })
+    g.fill({ color: scene ? 0x000000 : this.theme.keyBorder, alpha: scene ? 0.08 : 1 })
+  }
+
+  private syncSceneBackdrop(themeId: string, width: number, height: number): void {
+    const scene = sceneForTheme(themeId)
+    if (!scene) return
+    const key = `${scene.id}:${width}x${height}`
+    if (this.sceneBackdrop && this.sceneBackdropKey === key) {
+      this.sceneBackdrop.width = width
+      this.sceneBackdrop.height = height
+      return
+    }
+    this.clearSceneBackdrop()
+    const canvas = document.createElement('canvas')
+    paintSceneBackdrop(canvas, scene, Math.min(width, 1400), Math.min(height, 900))
+    const texture = Texture.from(canvas)
+    this.sceneBackdrop = new Sprite(texture)
+    this.sceneBackdrop.label = 'scene-backdrop'
+    this.sceneBackdrop.width = width
+    this.sceneBackdrop.height = height
+    this.sceneBackdropKey = key
+    this.app.stage.addChildAt(this.sceneBackdrop, 0)
+  }
+
+  private clearSceneBackdrop(): void {
+    this.sceneBackdrop?.destroy({ texture: true, textureSource: true })
+    this.sceneBackdrop = null
+    this.sceneBackdropKey = ''
   }
 
   private drawNowLine(): void {
@@ -292,18 +344,18 @@ export class PianoRollRenderer {
     const y = this.viewport.nowLineY
     const w = this.viewport.config.canvasWidth
     const glow = this.theme.nowLineGlow
+    const warm = sceneForTheme(this.theme.id) !== null
+    const lift = warm ? 3 : 1
 
     // Layered soft glow above the now-line
-    g.rect(0, y - 14, w, 14)
-    g.fill({ color: glow, alpha: 0.01 })
+    g.rect(0, y - 18, w, 18)
+    g.fill({ color: glow, alpha: 0.02 * lift })
     g.rect(0, y - 8, w, 8)
-    g.fill({ color: glow, alpha: 0.022 })
-    g.rect(0, y - 4, w, 4)
-    g.fill({ color: glow, alpha: 0.04 })
-    g.rect(0, y - 2, w, 2)
-    g.fill({ color: glow, alpha: 0.065 })
+    g.fill({ color: glow, alpha: 0.045 * lift })
+    g.rect(0, y - 3, w, 3)
+    g.fill({ color: glow, alpha: 0.08 * lift })
 
-    g.rect(0, y, w, 1.5)
+    g.rect(0, y, w, warm ? 2.5 : 1.5)
     g.fill({ color: this.theme.nowLine, alpha: this.theme.nowLineAlpha })
   }
 
@@ -983,6 +1035,7 @@ export class PianoRollRenderer {
     this.noteRenderer.destroy()
     this.liveNoteRenderer.destroy()
     this.materialAtmosphere?.destroy({ texture: true, textureSource: true })
+    this.clearSceneBackdrop()
     this.particles.destroy()
     this.mistStrike?.destroy()
     this.app.destroy()

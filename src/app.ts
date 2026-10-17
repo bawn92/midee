@@ -65,7 +65,15 @@ import { setNextLiveOpts } from './modes/LiveMode'
 import { MODE_CAPTURES_LIVE, type ModeContext } from './modes/ModeController'
 import { PianoRollRenderer } from './renderer/PianoRollRenderer'
 import { ALL_PARTICLE_STYLES, PARTICLE_STYLES, type ParticleStyle } from './renderer/particleStyles'
-import { ALL_THEMES, accentCSS, THEMES, type Theme, type ThemeId } from './renderer/theme'
+import { applySceneClass } from './renderer/scenes'
+import {
+  ALL_THEMES,
+  accentCSS,
+  DEFAULT_THEME_ID,
+  THEMES,
+  type Theme,
+  type ThemeId,
+} from './renderer/theme'
 import type { AppMode, AppStore } from './store/state'
 import { watch } from './store/watch'
 import {
@@ -2107,6 +2115,7 @@ export class App {
     document.documentElement.style.setProperty('--accent', accent)
     document.documentElement.style.setProperty('--accent-soft', `${accent}2e`)
     document.documentElement.style.setProperty('--accent-glow', `${accent}66`)
+    applySceneClass(theme.id)
   }
 
   private showLoading(): void {
@@ -2175,7 +2184,7 @@ export class App {
 // migration from the old `midee.*Index` integer keys (see `idPersisted`).
 const themeStore = idPersisted<ThemeId>(
   'midee.theme',
-  'sunset',
+  DEFAULT_THEME_ID,
   THEMES.map((t) => t.id),
   { key: 'midee.themeIndex', ids: ALL_THEMES.map((t) => t.id) },
 )

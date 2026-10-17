@@ -81,18 +81,18 @@ test('Piano M lights the physical key for the sounding note', async ({ page }) =
   await page.locator('#hud-play').click()
   const sent = () =>
     page.evaluate(() => (window as unknown as { __midiSent: number[][] }).__midiSent)
-  // Sunset: left #fbbf24 → 125,95,18 and right #f97316 → 124,57,11, on CC 20–22.
+  // Golden Hour default: left #e8a0a0 → 116,80,80 and right #f0b95a → 120,92,45.
   // CC 23 is the factory lowest key, MIDI 60.
-  const sunsetPalette = [
+  const goldenPalette = [
     [0xbb, 23, 60],
-    [0xbb, 20, 125],
-    [0xbb, 21, 95],
-    [0xbb, 22, 18],
-    [0xbc, 20, 124],
-    [0xbc, 21, 57],
-    [0xbc, 22, 11],
+    [0xbb, 20, 116],
+    [0xbb, 21, 80],
+    [0xbb, 22, 80],
+    [0xbc, 20, 120],
+    [0xbc, 21, 92],
+    [0xbc, 22, 45],
   ]
-  await expect.poll(sent).toEqual(expect.arrayContaining([...sunsetPalette, [0x9b, 60, 100]]))
+  await expect.poll(sent).toEqual(expect.arrayContaining([...goldenPalette, [0x9b, 60, 100]]))
 
   await openAppearance(page)
   await page.getByRole('button', { name: 'Ocean theme', exact: true }).click()

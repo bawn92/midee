@@ -17,6 +17,7 @@ const EXPECTED_THEME_IDS: Record<ThemeId, true> = {
   neon: true,
   sunset: true,
   ocean: true,
+  'golden-hour': true,
   'smoked-glass': true,
   'aurora-silk': true,
   'lacquer-gold': true,

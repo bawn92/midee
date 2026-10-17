@@ -116,6 +116,8 @@ const zhCN: Messages = {
 
   'customize.aria': '外观',
   'customize.title': '外观',
+  'customize.scene': '场景',
+  'customize.sceneClassic': '经典',
   'customize.theme': '主题',
   'customize.new': '新',
   'customize.particles': '粒子效果',

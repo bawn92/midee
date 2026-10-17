@@ -118,6 +118,8 @@ const ja: Messages = {
 
   'customize.aria': '外観',
   'customize.title': '外観',
+  'customize.scene': 'シーン',
+  'customize.sceneClassic': 'クラシック',
   'customize.theme': 'テーマ',
   'customize.new': 'NEW',
   'customize.particles': 'パーティクル',

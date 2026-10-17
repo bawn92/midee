@@ -141,6 +141,8 @@ export const en = {
   // ── Appearance / customize popover ──────────────────────────
   'customize.aria': 'Appearance',
   'customize.title': 'Appearance',
+  'customize.scene': 'Scene',
+  'customize.sceneClassic': 'Classic',
   'customize.theme': 'Theme',
   'customize.new': 'New',
   'customize.particles': 'Particles',

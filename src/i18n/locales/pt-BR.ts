@@ -122,6 +122,8 @@ const ptBR: Messages = {
   // ── Appearance / customize popover ──────────────────────────
   'customize.aria': 'Aparência',
   'customize.title': 'Aparência',
+  'customize.scene': 'Cena',
+  'customize.sceneClassic': 'Clássico',
   'customize.theme': 'Tema',
   'customize.new': 'Novo',
   'customize.particles': 'Partículas',

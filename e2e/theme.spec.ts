@@ -19,9 +19,10 @@ const ACCENT = {
   neon: '#00d4aa',
   sunset: '#f97316',
   ocean: '#38bdf8',
+  'golden-hour': '#c4843a',
 } as const
 const NEON_INDEX = 2
-const DEFAULT_ID = 'sunset' // App's fallback theme.
+const DEFAULT_ID = 'golden-hour' // App's fallback theme.
 
 /** Computed value of a CSS custom property on <html>. */
 function accentVar(page: Page, name: '--accent' | '--accent-soft' | '--accent-glow') {
@@ -105,7 +106,7 @@ test.describe('Theme selection + persistence', () => {
     await gotoApp(page)
     await leaveHomeScreen(page)
     await openCustomize(page)
-    await expect(themeTile(page, 'Sunset')).toHaveAttribute('aria-pressed', 'true')
+    await expect(themeTile(page, 'Golden Hour')).toHaveAttribute('aria-pressed', 'true')
     await expect(page.getByRole('button', { name: 'Embers particles', exact: true })).toHaveClass(/--on/)
   })
 
@@ -219,12 +220,16 @@ test.describe('Theme selection + persistence', () => {
     await expect
       .poll(() => accentVar(page, '--accent'), {
         timeout: 15_000,
-        message: 'an unknown theme id must fall back to the default (Sunset)',
+        message: 'an unknown theme id must fall back to the default (Golden Hour)',
       })
       .toBe(ACCENT[DEFAULT_ID])
 
     await leaveHomeScreen(page)
     await openCustomize(page)
-    await expect(themeTile(page, 'Sunset')).toHaveClass(/customize-theme-tile--on/)
+    await expect(themeTile(page, 'Golden Hour')).toHaveClass(/customize-theme-tile--on/)
+    await expect(page.getByRole('button', { name: 'Golden Hour Living Room scene' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
   })
 })

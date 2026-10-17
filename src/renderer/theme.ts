@@ -2,9 +2,18 @@ import type { MidiTrack } from '../core/midi/types'
 import { availableVisuals, FOR_LATER_THEME_IDS } from './forLater/visuals'
 import type { NoteMaterialId } from './NoteMaterial'
 import type { ParticleStyle } from './particleStyles'
+import { goldenHourTheme } from './scenes/goldenHour'
 
-// Persisted in localStorage (`midee.theme`) — never rename.
-export type ThemeId = 'dark' | 'midnight' | 'neon' | 'sunset' | 'ocean' | NoteMaterialId
+// Persisted in localStorage (`midee.theme`) — never rename. New ids are
+// appended; `ALL_THEMES` order is the legacy `midee.themeIndex` migration.
+export type ThemeId =
+  | 'dark'
+  | 'midnight'
+  | 'neon'
+  | 'sunset'
+  | 'ocean'
+  | 'golden-hour'
+  | NoteMaterialId
 
 export interface Theme {
   id: ThemeId
@@ -32,6 +41,8 @@ export interface Theme {
 
   beatLineAlpha: number
   barLineAlpha: number
+  // Beat and bar lines. Omitted themes keep the original white grid.
+  gridColor?: number
 
   // UI accent as a Pixi hex; CSS gets its string form via `accentCSS()`.
   accent: number
@@ -309,7 +320,11 @@ export const ALL_THEMES: readonly Theme[] = [
   opalTheme,
   liquidGlassTheme,
   emberMistTheme,
+  goldenHourTheme,
 ]
+
+// New visitors land in the living room. A saved id still wins.
+export const DEFAULT_THEME_ID: ThemeId = 'golden-hour'
 
 // Every user entry point (menu, cycling, persistence) uses this shipping roster.
 export const THEMES = availableVisuals(ALL_THEMES, FOR_LATER_THEME_IDS)

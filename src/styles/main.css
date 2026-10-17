@@ -22,9 +22,8 @@
   --text-muted: #b0b4d4;
   --text-dim: #6c7298;
 
-  /* Pre-JS defaults for the accent triplet — match the Sunset theme, which
-     is the current app default. Overwritten by applyTheme() on load; these
-     values only matter for the first paint frame and the favicon. */
+  /* Classic dark chrome. Golden Hour overrides these from
+     src/renderer/scenes/goldenHour.css while that scene is active. */
   --accent: #f97316;
   --accent-soft: rgba(249, 115, 22, 0.16);
   --accent-glow: rgba(249, 115, 22, 0.3);

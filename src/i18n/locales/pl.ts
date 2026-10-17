@@ -126,6 +126,8 @@ const pl: Messages & Record<PolishPluralKey, string> = {
 
   'customize.aria': 'Wygląd',
   'customize.title': 'Wygląd',
+  'customize.scene': 'Scena',
+  'customize.sceneClassic': 'Klasyczny',
   'customize.theme': 'Motyw',
   'customize.new': 'Nowość',
   'customize.particles': 'Cząstki',
