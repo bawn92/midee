@@ -16,7 +16,7 @@ const pl: Messages & Record<PolishPluralKey, string> = {
     'Kanały 12/13 dla lewej/prawej ręki. Ręce są szacowane z wysokości dźwięków ścieżki; pliki z jedną ścieżką są dzielone przy środkowym C. Bez wskazówek palców.',
   'keyLights.pianoM': 'ROLI Piano M',
   'keyLights.pianoMHint':
-    'Fabryczne oprogramowanie Piano M nie zapala nut przychodzących. Pobierz skrypt kolorów motywu i upuść go na urządzenie w ROLI Dashboard. Jeśli skrypt Synthesia jest już wgrany, upuść ten plik na niego. Kanały 12 i 13 zostają lewą i prawą ręką. midee wysyła kolory rąk z motywu — Sunset to żółty po lewej i pomarańczowy po prawej — i wysyła je ponownie po zmianie motywu. Światła uwzględniają Dopasuj do zakresu, ćwiczoną rękę i kalibrację klawiatury. Przywrócenie ustawień fabrycznych w Dashboard wraca do oryginalnego oprogramowania.',
+    'Fabryczne oprogramowanie Piano M nie zapala nut przychodzących. Pobierz skrypt kolorów motywu i upuść go na urządzenie w ROLI Dashboard. Jeśli skrypt Synthesia jest już wgrany, upuść ten plik na niego. Kanały 12 i 13 zostają lewą i prawą ręką. Kolory rąk sceny wychodzą tymi kanałami — róż po lewej i miód po prawej — i są wysyłane ponownie po zmianie sceny. Światła uwzględniają Dopasuj do zakresu, ćwiczoną rękę i kalibrację klawiatury. Przywrócenie ustawień fabrycznych w Dashboard wraca do oryginalnego oprogramowania.',
   'keyLights.pianoMScript': 'Pobierz piano-m-theme-lights.littlefoot',
   'keyLights.keeziHint':
     'KEEZI: połącz przez KEENEKT. Użyj Visualizer → Synthesia dla kolorów rąk lub → DAW dla kanałów pliku/ścieżek.',
@@ -61,7 +61,7 @@ const pl: Messages & Record<PolishPluralKey, string> = {
   'songGuide.rh': 'PR',
   'songGuide.lh': 'LR',
 
-  'home.kicker': 'midee · wizualizator MIDI',
+  'home.kicker': '{name} · wizualizator MIDI',
   'home.title.html': 'Graj <em>nuty</em>,<br/>patrz, jak rozkwitają.',
   'home.subtitle':
     'Otwórz plik MIDI, aby go zwizualizować, albo graj na żywo klawiaturą, myszą lub kontrolerem MIDI.',
@@ -84,7 +84,7 @@ const pl: Messages & Record<PolishPluralKey, string> = {
   'home.midi.blocked': 'Włącz MIDI na górnym pasku',
   'home.midi.unavailable': 'Web MIDI niedostępne w tej przeglądarce',
   'home.midi.disconnected': 'Brak kontrolera MIDI - klawiatura i myszka też działają',
-  'home.aria': 'Strona główna midee',
+  'home.aria': 'Strona główna {name}',
 
   'topStrip.home': 'Start',
   'topStrip.modePlay': 'Odtwórz plik MIDI',
@@ -333,8 +333,8 @@ const pl: Messages & Record<PolishPluralKey, string> = {
 
   'doc.title.home': 'Graj nuty, patrz, jak rozkwitają',
   'a11y.skipToMain': 'Przejdź do głównej treści',
-  'doc.title.live': 'Na żywo',
-  'doc.title.learn': 'Nauka',
+  'doc.title.live': 'Na żywo · {name}',
+  'doc.title.learn': 'Nauka · {name}',
 
   'learn.hub.recommended': 'Polecane',
   'learn.hub.uploadMidi': 'Wgraj MIDI',
@@ -559,8 +559,8 @@ const pl: Messages & Record<PolishPluralKey, string> = {
   'postSession.stats.other': '{duration} · {count} nuty',
 
   'toast.export.ready': '{filename} gotowe',
-  'toast.session.saved': 'midee-session.mid · {seconds} s',
-  'toast.loop.saved': 'midee-loop.mid',
+  'toast.session.saved': '{name}-session.mid · {seconds} s',
+  'toast.loop.saved': '{name}-loop.mid',
   'toast.recording.empty': 'Nic nie nagrano - zagraj kilka nut przy włączonym nagrywaniu.',
   'toast.updated': 'Zaktualizowano do najnowszej wersji',
 

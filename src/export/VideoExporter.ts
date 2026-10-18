@@ -16,8 +16,8 @@
 //
 // Resilience: codec selection runs two probe passes (hardware-preferred, then
 // software-preferred) and the export retries ONCE on a software plan when the
-// hardware encoder dies mid-run. PostHog showed video_encode failures are
-// concentrated on Linux/ChromeOS/iOS where the hardware probe passes but the
+// hardware encoder dies mid-run. Encode failures cluster on Linux, ChromeOS,
+// and iOS, where the hardware probe passes but the
 // encoder then errors at runtime — a single software retry rescues those.
 // If the audio render fails the attempt is re-run without an audio track (an
 // MP4 with an empty audio track is not something every player tolerates).
@@ -39,6 +39,7 @@ import {
   Output,
   Quality,
 } from 'mediabunny'
+import { APP_SLUG } from '../brand'
 import { type AacEncoderKind, resolveAacEncoder } from './aacEncoder'
 import { downloadBlob } from './download'
 import { isWebKit } from './engine'
@@ -616,7 +617,7 @@ export class VideoExporter {
         const blob = await sink.finish()
         saveMs = performance.now() - saveStart
         outputBytes = blob.size
-        const filename = opts.filename ?? 'midee.mp4'
+        const filename = opts.filename ?? `${APP_SLUG}.mp4`
         if (opts.deliver) opts.deliver(blob, filename)
         else downloadBlob(blob, filename)
       } catch (err) {

@@ -30,10 +30,8 @@ import { render } from 'solid-js/web'
 import { AppRoot } from './AppRoot'
 import { justReloadedForStaleChunk, reloadForStaleChunk } from './core/staleChunk'
 import { createApp } from './createApp'
-import { env } from './env'
 import { currentLocaleNativeName, initI18n, shouldShowLocaleHint, t } from './i18n'
 import { AppCtx } from './store/AppCtx'
-import { loadPostHog, registerAnalyticsContext } from './telemetry'
 import { installSkipLink } from './ui/SkipLink'
 import { showToast } from './ui/Toast'
 import { whenIdle } from './whenIdle'
@@ -44,24 +42,7 @@ window.addEventListener('vite:preloadError', (event) => {
   if (reloadForStaleChunk(event.payload)) event.preventDefault()
 })
 
-// Both analytics SDKs are loaded on idle so they don't sit in the initial
-// bundle. PostHog alone is ~70 KB gz with autocapture / session_recording /
-// feature_flags; @vercel/analytics is small but still a deferrable import.
-// Buffered events fire once the SDK lands — see telemetry.ts → `loadPostHog`.
-const posthogKey = env.VITE_POSTHOG_KEY
-if (posthogKey) {
-  // Snapshot context props at boot time even though the SDK isn't loaded
-  // yet — they get queued and replayed in order on first init.
-  registerAnalyticsContext()
-}
 whenIdle(() => {
-  if (posthogKey) {
-    void loadPostHog(posthogKey, {
-      api_host: env.VITE_POSTHOG_HOST ?? 'https://us.i.posthog.com',
-      defaults: '2026-01-30',
-      person_profiles: 'always',
-    })
-  }
   void import('@vercel/analytics').then(({ inject }) => inject())
 })
 

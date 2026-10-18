@@ -1,4 +1,5 @@
 import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { APP_NAME } from '../brand'
 import { t } from '../i18n'
 import type { LiveLooperState } from '../midi/LiveLooper'
 import type { MidiDeviceStatus } from '../midi/MidiInputManager'
@@ -197,10 +198,10 @@ export function TopStripView(props: TopStripProps) {
         class="ts-home"
         id="ts-home"
         type="button"
-        aria-label={t('home.aria')}
+        aria-label={t('home.aria', { name: APP_NAME })}
         data-tip={t('topStrip.home')}
         onClick={() => props.onHome()}
-        innerHTML={`<span class="ts-home-name">midee</span><span class="ts-home-icon">${icons.home(18)}</span>`}
+        innerHTML={`${icons.wordmark()}<span class="ts-home-name">${APP_NAME}</span><span class="ts-home-icon">${icons.home(18)}</span>`}
       />
 
       <div

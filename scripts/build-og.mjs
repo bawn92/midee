@@ -1,24 +1,19 @@
-// Renders the Open Graph banners (1200×630 PNG) with @resvg/resvg-js and the
-// app's real fonts (Instrument Serif, Inter, JetBrains Mono from @fontsource).
+// Renders the Open Graph banner (1200×630) with @resvg/resvg-js and the
+// app's real fonts (Instrument Serif, Inter from @fontsource).
 //
-//   dist/og.png            default site banner (wordmark + tagline)
-//   dist/og/<slug>.png     one per content page, with that page's title;
-//                          build-content.mjs writes dist/og-pages.json and
-//                          points each page's og:image at its banner.
+//   public/og.svg
+//   public/og.png
 //
-// The banner is composed here in JS rather than kept as a static SVG so the
-// piano-roll scene (keys, lit keys, falling notes) is generated from one
-// geometry and stays aligned, and so per-page titles can be wrapped.
-// Runs during postbuild after build-content.
+// The banner is composed here in JS so the piano-roll scene stays aligned
+// with the Golden Hour tokens.
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, resolve } from 'node:path'
 import { Resvg } from '@resvg/resvg-js'
 import { woffToTtf } from './woff-to-ttf.mjs'
 
 const root = process.cwd()
-const distDir = resolve(root, 'dist')
 
 // ── Fonts ───────────────────────────────────────────────────────────────
 // resvg only loads sfnt (ttf/otf) fonts and @fontsource only ships woff/woff2,
@@ -35,7 +30,7 @@ const woffFiles = [
   `${FS}/jetbrains-mono/files/jetbrains-mono-latin-400-normal.woff`,
   `${FS}/jetbrains-mono/files/jetbrains-mono-latin-500-normal.woff`,
 ]
-const fontDir = resolve(tmpdir(), 'midee-og-fonts')
+const fontDir = resolve(tmpdir(), 'play-notes-og-fonts')
 mkdirSync(fontDir, { recursive: true })
 const fontFiles = woffFiles.map((woff) => {
   const ttf = resolve(fontDir, basename(woff).replace(/\.woff$/, '.ttf'))
@@ -302,36 +297,6 @@ ${eyebrow('Piano trainer', 168)}
 `)
 }
 
-// Per-page banner: brand row, big italic title, one-line description.
-function pageBanner({ label, title, description }) {
-  const { size, lines } = fitTitle(title, [88, 76, 66, 58], 'serif', 540, 3)
-  const lineH = size * 1.02
-  const descLines = clamp(description, 19, 'sans', 550, 2)
-
-  // Lay the block out from y=0, then shift it so its middle sits at the
-  // canvas's optical centre. Baselines: brand → eyebrow → title → description.
-  const brandY = 0
-  const eyebrowY = brandY + 44
-  const titleY = eyebrowY + 24 + size * 0.78
-  const titleLast = titleY + (lines.length - 1) * lineH
-  const descY = titleLast + 50
-  const descLast = descY + (descLines.length - 1) * 28
-  const top = brandY - 32
-  const bottom = descLast + 6
-  const shift = 318 - (top + bottom) / 2
-
-  const titleSvg = lines
-    .map((l, i) => `<text x="76" y="${(shift + titleY + i * lineH).toFixed(0)}" font-family="Instrument Serif" font-style="italic" font-size="${size}" fill="${INK}" letter-spacing="-1.5">${esc(l)}</text>`)
-    .join('\n')
-  const descSvg = descLines
-    .map((l, i) => `<text x="80" y="${(shift + descY + i * 28).toFixed(0)}" font-family="Inter" font-size="19" font-weight="400" fill="${INK_SOFT}">${esc(l)}</text>`)
-    .join('\n')
-  return FRAME(`
-${eyebrow(label, shift + eyebrowY)}
-${titleSvg}
-${descSvg}`)
-}
-
 // ── Render ──────────────────────────────────────────────────────────────
 function render(svg, outPath) {
   const resvg = new Resvg(svg, {
@@ -345,19 +310,9 @@ function render(svg, outPath) {
 }
 
 const defaultSvg = defaultBanner()
-mkdirSync(distDir, { recursive: true })
-const pngPath = resolve(distDir, 'og.png')
+const publicDir = resolve(root, 'public')
+mkdirSync(publicDir, { recursive: true })
+const pngPath = resolve(publicDir, 'og.png')
 const kb = (render(defaultSvg, pngPath) / 1024).toFixed(1)
-writeFileSync(resolve(distDir, 'og.svg'), defaultSvg)
-writeFileSync(resolve(root, 'public/og.png'), readFileSync(pngPath))
-console.log(`[build-og] wrote dist/og.png and public/og.png (${kb} KB, 1200×630)`)
-
-const manifestPath = resolve(distDir, 'og-pages.json')
-if (existsSync(manifestPath)) {
-  const pages = JSON.parse(readFileSync(manifestPath, 'utf8'))
-  mkdirSync(resolve(distDir, 'og'), { recursive: true })
-  for (const p of pages) {
-    render(pageBanner(p), resolve(distDir, 'og', `${p.slug}.png`))
-  }
-  console.log(`[build-og] wrote ${pages.length} page banners to dist/og/`)
-}
+writeFileSync(resolve(publicDir, 'og.svg'), defaultSvg)
+console.log(`[build-og] wrote public/og.png (${kb} KB, 1200×630) and public/og.svg`)

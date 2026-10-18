@@ -1,4 +1,5 @@
 import { createSignal, onMount } from 'solid-js'
+import { APP_NAME } from '../brand'
 import { t } from '../i18n'
 import { useApp } from '../store/AppCtx'
 import { trackEvent } from '../telemetry'
@@ -35,7 +36,7 @@ export function LiveMode() {
     trackPanel.close()
     dropzone.hide()
     keyboardInput.enable()
-    document.title = t('doc.title.live')
+    document.title = t('doc.title.live', { name: APP_NAME })
     if (primeAudio) primeInteractiveAudio()
     // LiveMode only mounts on transition into live, so every mount is a
     // real entry — fire analytics unconditionally.

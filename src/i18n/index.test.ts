@@ -28,8 +28,8 @@ describe('t()', () => {
   })
 
   it('substitutes {var} placeholders', () => {
-    const out = t('toast.export.ready', { filename: 'midee.mp4' })
-    expect(out).toBe('midee.mp4 ready')
+    const out = t('toast.export.ready', { filename: 'play-notes.mp4' })
+    expect(out).toBe('play-notes.mp4 ready')
   })
 
   it('leaves {var} placeholders intact when no value is supplied', () => {

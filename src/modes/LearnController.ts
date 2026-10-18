@@ -1,3 +1,4 @@
+import { APP_NAME } from '../brand'
 import { parseMidiFileWithStats } from '../core/midi/parser'
 import type { MidiFile } from '../core/midi/types'
 import { forgetRecent, readRecentMidi, rememberRecent } from '../core/recentMidi'
@@ -96,7 +97,7 @@ export class LearnController {
     trackPanel.close()
     dropzone.hide()
     keyboardInput.enable()
-    document.title = t('doc.title.learn')
+    document.title = t('doc.title.learn', { name: APP_NAME })
 
     this.mountHostElements(overlay)
     this.showHubView()

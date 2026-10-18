@@ -12,8 +12,6 @@ export const env = createEnv({
       .union([z.string(), z.boolean()])
       .optional()
       .transform((v) => v === true || v === 'true' || v === '1'),
-    VITE_POSTHOG_KEY: z.string().optional(),
-    VITE_POSTHOG_HOST: z.string().optional(),
     VITE_SHOW_FPS: z
       .union([z.string(), z.boolean()])
       .optional()

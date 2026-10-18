@@ -1,5 +1,6 @@
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { render } from 'solid-js/web'
+import { APP_NAME } from '../brand'
 import { t } from '../i18n'
 import type { MidiDeviceStatus } from '../midi/MidiInputManager'
 import { icons } from './icons'
@@ -134,7 +135,7 @@ function DropZoneView(props: DropZoneProps) {
       }}
     >
       <div class="home-card">
-        <span class="home-kicker">{t('home.kicker')}</span>
+        <span class="home-kicker">{t('home.kicker', { name: APP_NAME })}</span>
         {/* biome-ignore lint/a11y/useHeadingContent: `home.title.html` is
             a translation key whose value is raw HTML (for per-locale inline
             markup); biome can't introspect innerHTML. Content is always

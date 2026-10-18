@@ -19,7 +19,7 @@ import { GlowFilter } from 'pixi-filters'
 //
 // Why: GlowFilter is a brute-force ring sampler. Every output pixel reads the
 // texture ≈ 2π·quality·distance² times (29 angles × 15 steps = 435 for the
-// default 'sunset' theme) over the bounds of all sounding notes, every frame.
+// default glow) over the bounds of all sounding notes, every frame.
 // MP4 export on weak GPUs is render-bound and the glow is about half of it:
 // headless SwiftShader at 720p exports at 31 fps with glow vs 46 without (GPU
 // 32 → 17 ms/frame); on an M4 the glow costs 7–21 %.

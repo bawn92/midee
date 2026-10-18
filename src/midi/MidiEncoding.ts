@@ -1,3 +1,4 @@
+import { APP_NAME } from '../brand'
 import { loadMidiModule } from '../core/midi/parser'
 import type { MidiFile } from '../core/midi/types'
 
@@ -26,7 +27,7 @@ export async function encodeCapturedEvents(
   const { Midi } = await loadMidiModule()
   const bpm = opts.bpm ?? 120
   const trackName = opts.trackName ?? 'Performance'
-  const midiName = opts.midiName ?? 'midee capture'
+  const midiName = opts.midiName ?? `${APP_NAME} capture`
 
   const lastEventTime = events.length === 0 ? 0 : events[events.length - 1]!.time
   const orphanCloseAt = opts.closeOrphansAt ?? lastEventTime

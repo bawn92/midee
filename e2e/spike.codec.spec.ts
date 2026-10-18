@@ -11,7 +11,7 @@ import { expect, test } from '@playwright/test'
 //
 // This drives the DECISION between the full export e2e (3a) and the reduced-confidence
 // fallback (3b). Result is asserted AND printed so CI logs record it. This spec is
-// intentionally app-independent: it probes the browser engine, not midee.
+// intentionally app-independent: it probes the browser engine, not this app.
 
 test.describe('WebCodecs headless capability spike', () => {
   test('probe VideoEncoder/AudioEncoder support + real encode', async ({ page }) => {

@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="16%" stop-color="#f8e3c8"/>
+    <stop offset="100%" stop-color="#f2c9a0"/>
+  </linearGradient>
+  <radialGradient id="warm" cx="82%" cy="8%" r="55%">
+    <stop offset="0%" stop-color="#8a5a32" stop-opacity="0.22"/>
+    <stop offset="70%" stop-color="#8a5a32" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="vignette" cx="50%" cy="40%" r="75%">
+    <stop offset="70%" stop-color="#5e3b24" stop-opacity="0"/>
+    <stop offset="100%" stop-color="#5e3b24" stop-opacity="0.08"/>
+  </radialGradient>
+  <radialGradient id="bloom" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#e6a94f" stop-opacity="0.45"/>
+    <stop offset="100%" stop-color="#e6a94f" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="hit" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#fff8ee" stop-opacity="0.9"/>
+    <stop offset="100%" stop-color="#e6a94f" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="noteHoney" x1="0" y1="1" x2="0" y2="0">
+    <stop offset="0%" stop-color="#c98a32"/>
+    <stop offset="100%" stop-color="#e6a94f"/>
+  </linearGradient>
+  <linearGradient id="noteRose" x1="0" y1="1" x2="0" y2="0">
+    <stop offset="0%" stop-color="#b8706f"/>
+    <stop offset="100%" stop-color="#d9908f"/>
+  </linearGradient>
+  <linearGradient id="keyWhite" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#f6ebda"/>
+    <stop offset="100%" stop-color="#e7d3b8"/>
+  </linearGradient>
+  <linearGradient id="keyLit" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#fff1dc"/>
+    <stop offset="100%" stop-color="#e6a94f"/>
+  </linearGradient>
+  <linearGradient id="keyBlack" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#3e2a1f"/>
+    <stop offset="100%" stop-color="#2e1f17"/>
+  </linearGradient>
+  <linearGradient id="blackLit" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#6b4630"/>
+    <stop offset="100%" stop-color="#5e3b24"/>
+  </linearGradient>
+  <filter id="blur28" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="28"/></filter>
+  <filter id="blur8" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="8"/></filter>
+</defs>
+<rect width="1200" height="630" fill="url(#bg)"/>
+<ellipse cx="1040" cy="20" rx="340" ry="180" fill="#7a4e32" opacity="0.18" filter="url(#blur28)"/>
+<rect width="1200" height="630" fill="url(#warm)"/>
+<g stroke="#5e3b24" stroke-opacity="0.14" stroke-width="1">
+<line x1="668.0" y1="60" x2="668.0" y2="436"/>
+<line x1="701.6" y1="60" x2="701.6" y2="436"/>
+<line x1="735.1" y1="60" x2="735.1" y2="436"/>
+<line x1="768.7" y1="60" x2="768.7" y2="436"/>
+<line x1="802.3" y1="60" x2="802.3" y2="436"/>
+<line x1="835.9" y1="60" x2="835.9" y2="436"/>
+<line x1="869.4" y1="60" x2="869.4" y2="436"/>
+<line x1="903.0" y1="60" x2="903.0" y2="436"/>
+<line x1="936.6" y1="60" x2="936.6" y2="436"/>
+<line x1="970.1" y1="60" x2="970.1" y2="436"/>
+<line x1="1003.7" y1="60" x2="1003.7" y2="436"/>
+<line x1="1037.3" y1="60" x2="1037.3" y2="436"/>
+<line x1="1070.9" y1="60" x2="1070.9" y2="436"/>
+<line x1="1104.4" y1="60" x2="1104.4" y2="436"/>
+<line x1="1138.0" y1="60" x2="1138.0" y2="436"/>
+</g>
+<g stroke="#5e3b24" stroke-opacity="0.08" stroke-width="1">
+<line x1="668" y1="122.7" x2="1138" y2="122.7"/>
+<line x1="668" y1="185.3" x2="1138" y2="185.3"/>
+<line x1="668" y1="248.0" x2="1138" y2="248.0"/>
+<line x1="668" y1="310.7" x2="1138" y2="310.7"/>
+<line x1="668" y1="373.3" x2="1138" y2="373.3"/>
+</g>
+<ellipse cx="926.5" cy="366" rx="300" ry="150" fill="url(#bloom)" filter="url(#blur28)"/>
+<rect x="1107.4" y="40" width="27.6" height="96" rx="6" fill="url(#noteHoney)" opacity="0.30"/>
+<rect x="1109.4" y="41" width="23.6" height="1.5" rx="1" fill="#fff8ee" opacity="0.45"/>
+<rect x="704.6" y="300" width="27.6" height="110" rx="6" fill="url(#noteHoney)" opacity="0.35"/>
+<rect x="706.6" y="301" width="23.6" height="1.5" rx="1" fill="#fff8ee" opacity="0.45"/>
+<rect x="794.5" y="240" width="15.5" height="86" rx="6" fill="url(#noteHoney)" opacity="0.40"/>
+<rect x="796.5" y="241" width="11.5" height="1.5" rx="1" fill="#fff8ee" opacity="0.45"/>
+<rect x="895.3" y="60" width="15.5" height="74" rx="6" fill="url(#noteRose)" opacity="0.40"/>
+<rect x="897.3" y="61" width="11.5" height="1.5" rx="1" fill="#fff8ee" opacity="0.45"/>
+<rect x="1040.3" y="118" width="27.6" height="128" rx="6" fill="url(#noteHoney)" opacity="0.50"/>
+<rect x="1042.3" y="119" width="23.6" height="1.5" rx="1" fill="#fff8ee" opacity="0.45"/>
+<rect x="738.1" y="96" width="27.6" height="150" rx="6" fill="url(#noteRose)" opacity="0.55"/>
+<rect x="740.1" y="97" width="23.6" height="1.5" rx="1" fill="#fff8ee" opacity="0.45"/>
+<rect x="939.6" y="20" width="27.6" height="140" rx="6" fill="url(#noteRose)" opacity="0.55"/>
+<rect x="941.6" y="21" width="23.6" height="1.5" rx="1" fill="#fff8ee" opacity="0.45"/>
+<rect x="1029.5" y="330" width="15.5" height="104" rx="6" fill="url(#noteRose)" opacity="0.60"/>
+<rect x="1031.5" y="331" width="11.5" height="1.5" rx="1" fill="#fff8ee" opacity="0.45"/>
+<ellipse cx="1037.3" cy="436" rx="24.75428571428571" ry="14" fill="url(#hit)" filter="url(#blur8)"/>
+<rect x="872.4" y="150" width="27.6" height="200" rx="6" fill="url(#noteRose)" opacity="0.70"/>
+<rect x="874.4" y="151" width="23.6" height="1.5" rx="1" fill="#fff8ee" opacity="0.45"/>
+<rect x="1073.9" y="260" width="27.6" height="174" rx="6" fill="url(#noteRose)" opacity="0.80"/>
+<rect x="1075.9" y="261" width="23.6" height="1.5" rx="1" fill="#fff8ee" opacity="0.45"/>
+<ellipse cx="1087.6" cy="436" rx="44.114285714285714" ry="14" fill="url(#hit)" filter="url(#blur8)"/>
+<rect x="805.3" y="40" width="27.6" height="210" rx="6" fill="url(#noteRose)" opacity="0.85"/>
+<rect x="807.3" y="41" width="23.6" height="1.5" rx="1" fill="#fff8ee" opacity="0.45"/>
+<rect x="838.9" y="322" width="27.6" height="112" rx="6" fill="url(#noteHoney)" opacity="1.00"/>
+<rect x="840.9" y="323" width="23.6" height="1.5" rx="1" fill="#fff8ee" opacity="0.45"/>
+<ellipse cx="852.6" cy="436" rx="44.114285714285714" ry="14" fill="url(#hit)" filter="url(#blur8)"/>
+<rect x="906.0" y="268" width="27.6" height="166" rx="6" fill="url(#noteHoney)" opacity="1.00"/>
+<rect x="908.0" y="269" width="23.6" height="1.5" rx="1" fill="#fff8ee" opacity="0.45"/>
+<ellipse cx="919.8" cy="436" rx="44.114285714285714" ry="14" fill="url(#hit)" filter="url(#blur8)"/>
+<rect x="973.1" y="200" width="27.6" height="234" rx="6" fill="url(#noteHoney)" opacity="1.00"/>
+<rect x="975.1" y="201" width="23.6" height="1.5" rx="1" fill="#fff8ee" opacity="0.45"/>
+<ellipse cx="986.9" cy="436" rx="44.114285714285714" ry="14" fill="url(#hit)" filter="url(#blur8)"/>
+<rect x="668" y="435" width="470" height="2" fill="#e6a94f" opacity="0.85"/>
+<rect x="660" y="436" width="486" height="138" rx="12" fill="#5e3b24"/>
+<rect x="668" y="436" width="470" height="120" rx="6" fill="#6b4630"/>
+<rect x="669.0" y="438" width="31.6" height="116" rx="4" fill="url(#keyWhite)"/>
+<rect x="702.6" y="438" width="31.6" height="116" rx="4" fill="url(#keyWhite)"/>
+<rect x="736.1" y="438" width="31.6" height="116" rx="4" fill="url(#keyWhite)"/>
+<rect x="769.7" y="438" width="31.6" height="116" rx="4" fill="url(#keyWhite)"/>
+<rect x="803.3" y="438" width="31.6" height="116" rx="4" fill="url(#keyWhite)"/>
+<rect x="836.9" y="438" width="31.6" height="116" rx="4" fill="url(#keyLit)"/>
+<rect x="836.9" y="438" width="31.6" height="116" rx="4" fill="#e6a94f" opacity="0.45"/>
+<rect x="870.4" y="438" width="31.6" height="116" rx="4" fill="url(#keyWhite)"/>
+<rect x="904.0" y="438" width="31.6" height="116" rx="4" fill="url(#keyLit)"/>
+<rect x="904.0" y="438" width="31.6" height="116" rx="4" fill="#e6a94f" opacity="0.45"/>
+<rect x="937.6" y="438" width="31.6" height="116" rx="4" fill="url(#keyWhite)"/>
+<rect x="971.1" y="438" width="31.6" height="116" rx="4" fill="url(#keyLit)"/>
+<rect x="971.1" y="438" width="31.6" height="116" rx="4" fill="#e6a94f" opacity="0.45"/>
+<rect x="1004.7" y="438" width="31.6" height="116" rx="4" fill="url(#keyWhite)"/>
+<rect x="1038.3" y="438" width="31.6" height="116" rx="4" fill="url(#keyWhite)"/>
+<rect x="1071.9" y="438" width="31.6" height="116" rx="4" fill="url(#keyLit)"/>
+<rect x="1071.9" y="438" width="31.6" height="116" rx="4" fill="#e6a94f" opacity="0.45"/>
+<rect x="1105.4" y="438" width="31.6" height="116" rx="4" fill="url(#keyWhite)"/>
+<rect x="691.8" y="436" width="19.5" height="74.4" rx="3" fill="url(#keyBlack)"/>
+<rect x="725.4" y="436" width="19.5" height="74.4" rx="3" fill="url(#keyBlack)"/>
+<rect x="792.5" y="436" width="19.5" height="74.4" rx="3" fill="url(#keyBlack)"/>
+<rect x="826.1" y="436" width="19.5" height="74.4" rx="3" fill="url(#keyBlack)"/>
+<rect x="859.7" y="436" width="19.5" height="74.4" rx="3" fill="url(#keyBlack)"/>
+<rect x="926.8" y="436" width="19.5" height="74.4" rx="3" fill="url(#keyBlack)"/>
+<rect x="960.4" y="436" width="19.5" height="74.4" rx="3" fill="url(#keyBlack)"/>
+<rect x="1027.5" y="436" width="19.5" height="74.4" rx="3" fill="url(#blackLit)"/>
+<rect x="1061.1" y="436" width="19.5" height="74.4" rx="3" fill="url(#keyBlack)"/>
+<rect x="1094.7" y="436" width="19.5" height="74.4" rx="3" fill="url(#keyBlack)"/>
+<rect x="668" y="436" width="470" height="1" fill="#fff" opacity="0.12"/>
+<rect width="1200" height="630" fill="url(#vignette)"/>
+
+<text x="80" y="168" font-family="Inter" font-size="13" font-weight="600" fill="#5e3b24" letter-spacing="3.2">PIANO TRAINER</text>
+<rect x="80" y="180" width="26" height="1.5" fill="#e6a94f" opacity="0.9"/>
+<text x="80" y="268" font-family="Instrument Serif" font-size="78" fill="#4a2f1e" letter-spacing="-1.5">Play notes,</text>
+<text x="80" y="352" font-family="Instrument Serif" font-size="78" fill="#4a2f1e" letter-spacing="-1.5">see them bloom.</text>
+<text x="80" y="418" font-family="Inter" font-size="22" font-weight="500" fill="#7a5a44">A piano trainer for your MIDI keyboard,</text>
+<text x="80" y="450" font-family="Inter" font-size="22" font-weight="500" fill="#7a5a44">with learn mode, a range for small</text>
+<text x="80" y="482" font-family="Inter" font-size="22" font-weight="500" fill="#7a5a44">keyboards, and cozy scenes.</text>
+
+</svg>

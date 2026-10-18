@@ -8,7 +8,7 @@ const zhCN: Messages = {
     '左手和右手使用通道 12/13。根据音轨音高估计左右手；单音轨文件在中央 C 处分开。不提供指法提示。',
   'keyLights.pianoM': 'ROLI Piano M',
   'keyLights.pianoMHint':
-    'Piano M 的出厂固件不会点亮收到的音符。请下载主题灯光脚本，并在 ROLI Dashboard 中把它拖到设备上。如果已经装了 Synthesia 脚本，用这个文件覆盖它。通道 12 和 13 仍是左手和右手。midee 会发送当前主题的左右手颜色——Sunset 是左手黄色、右手橙色——更换主题时会再发一次。灯光跟随“适配你的音域”、正在练习的手以及键盘校准。在 Dashboard 中恢复出厂设置可还原原固件。',
+    'Piano M 的出厂固件不会点亮收到的音符。请下载主题灯光脚本，并在 ROLI Dashboard 中把它拖到设备上。如果已经装了 Synthesia 脚本，用这个文件覆盖它。通道 12 和 13 仍是左手和右手。场景的左右手颜色从这些通道发出——左手玫瑰色、右手蜜色——更换场景时会再发一次。灯光跟随“适配你的音域”、正在练习的手以及键盘校准。在 Dashboard 中恢复出厂设置可还原原固件。',
   'keyLights.pianoMScript': '下载 piano-m-theme-lights.littlefoot',
   'keyLights.keeziHint':
     'KEEZI：通过 KEENEKT 连接。手部颜色使用 Visualizer → Synthesia，文件或音轨通道使用 → DAW。',
@@ -52,7 +52,7 @@ const zhCN: Messages = {
   'songGuide.rh': '右手',
   'songGuide.lh': '左手',
 
-  'home.kicker': 'midee · MIDI 可视化',
+  'home.kicker': '{name} · MIDI 可视化',
   'home.title.html': '弹奏<em>音符</em>，<br/>看它们盛放。',
   'home.subtitle': '打开 MIDI 文件让它动起来，或直接用键盘、鼠标或 MIDI 控制器实时弹奏。',
   'home.cta.openMidi': '打开 MIDI',
@@ -74,7 +74,7 @@ const zhCN: Messages = {
   'home.midi.blocked': '请在顶部栏启用 MIDI',
   'home.midi.unavailable': '当前浏览器不支持 Web MIDI',
   'home.midi.disconnected': '未连接 MIDI 设备 · 键盘和鼠标也能用',
-  'home.aria': 'midee 首页',
+  'home.aria': '{name} 首页',
 
   'topStrip.home': '首页',
   'topStrip.modePlay': '播放 MIDI 文件',
@@ -317,8 +317,8 @@ const zhCN: Messages = {
 
   'doc.title.home': '弹奏音符，看它们盛放',
   'a11y.skipToMain': '跳转到主要内容',
-  'doc.title.live': '实时',
-  'doc.title.learn': '学习',
+  'doc.title.live': '实时 · {name}',
+  'doc.title.learn': '学习 · {name}',
 
   'learn.hub.recommended': '推荐',
   'learn.hub.uploadMidi': '上传 MIDI',
@@ -536,8 +536,8 @@ const zhCN: Messages = {
   'postSession.stats.other': '{duration} · {count} 个音符',
 
   'toast.export.ready': '{filename} 已准备好',
-  'toast.session.saved': 'midee-session.mid · {seconds}s',
-  'toast.loop.saved': 'midee-loop.mid',
+  'toast.session.saved': '{name}-session.mid · {seconds}s',
+  'toast.loop.saved': '{name}-loop.mid',
   'toast.recording.empty': '还没有录到内容，请在录制开启时弹几个音符。',
   'toast.updated': '已更新到最新版本',
 

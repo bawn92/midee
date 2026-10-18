@@ -20,7 +20,7 @@ export const en = {
     'Uses channels 12/13 for left/right hands. Hands are estimated by track pitch; single-track files split at middle C. No finger hints.',
   'keyLights.pianoM': 'ROLI Piano M',
   'keyLights.pianoMHint':
-    'Factory Piano M firmware does not light incoming notes. Download the theme-lights script and drag it onto the device in ROLI Dashboard. If the Synthesia script is already on the Piano M, drop this file on top of it. Channels 12 and 13 stay left and right. midee sends the theme’s hand colours — Sunset is yellow on the left and orange on the right — and sends them again when you change theme. Lights follow Fit to your range, the hand you are practising, and your keyboard calibration. A factory reset in Dashboard restores the factory firmware.',
+    'Factory Piano M firmware does not light incoming notes. Download the theme-lights script and drag it onto the device in ROLI Dashboard. If the Synthesia script is already on the Piano M, drop this file on top of it. Channels 12 and 13 stay left and right. The scene’s hand colours go out on those channels — rose on the left and honey on the right — and they are sent again when you change scene. Lights follow Fit to your range, the hand you are practising, and your keyboard calibration. A factory reset in Dashboard restores the factory firmware.',
   'keyLights.pianoMScript': 'Download piano-m-theme-lights.littlefoot',
   'keyLights.keeziHint':
     'KEEZI: connect through KEENEKT. Use Visualizer → Synthesia for hand colors, or → DAW for file/track channels.',
@@ -70,7 +70,7 @@ export const en = {
   // translator-controlled (French/Spanish/Portuguese put the emphasised
   // noun in different positions). No user-controlled interpolation, so no
   // XSS risk.
-  'home.kicker': 'midee · MIDI visualizer',
+  'home.kicker': '{name} · MIDI visualizer',
   'home.title.html': 'Play <em>notes</em>,<br/>see them bloom.',
   'home.subtitle':
     'Open a MIDI file to animate it, or go live and play with your keyboard, mouse, or a MIDI controller.',
@@ -93,7 +93,7 @@ export const en = {
   'home.midi.blocked': 'Enable MIDI from the top bar',
   'home.midi.unavailable': 'Web MIDI unavailable in this browser',
   'home.midi.disconnected': 'No MIDI device - keyboard & mouse work too',
-  'home.aria': 'midee home',
+  'home.aria': '{name} home',
 
   // ── Top strip (primary nav) ─────────────────────────────────
   'topStrip.home': 'Home',
@@ -356,8 +356,8 @@ export const en = {
   // ── Document title (browser tab) ───────────────────────────
   'doc.title.home': 'Play notes, see them bloom',
   'a11y.skipToMain': 'Skip to main content',
-  'doc.title.live': 'Live',
-  'doc.title.learn': 'Learn',
+  'doc.title.live': 'Live · {name}',
+  'doc.title.learn': 'Learn · {name}',
 
   // ── Learn hub ───────────────────────────────────────────────
   'learn.hub.recommended': 'Recommended',
@@ -597,8 +597,8 @@ export const en = {
 
   // ── Toasts / confirmations ─────────────────────────────────
   'toast.export.ready': '{filename} ready',
-  'toast.session.saved': 'midee-session.mid · {seconds}s',
-  'toast.loop.saved': 'midee-loop.mid',
+  'toast.session.saved': '{name}-session.mid · {seconds}s',
+  'toast.loop.saved': '{name}-loop.mid',
   'toast.recording.empty': 'Nothing recorded - play a few notes while Record is on.',
   'toast.updated': 'Updated to the latest version',
 

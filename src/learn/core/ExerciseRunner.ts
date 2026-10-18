@@ -210,7 +210,7 @@ export class ExerciseRunner {
       miss: (pitch, expected) => session.miss(pitch, expected),
       error: () => session.error(),
       // Free-form escape hatch for exercise-specific events not in the typed
-      // registry. Prefixed so they're trivially filterable in PostHog.
+      // registry. Prefixed with the exercise id so they stay easy to filter.
       event: (name, data) =>
         track(`exercise.${descriptor.id}.${name}`, { exercise_id: descriptor.id, ...(data ?? {}) }),
     }

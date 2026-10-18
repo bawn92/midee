@@ -94,7 +94,7 @@ interface MockRender {
   target: { width: number; height: number }
 }
 
-const SUNSET = { distance: 15, strength: 3, radius: 8 }
+const GLOW = { distance: 15, strength: 3, radius: 8 }
 const WHITE = 35.9 // a white-key note at the 1920-px export stage
 const BLACK = 20.4
 
@@ -110,7 +110,7 @@ function setup() {
 type Note = [x: number, y: number, w: number, h: number, color: number]
 
 function frame(glow: BakedGlow, notes: Note[], tint: number | null = null) {
-  glow.begin(SUNSET.distance, SUNSET.strength, SUNSET.radius)
+  glow.begin(GLOW.distance, GLOW.strength, GLOW.radius)
   for (const [x, y, w, h, color] of notes) glow.add(x, y, w, h, color)
   glow.end(tint)
 }
@@ -130,8 +130,8 @@ describe('glow mode switch', () => {
 })
 
 describe('haloLayout', () => {
-  it('sizes the sunset white-key bake', () => {
-    const l = haloLayout(SUNSET.distance, SUNSET.radius, WHITE)
+  it('sizes the white-key bake', () => {
+    const l = haloLayout(GLOW.distance, GLOW.radius, WHITE)
     // pad + radius + one filter reach + 2 px slack = 15 + 8 + 15 + 2
     expect(l).toEqual({ pad: 15, texWidth: 66, border: 40, minSliceHeight: 50, tallHeight: 52 })
   })
@@ -160,7 +160,7 @@ describe('haloLayout', () => {
 })
 
 describe('shortBakeHeight', () => {
-  const l = haloLayout(SUNSET.distance, SUNSET.radius, WHITE)
+  const l = haloLayout(GLOW.distance, GLOW.radius, WHITE)
   it('slices notes at least minSliceHeight tall', () => {
     expect(shortBakeHeight(l, l.minSliceHeight)).toBeNull()
     expect(shortBakeHeight(l, 400)).toBeNull()

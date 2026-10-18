@@ -130,8 +130,8 @@ export function resolveExportDims(
 
 // ── Staged progress ─────────────────────────────────────────────────────────
 // Maps each encoder stage onto a fixed window of ONE overall progress bar. The old per-stage bar reset to 0% on every stage
-// change, which read as "stuck in a loop" — PostHog showed a 24.5 s median
-// cancel time. Window sizes are rough wall-clock weights; exactness doesn't
+// change, which read as "stuck in a loop" and led people to cancel. Window
+// sizes are rough wall-clock weights; exactness doesn't
 // matter because the bar is clamped monotonic by the caller. Only the modes
 // that show a progress card appear here ('midi' downloads instantly).
 

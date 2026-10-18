@@ -1,5 +1,6 @@
 import { Metronome } from './audio/Metronome'
 import { INSTRUMENTS, type InstrumentId, SynthEngine } from './audio/SynthEngine'
+import { APP_NAME, APP_SLUG } from './brand'
 import { MasterClock } from './core/clock/MasterClock'
 import { getHandPractice, subscribeHandPractice } from './core/handPractice'
 import { type BusNoteEvent, InputBus } from './core/input/InputBus'
@@ -69,8 +70,8 @@ import {
   subscribeKeyboardFocus,
 } from './renderer/keyboardFocus'
 import { PianoRollRenderer } from './renderer/PianoRollRenderer'
-import { finishRangeAdjust } from './renderer/rangeOverlay'
 import { ALL_PARTICLE_STYLES, PARTICLE_STYLES, type ParticleStyle } from './renderer/particleStyles'
+import { finishRangeAdjust } from './renderer/rangeOverlay'
 import { applySceneClass } from './renderer/scenes'
 import { accentCSS, readStoredThemeId, THEMES, type Theme, type ThemeId } from './renderer/theme'
 import type { AppMode, AppStore } from './store/state'
@@ -445,8 +446,8 @@ export class App {
       onMidiConnect: () => void this.connectMidi(),
       onOpenTracks: () => this.trackPanel.toggle(),
       onRecord: () => {
-        // First-time vs repeat opens are derivable in PostHog funnels via
-        // "first occurrence per user" — no need for a duplicate event.
+        // First-time vs repeat opens are the same event. Callers that care
+        // about the first open can count it themselves.
         track('export_opened', { has_midi: this.store.state.loadedMidi !== null })
         void this.openExportModal()
       },
@@ -1937,11 +1938,13 @@ export class App {
       const bytes = await encodeCapturedEvents(pending.events, {
         bpm: this.metronomeBpm(),
         closeOrphansAt: pending.duration,
-        midiName: 'midee session',
+        midiName: `${APP_NAME} session`,
         trackName: 'Live performance',
       })
-      triggerMidiDownload(bytes, 'midee-session.mid')
-      this.showSuccess(`↓ ${t('toast.session.saved', { seconds: Math.round(pending.duration) })}`)
+      triggerMidiDownload(bytes, `${APP_SLUG}-session.mid`)
+      this.showSuccess(
+        `↓ ${t('toast.session.saved', { seconds: Math.round(pending.duration), name: APP_SLUG })}`,
+      )
       this.pendingSession = null
       return
     }
@@ -1982,11 +1985,11 @@ export class App {
     const bytes = await encodeCapturedEvents(snap.events, {
       bpm: this.metronomeBpm(),
       closeOrphansAt: snap.duration,
-      midiName: 'midee loop',
+      midiName: `${APP_NAME} loop`,
       trackName: 'Loop',
     })
-    triggerMidiDownload(bytes, 'midee-loop.mid')
-    this.showSuccess(`↓ ${t('toast.loop.saved')}`)
+    triggerMidiDownload(bytes, `${APP_SLUG}-loop.mid`)
+    this.showSuccess(`↓ ${t('toast.loop.saved', { name: APP_SLUG })}`)
     track('loop_saved', {
       duration_s: Math.round(snap.duration),
       layers: this.liveLooper.layerCount.value,
@@ -2244,7 +2247,7 @@ function indexOfId<T extends { id: string }>(list: readonly T[], id: string): nu
 // Falls back to a constant if the result is empty.
 function sanitiseFilename(name: string): string {
   const cleaned = name.replace(/[\\/:*?"<>|]+/g, ' ').trim()
-  return cleaned.length > 0 ? cleaned : 'midee'
+  return cleaned.length > 0 ? cleaned : APP_SLUG
 }
 
 // A loop total spread over its frames, to 0.01 ms (telemetry).

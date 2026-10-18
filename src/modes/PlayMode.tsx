@@ -1,4 +1,5 @@
 import { createEffect, onMount } from 'solid-js'
+import { APP_NAME } from '../brand'
 import { useApp } from '../store/AppCtx'
 import { track, trackEvent } from '../telemetry'
 
@@ -55,7 +56,7 @@ export function PlayMode() {
     trackPanel.render(midi)
     dropzone.hide()
     keyboardInput.enable()
-    document.title = `${midi.name} · midee`
+    document.title = `${midi.name} · ${APP_NAME}`
   })
 
   return null

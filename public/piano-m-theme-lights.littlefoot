@@ -1,15 +1,15 @@
 /*
-<metadata description="midee Piano M theme lights" target="LUMI Keys" tags="MIDI;Light;" insertModes="false">
+<metadata description="Piano M theme lights" target="LUMI Keys" tags="MIDI;Light;" insertModes="false">
 </metadata>
 
-midee theme lights for the ROLI Piano M.
+Theme lights for the ROLI Piano M.
 
 Replaces the Synthesia littlefoot script. Channels 12 and 13 are still the
 left and right hands. The older finger channels count too: 2–6 and 12 are
 the left hand, 7–11 and 13 are the right hand. Colours are no longer the
 fixed blue and green from that script.
 
-midee sends the active theme on these control changes. Each value is 0–127:
+The app sends the active scene on these control changes. Each value is 0–127:
 
   channel 12, CC 20 / 21 / 22   left hand red / green / blue
   channel 13, CC 20 / 21 / 22   right hand red / green / blue
@@ -20,7 +20,7 @@ keys that are already lit. CC 121 and CC 123 clear the notes and leave the
 colours in place.
 
 The Piano M has 25 keys. The lowest one is middle C until the octave buttons
-move it; midee sends the new low note on CC 23. Touch, octave, and the notes
+move it; the app sends the new low note on CC 23. Touch, octave, and the notes
 the keys send stay on the factory handler.
 
 Drag this file onto the Piano M in ROLI Dashboard. A factory reset restores

@@ -7,6 +7,7 @@
   <!-- Hide the skip link before the app stylesheet arrives; keep it focusable. -->
   <style>
     .skip-link:not(:focus) { position: fixed; top: 0; transform: translateY(-200%); }
+    html, body { background: #F8E3C8; color: #4A2F1E; }
   </style>
   <title>Play notes, see them bloom</title>
   <meta name="description"
@@ -94,10 +95,10 @@
   </main>
   <noscript>
     <div
-      style="max-width:720px;margin:4rem auto;padding:2rem;font-family:system-ui,sans-serif;color:#e8e8f0;background:#0b0b10;border-radius:12px;line-height:1.55;">
-      <h1>Play notes, see them bloom</h1>
+      style="max-width:640px;margin:4rem auto;padding:2rem 1.5rem;font-family:'Nunito Sans',system-ui,sans-serif;color:#4A2F1E;line-height:1.55;">
+      <h1 style="font-weight:500;letter-spacing:-0.02em;">Play notes, see them bloom</h1>
       <p>A piano trainer for your MIDI keyboard, with learn mode, a range for small keyboards, and cozy scenes.</p>
-      <p><em>This page needs JavaScript.</em></p>
+      <p>This page needs JavaScript.</p>
     </div>
   </noscript>
   <script type="module" src="/src/main.tsx"></script>

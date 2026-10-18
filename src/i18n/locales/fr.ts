@@ -11,7 +11,7 @@ const fr: Messages = {
     'Canaux 12/13 pour les mains gauche/droite. Les mains sont estimées selon la hauteur des pistes ; les fichiers à une piste sont séparés au do central. Sans doigtés.',
   'keyLights.pianoM': 'ROLI Piano M',
   'keyLights.pianoMHint':
-    'Le firmware d’usine du Piano M n’allume pas les notes reçues. Téléchargez le script de couleurs du thème et déposez-le sur l’appareil dans ROLI Dashboard. Si le script Synthesia est déjà installé, déposez ce fichier par-dessus. Les canaux 12 et 13 restent la gauche et la droite. midee envoie les couleurs de mains du thème — Sunset est jaune à gauche et orange à droite — et les renvoie quand vous changez de thème. Les lumières suivent Ajuster à votre tessiture, la main travaillée et la calibration du clavier. Une réinitialisation d’usine dans Dashboard restaure le firmware d’origine.',
+    'Le firmware d’usine du Piano M n’allume pas les notes reçues. Téléchargez le script de couleurs du thème et déposez-le sur l’appareil dans ROLI Dashboard. Si le script Synthesia est déjà installé, déposez ce fichier par-dessus. Les canaux 12 et 13 restent la gauche et la droite. Les couleurs de mains de la scène partent sur ces canaux — rose à gauche et miel à droite — et elles sont renvoyées quand vous changez de scène. Les lumières suivent Ajuster à votre tessiture, la main travaillée et la calibration du clavier. Une réinitialisation d’usine dans Dashboard restaure le firmware d’origine.',
   'keyLights.pianoMScript': 'Télécharger piano-m-theme-lights.littlefoot',
   'keyLights.keeziHint':
     'KEEZI : connectez via KEENEKT. Utilisez Visualizer → Synthesia pour les mains, ou → DAW pour les canaux du fichier/des pistes.',
@@ -58,7 +58,7 @@ const fr: Messages = {
   'songGuide.lh': 'MG',
 
   // ── Home / dropzone ─────────────────────────────────────────
-  'home.kicker': 'midee · visualiseur MIDI',
+  'home.kicker': '{name} · visualiseur MIDI',
   'home.title.html': 'Jouez des <em>notes</em>,<br/>voyez-les éclore.',
   'home.subtitle':
     'Ouvrez un fichier MIDI pour le visualiser, ou jouez en direct avec votre clavier, votre souris, ou un contrôleur MIDI.',
@@ -81,7 +81,7 @@ const fr: Messages = {
   'home.midi.blocked': 'Activez MIDI depuis la barre du haut',
   'home.midi.unavailable': 'Web MIDI indisponible dans ce navigateur',
   'home.midi.disconnected': 'Aucun périphérique MIDI - clavier et souris fonctionnent aussi',
-  'home.aria': 'accueil midee',
+  'home.aria': 'accueil {name}',
 
   // ── Top strip (primary nav) ─────────────────────────────────
   'topStrip.home': 'Accueil',
@@ -342,8 +342,8 @@ const fr: Messages = {
   // ── Document title ──────────────────────────────────────────
   'doc.title.home': 'Jouez des notes, voyez-les éclore',
   'a11y.skipToMain': 'Aller au contenu principal',
-  'doc.title.live': 'Direct',
-  'doc.title.learn': 'Apprendre',
+  'doc.title.live': 'Direct · {name}',
+  'doc.title.learn': 'Apprendre · {name}',
 
   // ── Learn hub ───────────────────────────────────────────────
   'learn.hub.recommended': 'Recommandé',
@@ -573,8 +573,8 @@ const fr: Messages = {
 
   // ── Toasts / confirmations ─────────────────────────────────
   'toast.export.ready': '{filename} prêt',
-  'toast.session.saved': 'midee-session.mid · {seconds} s',
-  'toast.loop.saved': 'midee-loop.mid',
+  'toast.session.saved': '{name}-session.mid · {seconds} s',
+  'toast.loop.saved': '{name}-loop.mid',
   'toast.recording.empty':
     'Rien d’enregistré - jouez quelques notes pendant que Record est activé.',
   'toast.updated': 'Mis à jour vers la dernière version',

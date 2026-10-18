@@ -8,7 +8,7 @@ const ja: Messages = {
     '左手・右手にチャンネル12・13を使用します。手はトラックの音の高さから推定し、単一トラックは中央のドで分けます。指番号は送信しません。',
   'keyLights.pianoM': 'ROLI Piano M',
   'keyLights.pianoMHint':
-    'Piano M の工場出荷時ファームウェアは、受信したノートを点灯しません。テーマ用ライトのスクリプトをダウンロードし、ROLI Dashboard でデバイスにドラッグしてください。Synthesia のスクリプトが入っている場合は、このファイルで置き換えます。チャンネル 12 と 13 はこれまで通り左と右です。midee は現在のテーマの左右の色を送ります。Sunset は左が黄色、右がオレンジで、テーマを変えると送り直します。ライトは「音域に合わせる」、練習中の手、キーボードのキャリブレーションに従います。Dashboard の工場出荷時リセットで元のファームウェアに戻ります。',
+    'Piano M の工場出荷時ファームウェアは、受信したノートを点灯しません。テーマ用ライトのスクリプトをダウンロードし、ROLI Dashboard でデバイスにドラッグしてください。Synthesia のスクリプトが入っている場合は、このファイルで置き換えます。チャンネル 12 と 13 はこれまで通り左と右です。シーンの左右の色をそのチャンネルで送ります。左はローズ、右はハニーで、シーンを変えると送り直します。ライトは「音域に合わせる」、練習中の手、キーボードのキャリブレーションに従います。Dashboard の工場出荷時リセットで元のファームウェアに戻ります。',
   'keyLights.pianoMScript': 'piano-m-theme-lights.littlefoot をダウンロード',
   'keyLights.keeziHint':
     'KEEZIはKEENEKT経由で接続します。手の色にはVisualizer → Synthesia、ファイルやトラックのチャンネルには → DAWを使用してください。',
@@ -53,7 +53,7 @@ const ja: Messages = {
   'songGuide.rh': '右',
   'songGuide.lh': '左',
 
-  'home.kicker': 'midee · MIDI ビジュアライザー',
+  'home.kicker': '{name} · MIDI ビジュアライザー',
   'home.title.html': '<em>音符</em>を弾いて、<br/>咲かせよう。',
   'home.subtitle':
     'MIDI ファイルを開いてアニメーションにするか、ライブモードでキーボード・マウス・MIDI コントローラーを使って弾いてみましょう。',
@@ -76,7 +76,7 @@ const ja: Messages = {
   'home.midi.blocked': '上部バーから MIDI を有効にしてください',
   'home.midi.unavailable': 'このブラウザーでは Web MIDI を利用できません',
   'home.midi.disconnected': 'MIDI デバイスなし · キーボードとマウスでも弾けます',
-  'home.aria': 'midee ホーム',
+  'home.aria': '{name} ホーム',
 
   'topStrip.home': 'ホーム',
   'topStrip.modePlay': 'MIDI ファイルを再生',
@@ -326,8 +326,8 @@ const ja: Messages = {
 
   'doc.title.home': '音符を弾いて、咲かせよう',
   'a11y.skipToMain': 'メインコンテンツへ移動',
-  'doc.title.live': 'ライブ',
-  'doc.title.learn': '学習',
+  'doc.title.live': 'ライブ · {name}',
+  'doc.title.learn': '学習 · {name}',
 
   'learn.hub.recommended': 'おすすめ',
   'learn.hub.uploadMidi': 'MIDI をアップロード',
@@ -547,8 +547,8 @@ const ja: Messages = {
   'postSession.stats.other': '{duration} · {count} 音符',
 
   'toast.export.ready': '{filename} の準備ができました',
-  'toast.session.saved': 'midee-session.mid · {seconds}s',
-  'toast.loop.saved': 'midee-loop.mid',
+  'toast.session.saved': '{name}-session.mid · {seconds}s',
+  'toast.loop.saved': '{name}-loop.mid',
   'toast.recording.empty': '何も録音されていません。録音をオンにして音を弾いてみてください。',
   'toast.updated': '最新バージョンに更新しました',
 

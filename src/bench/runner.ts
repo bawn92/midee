@@ -1222,7 +1222,7 @@ async function suiteExportReal(
 // against the frames the renderer drew, frame/timestamp/keyframe structure,
 // A/V sync — through the REAL VideoExporter. One page load per browser × res:
 //
-//   1. Deterministic frames. The look is pinned (exportstages 'base': sunset,
+//   1. Deterministic frames. The look is pinned (exportstages 'base': golden-hour,
 //      embers, glow, no labels) and Math.random is swapped for a seeded PRNG
 //      around each renderManualFrame call only (classic particle styles draw
 //      from it at emission; the offline audio render running alongside never
@@ -1551,7 +1551,7 @@ async function suiteExportQuality(
 //          exposed (`gpuQuery`, -1 elsewhere).
 //
 // Configs price each effect against the new-visitor look — app.ts's store
-// defaults, theme 'sunset' + particles 'embers' + labels off — pinned so
+// defaults, theme 'golden-hour' + particles 'embers' + labels off — pinned so
 // browser profiles with different saved settings measure the same scene.
 // `filterglow` is `base` with the old GlowFilter note glow (the shipped glow
 // is baked since 2026-09-28); the other glow configs use the page's `&glow=`
@@ -2406,7 +2406,7 @@ async function suiteVoiceload(
 // two paths per moment. Particles and labels off, so the glow is the only
 // difference. Moments: `dense` (most notes sounding), `lone` (exactly one),
 // `ending` (the dense chord's first note 40 ms before it ends — slivers at the
-// strike line). `&themes=a,b` (default sunset, the new-visitor theme).
+// strike line). `&themes=a,b` (default golden-hour, the new-visitor theme).
 async function suiteGlowShots(
   ctx: AppCtxValue,
   fixtureId: string,
