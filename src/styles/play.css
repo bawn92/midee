@@ -132,7 +132,6 @@ html[data-scene] #hud .hud-metro-bpm {
 
 html[data-scene] #hud #hud-drag,
 html[data-scene] #hud .float-hud__handle,
-html[data-scene] #hud .scrubber-wrap .time-display,
 html[data-scene] #hud .hud-session-btn {
   position: absolute;
   width: 1px;
@@ -206,19 +205,111 @@ html[data-scene] #hud .hud-hands[data-hand="right"] .hud-hand.is-active {
   background: var(--segment-rh-thumb);
 }
 
+/* Progress sits inside the pill, under the controls: elapsed, honey fill, total.
+   The old 4px line hung off the bottom edge and overflow:hidden ate the track. */
 html[data-scene] #hud .scrubber-wrap {
   position: absolute;
-  left: 24px;
-  right: 24px;
-  bottom: -10px;
-  height: 4px;
-  display: block;
+  left: 20px;
+  right: 20px;
+  bottom: 8px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 16px;
+  min-width: 0;
+}
+
+html[data-scene] #hud .scrubber-wrap .time-display {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  flex: none;
+  color: var(--text-2);
+  font:
+    600 12px / 16px "Nunito Sans",
+    system-ui,
+    sans-serif;
 }
 
 html[data-scene] #hud .scrubber {
-  width: 100%;
-  height: 4px;
-  accent-color: var(--accent);
+  --scrub-rest: color-mix(in srgb, var(--note-rh) 34%, var(--surface-solid));
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 48px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  /* Paint the 6px groove on the input itself. Chrome drops the track
+     pseudo's background on this control, which left only a clipped thumb. */
+  background-color: transparent;
+  background-image:
+    linear-gradient(var(--note-rh), var(--note-rh)),
+    linear-gradient(var(--scrub-rest), var(--scrub-rest));
+  background-size:
+    var(--pct, 0%) 6px,
+    100% 6px;
+  background-position:
+    left center,
+    left center;
+  background-repeat: no-repeat;
+  border-radius: 999px;
+  box-shadow: none;
+  accent-color: transparent;
+  cursor: pointer;
+}
+
+html[data-scene] #hud .scrubber::-webkit-slider-runnable-track {
+  -webkit-appearance: none;
+  height: 6px;
+  margin: 5px 0;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--note-rh) 0,
+    var(--note-rh) var(--pct, 0%),
+    var(--scrub-rest) var(--pct, 0%),
+    var(--scrub-rest) 100%
+  );
+  box-shadow: inset 0 1px 1px rgba(94, 59, 36, 0.16);
+}
+
+html[data-scene] #hud .scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -4px;
+  border: 2px solid var(--note-rh);
+  border-radius: 50%;
+  background: var(--surface-solid);
+  box-shadow: 0 1px 3px rgba(94, 59, 36, 0.28);
+}
+
+html[data-scene] #hud .scrubber::-moz-range-track {
+  height: 6px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--scrub-rest, var(--accent-soft));
+}
+
+html[data-scene] #hud .scrubber::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--note-rh);
+}
+
+html[data-scene] #hud .scrubber::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--note-rh);
+  border-radius: 50%;
+  background: var(--surface-solid);
 }
 
 html[data-scene] .song-guide {
@@ -318,8 +409,8 @@ html[data-scene] .song-guide-fingers {
     top: calc(80px + env(safe-area-inset-top));
     bottom: auto;
     transform: translateX(calc(-50% + var(--hud-dx, 0px)));
-    width: min(742px, calc(100vw - 712px));
-    max-width: min(742px, calc(100vw - 712px));
+    width: min(742px, calc(100vw - 80px));
+    max-width: min(742px, calc(100vw - 80px));
   }
 
   html[data-scene] .song-guide,
@@ -1443,7 +1534,7 @@ html[data-scene] #hud #hud-loop {
 html[data-scene] #hud .scrubber-wrap {
   left: 16px;
   right: 16px;
-  bottom: 7px;
+  bottom: 8px;
   width: auto;
 }
 
@@ -1492,8 +1583,8 @@ html[data-scene] #hud .scrubber-wrap {
     width: min(1080px, calc(100vw - 48px));
     max-width: min(1080px, calc(100vw - 48px));
     height: auto;
-    min-height: 72px;
-    padding: 8px 16px 18px;
+    min-height: 84px;
+    padding: 8px 16px 30px;
     overflow: hidden;
     box-sizing: border-box;
     transform: translateX(calc(-50% + var(--hud-dx, 0px)));
@@ -1601,7 +1692,19 @@ html[data-scene] #hud .scrubber-wrap {
   html[data-scene] #hud.float-hud,
   html[data-scene]
     #hud.hud--active.float-hud--idle:not(.float-hud--pinned):not(.float-hud--dragging) {
-    padding: 8px 8px 16px;
+    padding: 8px 8px 30px;
+  }
+
+  html[data-scene] #hud .scrubber-wrap {
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    height: 20px;
+    flex: 1 1 100%;
+    order: 10;
+    margin-top: 2px;
   }
 
   html[data-scene] #hud.float-hud,
