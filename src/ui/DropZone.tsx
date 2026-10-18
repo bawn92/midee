@@ -5,6 +5,7 @@ import { t } from '../i18n'
 import type { MidiDeviceStatus } from '../midi/MidiInputManager'
 import { icons } from './icons'
 import { type GridContents, SamplesGrid } from './SamplesGrid'
+import { settleSongIntoPlay } from './viewTransition'
 
 export type LoadSource = 'drag' | 'picker'
 type DropHandler = (file: File, source: LoadSource) => void
@@ -224,6 +225,7 @@ export class DropZone {
   private statusSetter!: (v: { status: MidiDeviceStatus; deviceName: string }) => void
   private filePicker: (() => void) | null = null
   private refreshGrid: (() => void) | null = null
+  private shown = true
 
   constructor(
     container: HTMLElement,
@@ -275,12 +277,25 @@ export class DropZone {
   }
 
   show(): void {
+    this.shown = true
     this.hiddenSetter(false)
     // Coming back Home after opening a file: that file is now a recent.
     this.refreshGrid?.()
   }
 
   hide(): void {
+    const fromHome = this.shown
+    this.shown = false
+    if (!fromHome) {
+      this.hiddenSetter(true)
+      return
+    }
+    const mode = document.getElementById('top-strip')?.dataset.mode
+    const card = document.querySelector('.sample-card.is-vt-source')
+    if (mode === 'play' || card) {
+      settleSongIntoPlay(() => this.hiddenSetter(true))
+      return
+    }
     this.hiddenSetter(true)
   }
 

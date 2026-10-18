@@ -57,7 +57,13 @@ function CardShell(props: CardShellProps) {
         data-card-id={props.id}
         type="button"
         {...(props.accent ? { style: { '--sample-accent': props.accent } } : {})}
-        onClick={() => props.onSelect()}
+        onClick={(e) => {
+          document.querySelectorAll('.sample-card.is-vt-source').forEach((el) => {
+            el.classList.remove('is-vt-source')
+          })
+          e.currentTarget.classList.add('is-vt-source')
+          props.onSelect()
+        }}
       >
         <Show
           when={props.recent}

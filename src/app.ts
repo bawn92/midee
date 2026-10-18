@@ -111,6 +111,7 @@ import { SongGuideController } from './ui/SongGuide'
 import { showError, showSuccess } from './ui/Toast'
 import { TrackPanel } from './ui/TrackPanel'
 import { installViewportClassSync } from './ui/utils'
+import { crossfadeModes, isModeCrossfade } from './ui/viewTransition'
 import { whenIdle } from './whenIdle'
 
 // Total note count across all tracks — the content-size signal attached to
@@ -1843,31 +1844,42 @@ export class App {
   }
 
   private requestMode(mode: Exclude<AppMode, 'home'>): void {
-    if (mode === 'live') {
-      this.enterLiveMode()
+    // Play with nothing loaded opens the picker and stays in the current mode.
+    // That is not a view change, so it must not arm the roll-preserving flag.
+    if (mode === 'play' && !this.store.state.loadedMidi) {
+      this.openFilePicker('play')
       return
     }
-    if (mode === 'learn') {
-      // Re-clicking Learn while already inside an exercise pops back to the
-      // hub. closeActiveExercise is idempotent (no-op when no runner) so this
-      // is safe to call regardless of prior state.
-      const lc = this.learnControllerHandle.peek()
-      if (this.store.state.mode === 'learn' && lc) {
-        lc.closeActiveExercise('abandoned')
+    const cross = isModeCrossfade(this.store.state.mode, mode)
+    const run = (): void => {
+      if (mode === 'live') {
+        this.enterLiveMode(true, !cross)
         return
       }
-      this.store.setState('mode', 'learn')
-      return
+      if (mode === 'learn') {
+        // Re-clicking Learn while already inside an exercise pops back to the
+        // hub. closeActiveExercise is idempotent (no-op when no runner) so this
+        // is safe to call regardless of prior state.
+        const lc = this.learnControllerHandle.peek()
+        if (this.store.state.mode === 'learn' && lc) {
+          lc.closeActiveExercise('abandoned')
+          return
+        }
+        this.store.setState('mode', 'learn')
+        return
+      }
+      if (this.store.state.loadedMidi) {
+        this.enterPlayMode(!cross)
+        return
+      }
+      // Pin the target — without it, the picker would read `state.mode` at
+      // file-pick time and (if we came here from Learn) route the file back
+      // into Learn instead of opening it in Play. The user clicked Play; honor
+      // that even if their mode hasn't flipped yet.
+      this.openFilePicker('play')
     }
-    if (this.store.state.loadedMidi) {
-      this.enterPlayMode()
-      return
-    }
-    // Pin the target — without it, the picker would read `state.mode` at
-    // file-pick time and (if we came here from Learn) route the file back
-    // into Learn instead of opening it in Play. The user clicked Play; honor
-    // that even if their mode hasn't flipped yet.
-    this.openFilePicker('play')
+    if (isModeCrossfade(this.store.state.mode, mode)) crossfadeModes(run)
+    else run()
   }
 
   // Hands the currently-loaded Play MIDI off to Learn and switches modes.
@@ -1880,7 +1892,9 @@ export class App {
     track('learn_from_play', { duration_s: Math.round(midi.duration) })
     void this.ensureLearnController().then((c) => {
       c.queueMidi(midi)
-      this.store.setState('mode', 'learn')
+      crossfadeModes(() => {
+        this.store.setState('mode', 'learn')
+      })
     })
   }
 
@@ -1890,13 +1904,13 @@ export class App {
     this.store.enterHome()
   }
 
-  private enterLiveMode(primeAudio = true): void {
+  private enterLiveMode(primeAudio = true, resetTime = true): void {
     setNextLiveOpts({ primeAudio })
-    this.store.enterLive()
+    this.store.enterLive(resetTime)
   }
 
-  private enterPlayMode(): void {
-    this.store.enterPlay()
+  private enterPlayMode(resetTime = true): void {
+    this.store.enterPlay(resetTime)
   }
 
   // Schedules a UI side-effect to run at (roughly) the AudioContext time

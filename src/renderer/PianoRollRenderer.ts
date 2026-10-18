@@ -424,17 +424,19 @@ export class PianoRollRenderer {
     g.fill({ color: this.theme.nowLine, alpha: this.theme.nowLineAlpha })
   }
 
-  loadMidi(midi: MidiFile): void {
+  loadMidi(midi: MidiFile, atTime?: number): void {
     this.midi = midi
     this.visibleTrackIds = new Set(midi.tracks.map((t) => t.id))
     this.practiceFocusTrackIds = null
     this.noteRenderer.setTracks(midi.tracks)
     this.noteRenderer.setFingerGuide(guideForMidi(midi))
     this.noteRenderer.setTempo(midi.bpm)
-    this.particles.clear()
-    this.prevActive.clear()
-    this.currActive.clear()
-    this.renderStaticFrame(0)
+    if (atTime === undefined) {
+      this.particles.clear()
+      this.prevActive.clear()
+      this.currActive.clear()
+    }
+    this.renderStaticFrame(atTime ?? 0)
   }
 
   clearMidi(): void {

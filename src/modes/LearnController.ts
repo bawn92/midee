@@ -23,6 +23,7 @@ import {
   trackMidiLoaded,
   trackMidiLoadFailed,
 } from '../telemetry'
+import { consumePreserveRoll } from '../ui/viewTransition'
 import type { ModeContext } from './ModeController'
 
 // Learn mode host. Owns all Learn-scoped state (loaded MIDI, transport,
@@ -81,17 +82,22 @@ export class LearnController {
       this.ctx
     const from = services.store.state.mode
     const wasAlreadyLearn = from === 'learn'
-    resetInteractionState()
-    // Halt the shared transport BEFORE switching modes. A Play-mode session
-    // that was still playing would otherwise keep the clock ticking and its
-    // synth scheduling MIDI into the background of Learn until something
-    // explicitly pauses it.
-    services.clock.pause()
-    services.clock.seek(0)
+    // A header switch keeps the song where it is. Opening Learn from Home
+    // still parks the clock and clears the roll.
+    const keep = consumePreserveRoll()
+    if (!keep) {
+      resetInteractionState()
+      // Halt the shared transport BEFORE switching modes. A Play-mode session
+      // that was still playing would otherwise keep the clock ticking and its
+      // synth scheduling MIDI into the background of Learn until something
+      // explicitly pauses it.
+      services.clock.pause()
+      services.clock.seek(0)
+    }
     // Mode is a cross-cutting router concern, so it still lives on AppStore.
     // Everything else about Learn's transport lives on `this.learnState`.
     services.store.setState('mode', 'learn')
-    services.renderer.clearMidi()
+    if (!keep) services.renderer.clearMidi()
     // Hide the ascending live-note sprites — Learn surfaces show the scheduled
     // piece (if any) and user presses should only highlight the keyboard.
     services.renderer.setLiveNotesVisible(false)
@@ -101,14 +107,15 @@ export class LearnController {
     document.title = t('doc.title.learn', { name: APP_NAME })
 
     this.mountHostElements(overlay)
-    this.showHubView()
+    this.showHubView(keep)
     this.hub.mount(this.hubHost!, this.hubOpts)
     this.overlay = new LearnOverlay()
     services.renderer.addLayer(this.overlay)
 
     // Learn is intentionally session-local: entering the hub starts from the
-    // picker instead of resurrecting a previous practice file.
-    this.clearLoadedLearnMidi()
+    // picker instead of resurrecting a previous practice file. A header
+    // switch leaves the playing piece alone.
+    if (!keep) this.clearLoadedLearnMidi()
     // Touch the streak so attendance counts even if the user bails before
     // finishing an exercise — "opened the app today" is still practice.
     this.progress.touchStreak()
@@ -411,11 +418,12 @@ export class LearnController {
     this.exerciseHost = null
   }
 
-  private showHubView(): void {
+  private showHubView(keepRoll = false): void {
     if (!this.hubHost || !this.exerciseHost) return
     this.hubHost.classList.remove('learn-host--hidden')
     this.exerciseHost.classList.add('learn-host--hidden')
     this.view.set('hub')
+    if (keepRoll) return
     // The hub never shows the rolling piano — flush any MIDI + live notes an
     // exiting exercise (or a prior Play-mode session) left on the renderer so
     // the background stays quiet behind the hub chrome.

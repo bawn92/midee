@@ -7,6 +7,7 @@ import { type AppMode, TRANSPOSE_LIMIT } from '../store/state'
 import { FloatingHud } from './FloatingHud'
 import { HandPracticeButtons } from './HandPracticeControl'
 import { icons } from './icons'
+import { prefersReducedMotion } from './viewTransition'
 
 export const ZOOM_MIN = 80
 export const ZOOM_MAX = 600
@@ -149,7 +150,7 @@ export function TopStripView(props: TopStripProps) {
   let primed = false
   createEffect(() => {
     activeMode()
-    positionThumb(primed)
+    positionThumb(primed && !prefersReducedMotion())
     primed = true
   })
 

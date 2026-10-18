@@ -2,6 +2,7 @@ import { createEffect, onMount } from 'solid-js'
 import { APP_NAME } from '../brand'
 import { useApp } from '../store/AppCtx'
 import { track, trackEvent } from '../telemetry'
+import { consumePreserveRoll } from '../ui/viewTransition'
 
 // Playback surface for a loaded MIDI file. Mount happens when the store's
 // mode transitions to 'play' — which only occurs in `completePlayLoad`, so
@@ -17,7 +18,11 @@ export function PlayMode() {
   const { services, trackPanel, dropzone, keyboardInput, openFilePicker, resetInteractionState } =
     useApp()
 
+  let heldTime: number | null = null
+
   onMount(() => {
+    const keep = consumePreserveRoll()
+    if (keep) heldTime = services.clock.currentTime
     const midi = services.store.state.loadedMidi
     const status = services.store.state.status
     if (!midi) {
@@ -33,14 +38,14 @@ export function PlayMode() {
       // Halt any prior surface (Live looper / sessionRec / metronome / etc.)
       // BEFORE opening the picker so audio doesn't ghost through while the
       // user chooses a file.
-      resetInteractionState()
+      if (!keep) resetInteractionState()
       trackPanel.close()
       dropzone.hide()
       keyboardInput.enable()
       openFilePicker()
       return
     }
-    resetInteractionState()
+    if (!keep) resetInteractionState()
     // Dual-fire during the 2-week rename migration window. `play_mode_entered`
     // is the canonical successor; `file_mode_entered` is scheduled for
     // removal after 2026-05-07.
@@ -52,7 +57,10 @@ export function PlayMode() {
   createEffect(() => {
     const midi = services.store.state.loadedMidi
     if (!midi) return
-    services.renderer.loadMidi(midi)
+    const at = heldTime
+    heldTime = null
+    if (at === null) services.renderer.loadMidi(midi)
+    else services.renderer.loadMidi(midi, at)
     trackPanel.render(midi)
     dropzone.hide()
     keyboardInput.enable()
