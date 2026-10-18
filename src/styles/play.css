@@ -308,52 +308,27 @@ html[data-scene] .song-guide-fingers {
 /* Wide play view: the range card sits upper-right. The shortcuts card
    stays in #lower-left, above the keys. */
 @media (min-width: 1100px) {
+  /* Site frame B1: a labeled app bar, then the transport pill, then the cards. */
+  html[data-scene] #top-strip {
+    top: calc(10px + env(safe-area-inset-top));
+    height: 52px;
+  }
+
   html[data-scene] #hud.float-hud {
-    top: calc(16px + env(safe-area-inset-top));
+    top: calc(80px + env(safe-area-inset-top));
     bottom: auto;
     transform: translateX(calc(-50% + var(--hud-dx, 0px)));
-    width: min(702px, calc(100vw - 620px));
-    max-width: min(702px, calc(100vw - 620px));
+    width: min(742px, calc(100vw - 520px));
+    max-width: min(742px, calc(100vw - 520px));
   }
 
-  html[data-scene] #top-strip {
-    top: calc(16px + env(safe-area-inset-top));
-    left: calc(16px + env(safe-area-inset-left));
-    right: calc(16px + env(safe-area-inset-right));
-    height: 40px;
-    padding: 0;
-    gap: 6px;
+  html[data-scene] .song-guide,
+  html[data-scene] .song-guide--side {
+    top: calc(168px + env(safe-area-inset-top));
   }
 
-  html[data-scene] .ts-mode-label,
-  html[data-scene] .ts-home-name,
-  html[data-scene] #top-strip .ts-pill > span + span,
-  html[data-scene] .ts-customize-label,
-  html[data-scene] .ts-record-btn span + span,
-  html[data-scene] .ts-midi-label {
-    display: none;
-  }
-
-  html[data-scene] #ts-status {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    flex: none;
-  }
-
-  html[data-scene] .ts-end {
-    gap: 4px;
-  }
-
-  html[data-scene] .ts-pill,
-  html[data-scene] .ts-home,
-  html[data-scene] #ts-customize,
-  html[data-scene] .ts-record-btn {
-    height: 36px;
-    min-width: 36px;
-    padding: 0 8px;
+  html[data-scene] .song-guide-card {
+    max-height: min(460px, calc(100svh - 168px - var(--keyboard-h, 180px) - 24px));
   }
 
   html[data-scene]
@@ -362,7 +337,7 @@ html[data-scene] .song-guide-fingers {
   html[data-scene] #lower-left .kbd-range-mount,
   html[data-scene] #lower-left:has(.kbd-range--beside) .kbd-range-mount {
     position: fixed;
-    top: calc(104px + env(safe-area-inset-top));
+    top: calc(168px + env(safe-area-inset-top));
     right: calc(24px + env(safe-area-inset-right));
     left: auto;
     bottom: auto;
@@ -387,7 +362,7 @@ html[data-scene] .song-guide-fingers {
     right: auto;
     bottom: auto;
     width: 100%;
-    max-height: min(520px, calc(100svh - 120px - var(--keyboard-h, 180px) - 88px));
+    max-height: min(460px, calc(100svh - 168px - var(--keyboard-h, 180px) - 72px));
     overflow: auto;
     margin-top: 0;
     border-top: 0;
@@ -499,7 +474,6 @@ html[data-scene] .kbd-range-band-move {
   color: var(--text-2);
 }
 
-html[data-scene] .home-card,
 html[data-scene] .ts-popover,
 html[data-scene] .modal,
 html[data-scene] #export-modal,
@@ -698,10 +672,17 @@ html[data-scene] .kbd-range-calibrate-bar {
     display: none;
   }
 
-  html[data-scene] #hud.float-hud {
+  html[data-scene] #hud.float-hud,
+  html[data-scene] #hud.hud--active.float-hud--idle {
     top: calc(64px + env(safe-area-inset-top));
-    max-width: calc(100vw - 16px);
-    height: 56px;
+    bottom: auto;
+    left: calc(8px + env(safe-area-inset-left));
+    right: calc(8px + env(safe-area-inset-right));
+    transform: none;
+    width: auto;
+    max-width: none;
+    height: auto;
+    min-height: 56px;
     padding: 6px 8px;
   }
 
@@ -792,6 +773,15 @@ html[data-scene] .ts-status-title {
 html[data-scene] .ts-home-name {
   font: var(--type-heading);
   color: var(--text-1);
+}
+
+html[data-scene] .home-card {
+  background: var(--surface);
+  color: var(--text-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--elev-3);
+  backdrop-filter: blur(var(--blur-card)) saturate(1.15);
 }
 
 html[data-scene] .home-title {
@@ -917,4 +907,214 @@ html[data-scene] .dz-overlay {
   html[data-scene]:has(#kbd-range:not(.kbd-range--hidden)) .gh-phone-dock {
     display: flex;
   }
+}
+
+/* Site frames: the leftover classic chrome (modals, key lights, live
+   keycaps, learn wash, file errors) uses the same warm surfaces. */
+
+html[data-scene] .learn-hub__glow {
+  opacity: 1;
+  background:
+    radial-gradient(
+      800px 420px at 72% -8%,
+      color-mix(in srgb, var(--accent) 28%, transparent),
+      transparent 62%
+    ),
+    radial-gradient(
+      640px 420px at 8% 0%,
+      color-mix(in srgb, var(--accent-soft) 55%, transparent),
+      transparent 64%
+    );
+}
+
+html[data-scene] .learn-hub,
+html[data-scene] .hero-card,
+html[data-scene] .hero-card__title {
+  color: var(--text-1);
+}
+
+html[data-scene] .hero-card {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 14%, var(--surface-solid)),
+    var(--surface-solid) 62%
+  );
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-2);
+}
+
+html[data-scene] .hero-card__kicker,
+html[data-scene] .hero-card__blurb,
+html[data-scene] .learn-hub__grid-label,
+html[data-scene] .ex-card__blurb {
+  color: var(--text-2);
+}
+
+html[data-scene] .key-lights-field select,
+html[data-scene] .customize-locale-chip {
+  color-scheme: light;
+  background: var(--surface-sunken);
+  color: var(--text-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+html[data-scene] .key-lights-settings p,
+html[data-scene] .key-lights-field,
+html[data-scene] .key-lights-help summary {
+  color: var(--text-2);
+}
+
+html[data-scene] #export-modal.open,
+html[data-scene] #midi-picker-modal.open,
+html[data-scene] #post-session-modal.open {
+  background: rgba(74, 47, 30, 0.38);
+  backdrop-filter: blur(var(--blur-overlay));
+  -webkit-backdrop-filter: blur(var(--blur-overlay));
+}
+
+html[data-scene] .export-card,
+html[data-scene] .midi-picker-card {
+  background: var(--surface-solid);
+  color: var(--text-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--elev-3);
+}
+
+html[data-scene] .export-card-title,
+html[data-scene] .midi-picker-title,
+html[data-scene] .export-row-label,
+html[data-scene] .midi-picker-drop-title {
+  color: var(--text-1);
+}
+
+html[data-scene] .export-tabs,
+html[data-scene] .fps-group,
+html[data-scene] .midi-picker-drop {
+  background: var(--surface-sunken);
+  border-color: var(--border);
+}
+
+html[data-scene] .export-tab,
+html[data-scene] .fps-btn,
+html[data-scene] .export-toggle,
+html[data-scene] .export-caption,
+html[data-scene] .midi-picker-sub,
+html[data-scene] .export-row-note {
+  color: var(--text-2);
+}
+
+html[data-scene] .export-tab--on {
+  background: var(--surface);
+  color: var(--text-1);
+}
+
+html[data-scene] .fps-btn.fps-btn--on {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  box-shadow: none;
+}
+
+html[data-scene] .export-toggle-knob {
+  background: var(--border-strong);
+}
+
+html[data-scene] .export-toggle-knob::after {
+  background: var(--surface-solid);
+  opacity: 1;
+}
+
+html[data-scene] .kh-keys kbd,
+html[data-scene] .kh-combo kbd {
+  color: var(--text-1);
+  background: linear-gradient(180deg, var(--surface-solid), var(--surface-sunken));
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  box-shadow: none;
+}
+
+html[data-scene] #key-hint:hover .kh-keys kbd,
+html[data-scene] #key-hint:hover .kh-combo kbd,
+html[data-scene] .kh-keys .kh-cap-btn:hover kbd {
+  border-color: var(--border-strong);
+  background: var(--surface);
+}
+
+html[data-scene] #dropzone::before {
+  background:
+    radial-gradient(
+      circle at 35% 35%,
+      color-mix(in srgb, var(--accent) 22%, transparent),
+      transparent 40%
+    ),
+    radial-gradient(circle at 70% 60%, rgba(255, 248, 236, 0.45), transparent 46%);
+}
+
+html[data-scene] #dropzone.drag-over .home-card {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 2px var(--accent),
+    var(--elev-3);
+  transform: none;
+}
+
+html[data-scene] .mode-error {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(74, 47, 30, 0.38);
+}
+
+html[data-scene] .mode-error-inner {
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 28px;
+  background: var(--surface-solid);
+  color: var(--text-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--elev-3);
+}
+
+html[data-scene] .mode-error-title {
+  font: var(--type-title);
+  font-variation-settings: var(--font-display-axes);
+}
+
+html[data-scene] .mode-error-message {
+  margin: 0;
+  color: var(--text-2);
+  font: var(--type-body);
+}
+
+html[data-scene] .mode-error-retry {
+  align-self: flex-start;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font: var(--type-label);
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+html[data-scene] .coachmark {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-2);
+}
+
+html[data-scene] .coachmark__title {
+  color: var(--accent);
+  font: var(--type-label);
+}
+
+html[data-scene] .toast {
+  border-radius: var(--radius-lg);
 }
