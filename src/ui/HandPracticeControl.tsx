@@ -76,7 +76,11 @@ export function HandPracticeButtons(props: { variant: 'transport' | 'learn' }) {
           {buttons}
         </fieldset>
       ) : (
-        <fieldset class="ctrl-group hud-hands" aria-label={t('learn.pa.handsAria')}>
+        <fieldset
+          class="ctrl-group hud-hands"
+          aria-label={t('learn.pa.handsAria')}
+          data-hand={prefs().hand}
+        >
           {buttons}
         </fieldset>
       )}

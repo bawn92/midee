@@ -10,6 +10,7 @@ import { barAt, barStart, fingersAt, loopShouldWrap, snapshot } from '../songGui
 import type { FingerMark, GuideSnapshot, SongGuide } from '../songGuide/types'
 import type { AppStore } from '../store/state'
 import { watch } from '../store/watch'
+import { Chip, Dropdown } from './kit/kit'
 
 const CLEAN_GOAL = 3
 const DEFAULT_TEMPO = 120
@@ -96,6 +97,19 @@ export function SongGuidePanel(props: {
             </button>
           </header>
 
+          <Dropdown
+            label={snap().section?.name ?? t('songGuide.title')}
+            value={snap().section?.id ?? ''}
+            options={view().guide.sections.map((section) => ({
+              id: section.id,
+              label: section.name,
+            }))}
+            onChange={(id) => {
+              const section = view().guide.sections.find((item) => item.id === id)
+              if (section) props.onJump(section.startBar, section.endBar)
+            }}
+          />
+
           <div class="song-guide-now">
             <span class="song-guide-bar">{t('songGuide.bar', { n: snap().bar })}</span>
             <Show when={snap().section}>
@@ -122,12 +136,13 @@ export function SongGuidePanel(props: {
                   <legend class="sr-visually-hidden">{t('songGuide.loopLabel')}</legend>
                   <For each={loop().chords}>
                     {(name, i) => (
-                      <span
+                      <Chip
                         class="song-guide-chip"
-                        classList={{ 'song-guide-chip--on': i() === loop().index }}
+                        current={i() === loop().index}
+                        next={i() === loop().index + 1}
                       >
                         {name}
-                      </span>
+                      </Chip>
                     )}
                   </For>
                 </fieldset>

@@ -1,6 +1,7 @@
 import type { Application, Ticker } from 'pixi.js'
-import { Container, Graphics, RenderTexture, Sprite, Texture, TilingSprite } from 'pixi.js'
+import { Container, Graphics, RenderTexture, Sprite, Text, Texture, TilingSprite } from 'pixi.js'
 import { isBlackKey, MIDI_MAX, MIDI_MIN } from '../core/midi/types'
+import { paintPrefs, WOOD } from '../ui/paint'
 import { keyRect } from './keyGeometry'
 import { keyboardMaterial, sceneForTheme } from './scenes'
 import { liveNoteColor, type Theme } from './theme'
@@ -55,14 +56,12 @@ function drawWalnutWhite(
   h: number,
   radius: number,
 ): void {
-  const front = Math.max(18, Math.round(h * 0.22))
+  const front = 10
   const topH = Math.max(8, h - front)
-  g.roundRect(x, y, w, topH + 6, radius).fill({ color: 0xfff6ea })
-  g.rect(x + 2, y + 2, w - 4, 4).fill({ color: 0xffffff, alpha: 0.55 })
-  g.rect(x, y + 4, 2, topH - 6).fill({ color: 0xd7c2a8, alpha: 0.55 })
-  g.roundRect(x, y + topH, w, front, 2).fill({ color: 0xe4cdb4 })
-  g.rect(x + 1, y + topH, w - 2, 2).fill({ color: 0xffffff, alpha: 0.72 })
-  g.rect(x + 1, y + h - 4, w - 2, 4).fill({ color: 0xb08968, alpha: 0.9 })
+  g.roundRect(x, y, w, topH + 4, radius).fill({ color: 0xf6ebda })
+  g.rect(x, y, w, Math.max(2, topH * 0.04)).fill({ color: 0xfff8ee, alpha: 0.45 })
+  g.roundRect(x, y + topH, w, front, 2).fill({ color: 0xdccbb2 })
+  g.roundRect(x, y + topH - 2, w, front, 6).fill({ color: 0xdccbb2 })
 }
 
 function drawWalnutBlack(
@@ -73,15 +72,12 @@ function drawWalnutBlack(
   h: number,
   radius: number,
 ): void {
-  const bodyH = Math.max(8, h - 3)
-  g.roundRect(x + 1, y + 5, w, bodyH, radius).fill({ color: 0x1a0c08, alpha: 0.55 })
-  g.roundRect(x, y, w, bodyH, radius).fill({ color: 0x2a1610 })
-  const cap = Math.max(5, Math.round(bodyH * 0.16))
-  g.roundRect(x + 1, y + 1, w - 2, cap, Math.min(radius, 2)).fill({ color: 0x6a4636 })
-  g.rect(x + 2, y + 1, w - 4, 2).fill({ color: 0xfff1d8, alpha: 0.38 })
-  g.rect(x, y + 3, 1, bodyH - 8).fill({ color: 0xffffff, alpha: 0.16 })
-  g.rect(x + w - 1, y + 3, 1, bodyH - 8).fill({ color: 0x000000, alpha: 0.4 })
-  g.rect(x + 1, y + bodyH - 2, w - 2, 2).fill({ color: 0x000000, alpha: 0.45 })
+  const front = 8
+  const bodyH = Math.max(8, h - front)
+  g.roundRect(x, y + 3, w, bodyH, radius).fill({ color: 0x2e1f17, alpha: 0.35 })
+  g.roundRect(x, y, w, bodyH, radius).fill({ color: 0x3e2a1f })
+  g.rect(x + 1, y, w - 2, 1).fill({ color: 0xffe6c8, alpha: 0.12 })
+  g.roundRect(x, y + bodyH - 2, w, front, 2).fill({ color: 0x2e1f17 })
 }
 
 export class KeyboardRenderer {
@@ -113,6 +109,7 @@ export class KeyboardRenderer {
   // Playable-window highlight. Defaults to the whole piano, which draws nothing.
   private rangeLayer: Graphics
   private caseLayer: Graphics
+  private keyLabels: Text[] = []
   private playStart = MIDI_MIN
   private playEnd = MIDI_MAX
   private rangeSignature = ''
@@ -172,10 +169,11 @@ export class KeyboardRenderer {
     // that tint the white/black keys and gap. Hitting this cache path turns
     // a theme re-apply or redundant rebuildStaticLayers() into a no-op.
     const walnut = keyboardMaterial(this.theme.id) === 'upright-walnut'
+    const paint = paintPrefs()
     const sig =
       `${canvasWidth}x${keyboardHeight}|${pitchMin ?? 21}-${pitchMax ?? 108}|` +
       `${this.theme.whiteKey}.${this.theme.blackKey}.${this.theme.keyBorder}|` +
-      `${walnut ? 'walnut' : 'flat'}|y=${yOffset}`
+      `${walnut ? paint.wood : 'flat'}|labels=${paint.keyLabels}|y=${yOffset}`
     if (sig === this.lastBuildSignature && this.whiteSprite && this.blackSprite) return
     this.lastBuildSignature = sig
 
@@ -321,6 +319,7 @@ export class KeyboardRenderer {
     this.blackActiveLayer.y = yOffset
     this.caseLayer.y = yOffset
     this.drawCase(canvasWidth, keyboardHeight, walnut)
+    this.drawKeyLabels(positions, yOffset, keyboardHeight, walnut)
     this.rangeLayer.y = yOffset
     this.rangeSignature = ''
     // Force a redraw of the hint layer on the next setPracticeHints call —
@@ -378,6 +377,35 @@ export class KeyboardRenderer {
     this.rangeSignature = ''
   }
 
+  private drawKeyLabels(
+    positions: Map<number, { x: number; width: number }>,
+    yOffset: number,
+    keyboardHeight: number,
+    walnut: boolean,
+  ): void {
+    for (const label of this.keyLabels) label.destroy()
+    this.keyLabels = []
+    if (!walnut || !paintPrefs().keyLabels) return
+    for (const [pitch, pos] of positions) {
+      if (pitch % 12 !== 0) continue
+      const octave = Math.floor(pitch / 12) - 1
+      const text = new Text({
+        text: `C${octave}`,
+        style: {
+          fontFamily: 'Nunito Sans, system-ui, sans-serif',
+          fontSize: 11,
+          fontWeight: '600',
+          fill: 0xa4876f,
+        },
+      })
+      text.anchor.set(0.5, 1)
+      text.x = pos.x + pos.width / 2
+      text.y = yOffset + keyboardHeight - 8
+      this.container.addChild(text)
+      this.keyLabels.push(text)
+    }
+  }
+
   // Inclusive MIDI pitches of the controller window. The full piano draws
   // no wash — every key is already in range.
   setPlayableRange(start: number, end: number): void {
@@ -408,8 +436,8 @@ export class KeyboardRenderer {
     const x1 = endPos.x + endPos.width
     const accent = this.theme.accent
     const walnut = keyboardMaterial(this.theme.id) === 'upright-walnut'
-    const dim = walnut ? 0x6b4a2f : 0x000000
-    const dimAlpha = walnut ? 0.22 : 0.34
+    const dim = walnut ? 0x5e3b24 : 0x000000
+    const dimAlpha = walnut ? 0.1 : 0.34
 
     if (x0 > 0) this.rangeLayer.rect(0, 0, x0, keyboardHeight).fill({ color: dim, alpha: dimAlpha })
     if (x1 < canvasWidth) {
@@ -436,13 +464,17 @@ export class KeyboardRenderer {
     g.clear()
     if (!walnut) return
     const scene = sceneForTheme(this.theme.id)
-    const wood = scene?.keyboard.case ?? 0x6b3e2a
-    const light = scene?.keyboard.caseLight ?? 0xc4926a
-    const rail = 36
-    const cheek = 22
-    const lip = 12
-    g.roundRect(0, 0, canvasWidth, rail, 8).fill({ color: wood })
-    g.roundRect(8, 3, canvasWidth - 16, 7, 4).fill({ color: light, alpha: 0.42 })
+    const paint = paintPrefs()
+    const woodChoice = WOOD[paint.wood]
+    const useSceneWood = paint.wood === 'walnut' && scene
+    const wood = useSceneWood ? scene.keyboard.case : woodChoice.dark
+    const light = useSceneWood ? scene.keyboard.caseLight : woodChoice.light
+    const rail = 28
+    const cheek = 18
+    const lip = 10
+    g.roundRect(0, 0, canvasWidth, rail, 18).fill({ color: wood })
+    g.roundRect(8, 3, canvasWidth - 16, 7, 4).fill({ color: light, alpha: 0.35 })
+    g.rect(cheek, rail, canvasWidth - cheek * 2, 6).fill({ color: 0x8e3b32 })
     g.rect(0, rail - 3, canvasWidth, 3).fill({ color: 0x2a140c, alpha: 0.55 })
     for (let i = 0; i < 5; i++) {
       g.rect(cheek, 12 + i * 4, canvasWidth - cheek * 2, 1).fill({ color: light, alpha: 0.07 })

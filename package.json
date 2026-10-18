@@ -31,9 +31,11 @@
   },
   "dependencies": {
     "@breezystack/lamejs": "^1.2.7",
+    "@fontsource-variable/fraunces": "^5.3.0",
     "@fontsource/instrument-serif": "^5.2.8",
     "@fontsource/inter": "^5.2.8",
     "@fontsource/jetbrains-mono": "^5.2.8",
+    "@fontsource/nunito-sans": "^5.3.0",
     "@mediabunny/aac-encoder": "^1.60.0",
     "@t3-oss/env-core": "^0.13.11",
     "@tonaljs/chord": "^6.1.2",

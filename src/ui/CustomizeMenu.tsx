@@ -6,6 +6,7 @@ import type { MidiInputManager } from '../midi/MidiInputManager'
 import type { ParticleStyle, ParticleStyleInfo } from '../renderer/particleStyles'
 import { SCENES } from '../renderer/scenes'
 import { accentCSS, type Theme } from '../renderer/theme'
+import { AppearanceStudio } from './AppearanceStudio'
 import { icons } from './icons'
 import { KeyLightsSettings } from './KeyLightsSettings'
 import { isNarrowViewport } from './utils'
@@ -24,6 +25,12 @@ export interface CustomizeMenuCallbacks {
   onToggleChord: () => void
   onToggleNoteLabels: () => void
   onSelectLocale: (code: LocaleCode) => void
+  volume?: (() => number) | undefined
+  onVolume?: ((value: number) => void) | undefined
+  rollSpeed?: (() => number) | undefined
+  onRollSpeed?: ((seconds: number) => void) | undefined
+  metroOn?: (() => boolean) | undefined
+  onMetro?: (() => void) | undefined
 }
 
 interface TriggerProps {
@@ -92,6 +99,12 @@ interface MenuProps {
   onToggleChord: () => void
   onToggleNoteLabels: () => void
   onSelectLocale: (code: LocaleCode) => void
+  volume?: (() => number) | undefined
+  onVolume?: ((value: number) => void) | undefined
+  rollSpeed?: (() => number) | undefined
+  onRollSpeed?: ((seconds: number) => void) | undefined
+  metroOn?: (() => boolean) | undefined
+  onMetro?: (() => void) | undefined
   onClose: () => void
   registerEl: (el: HTMLElement) => void
 }
@@ -160,6 +173,15 @@ function MenuView(props: MenuProps) {
             </For>
           </div>
         </div>
+
+        <AppearanceStudio
+          volume={props.volume ?? (() => 0.8)}
+          onVolume={props.onVolume}
+          rollSpeed={props.rollSpeed ?? (() => 1)}
+          onRollSpeed={props.onRollSpeed}
+          metroOn={props.metroOn ?? (() => false)}
+          onMetro={props.onMetro}
+        />
 
         <div class="customize-section">
           <div class="customize-section-head">
@@ -432,6 +454,12 @@ export class CustomizeMenu {
           onToggleChord={() => callbacks.onToggleChord()}
           onToggleNoteLabels={() => callbacks.onToggleNoteLabels()}
           onSelectLocale={(code) => callbacks.onSelectLocale(code)}
+          volume={callbacks.volume}
+          onVolume={callbacks.onVolume}
+          rollSpeed={callbacks.rollSpeed}
+          onRollSpeed={callbacks.onRollSpeed}
+          metroOn={callbacks.metroOn}
+          onMetro={callbacks.onMetro}
           onClose={() => this.close(true)}
           registerEl={(el) => {
             this.menu = el

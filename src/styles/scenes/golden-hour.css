@@ -1,0 +1,40 @@
+/* Golden Hour scene. Colour, backdrop, wood, and ambient only. */
+
+:root[data-scene="golden-hour"] {
+  --bg-top: #f8e3c8;
+  --bg-bottom: #f2c9a0;
+  --bg-vignette: rgba(120, 70, 30, 0.1);
+  --scene-shadow-img: url("/scenes/plant-shadow.webp");
+  --surface: rgba(255, 248, 238, 0.62);
+  --surface-solid: #fbf3e8;
+  --surface-sunken: rgba(122, 78, 44, 0.06);
+  --surface-hover: rgba(255, 248, 238, 0.78);
+  --border: rgba(122, 78, 44, 0.14);
+  --border-strong: rgba(122, 78, 44, 0.28);
+  --text-1: #4a2f1e;
+  --text-2: #7a5a44;
+  --text-3: #a4876f;
+  --text-on-accent: #fff8ee;
+  --accent: #b9773a;
+  --accent-hover: #a86a30;
+  --accent-press: #94592a;
+  --accent-soft: #ebc99a;
+  --note-rh: #e6a94f;
+  --note-rh-edge: #c98a32;
+  --note-lh: #d9908f;
+  --note-lh-edge: #b8706f;
+  --success: #6e8f5a;
+  --success-soft: #dce6cf;
+  --warning: #c7853a;
+  --warning-soft: #f6dfc0;
+  --danger: #b4574b;
+  --danger-soft: #f3d3cc;
+  --focus-ring: #8a5a2b;
+  --wood-light: #9a6640;
+  --wood-dark: #5e3b24;
+  --key-ivory: #f6ebda;
+  --key-ivory-side: #dccbb2;
+  --key-ebony: #3e2a1f;
+  --key-ebony-side: #2e1f17;
+  --felt: #8e3b32;
+}

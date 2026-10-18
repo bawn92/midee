@@ -1,4 +1,15 @@
 import './styles/main.css'
+import './styles/tokens.css'
+import './styles/scenes/golden-hour.css'
+import './styles/scenes/rainy-study.css'
+import './styles/kit.css'
+import './styles/play.css'
+import '@fontsource/nunito-sans/latin-500.css'
+import '@fontsource/nunito-sans/latin-600.css'
+import '@fontsource/nunito-sans/latin-700.css'
+import '@fontsource/nunito-sans/latin-800.css'
+import '@fontsource-variable/fraunces/full.css'
+import './ui/paint'
 // Self-hosted fonts via @fontsource. Each CSS import emits a `@font-face`
 // rule into the main stylesheet bundle and ships its woff2 file to
 // `dist/assets/` as a long-cacheable hashed asset. Compared to

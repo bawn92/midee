@@ -39,13 +39,11 @@ export const KEYBOARD_HEIGHT_MAX = 360
 function computeInitialKeyboardHeight(): number {
   if (typeof window === 'undefined' || !window.matchMedia) return DEFAULT_KEYBOARD_HEIGHT
   const isCoarse = window.matchMedia('(pointer: coarse)').matches
-  const scene =
-    typeof document !== 'undefined' &&
-    document.documentElement.classList.contains('scene-golden-hour')
+  const scene = typeof document !== 'undefined' && Boolean(document.documentElement.dataset.scene)
   if (!isCoarse) {
     if (!scene) return DEFAULT_KEYBOARD_HEIGHT
     const vh = window.innerHeight || 800
-    return Math.min(220, Math.max(170, Math.round(vh * 0.26)))
+    return Math.min(220, Math.max(160, Math.round(vh * 0.22)))
   }
   const vh = window.innerHeight || 800
   const isPortrait = window.matchMedia('(orientation: portrait)').matches
@@ -356,14 +354,20 @@ export class PianoRollRenderer {
 
     // Layered soft glow above the now-line. The living-room line is a
     // golden band the notes fall into, not a hairline.
-    g.rect(0, y - (warm ? 28 : 18), w, warm ? 28 : 18)
-    g.fill({ color: glow, alpha: (warm ? 0.05 : 0.02) * lift })
-    g.rect(0, y - (warm ? 12 : 8), w, warm ? 12 : 8)
-    g.fill({ color: glow, alpha: (warm ? 0.12 : 0.045) * lift })
-    g.rect(0, y - (warm ? 4 : 3), w, warm ? 5 : 3)
-    g.fill({ color: warm ? 0xfff1c8 : glow, alpha: warm ? 0.55 : 0.08 * lift })
-
-    g.rect(0, y, w, warm ? 3 : 1.5)
+    if (warm) {
+      g.rect(0, y, w, 24)
+      g.fill({ color: glow, alpha: 0.18 })
+      g.rect(0, y, w, 2)
+      g.fill({ color: this.theme.nowLine, alpha: this.theme.nowLineAlpha })
+      return
+    }
+    g.rect(0, y - 18, w, 18)
+    g.fill({ color: glow, alpha: 0.02 * lift })
+    g.rect(0, y - 8, w, 8)
+    g.fill({ color: glow, alpha: 0.045 * lift })
+    g.rect(0, y - 3, w, 3)
+    g.fill({ color: glow, alpha: 0.08 * lift })
+    g.rect(0, y, w, 1.5)
     g.fill({ color: this.theme.nowLine, alpha: this.theme.nowLineAlpha })
   }
 

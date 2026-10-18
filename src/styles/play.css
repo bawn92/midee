@@ -1,0 +1,746 @@
+/* Play view built on the design-system tokens. Applies while a scene is
+   selected. Classic themes leave data-scene unset and keep their own chrome. */
+
+html[data-scene] {
+  font-family: var(--font-ui);
+  color: var(--text-1);
+  color-scheme: light;
+  --bg: var(--bg-bottom);
+  --text: var(--text-1);
+  --text-muted: var(--text-2);
+  --text-dim: var(--text-3);
+  --surface-hi: var(--surface-solid);
+  --border-hi: var(--border-strong);
+}
+
+html[data-scene] body,
+html[data-scene] #app {
+  background: linear-gradient(to bottom left, var(--bg-top), var(--bg-bottom));
+}
+
+#scene-shadow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: var(--scene-shadow-img) top right / min(78%, 820px) auto no-repeat;
+  mix-blend-mode: multiply;
+  opacity: 0.55;
+}
+
+html[data-scene] #ui-overlay {
+  z-index: 2;
+}
+
+html[data-scene] #top-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  height: 52px;
+  top: calc(10px + env(safe-area-inset-top));
+  pointer-events: none;
+  z-index: 6;
+}
+
+html[data-scene] .ts-end {
+  margin-left: auto;
+}
+
+html[data-scene] #top-strip button,
+html[data-scene] #top-strip .ts-mode-switch,
+html[data-scene] #ts-customize-slot,
+html[data-scene] #top-strip .ts-end {
+  pointer-events: auto;
+}
+
+html[data-scene] .ts-mode-switch {
+  background: var(--surface);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--elev-1);
+  backdrop-filter: blur(var(--blur-card)) saturate(1.15);
+}
+
+html[data-scene] .ts-mode-thumb {
+  background: var(--accent-soft);
+  box-shadow: var(--elev-1);
+}
+
+html[data-scene] .ts-mode-seg.is-active,
+html[data-scene] .ts-mode-seg.is-active:hover {
+  color: var(--text-1);
+}
+
+html[data-scene] .ts-pill,
+html[data-scene] .ts-home,
+html[data-scene] #ts-customize {
+  background: var(--surface);
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--elev-1);
+}
+
+html[data-scene] #hud.float-hud {
+  left: 50%;
+  right: auto;
+  height: 64px;
+  max-width: min(820px, calc(100vw - 80px));
+  padding: 8px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-1);
+  border: 1px solid var(--border);
+  box-shadow: var(--elev-2);
+  backdrop-filter: blur(var(--blur-card)) saturate(1.15);
+  z-index: 5;
+}
+
+html[data-scene] #hud.float-hud--idle {
+  opacity: 0.7;
+  transition: opacity var(--dur-slow) var(--ease-in-out);
+}
+
+html[data-scene] #hud .btn-play {
+  width: 48px;
+  height: 48px;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  box-shadow: none;
+}
+
+html[data-scene] #hud .btn-play:hover {
+  background: var(--accent-hover);
+}
+
+html[data-scene] #hud .hud-piece-title {
+  font: var(--type-transport);
+  font-variation-settings: var(--font-display-axes);
+  color: var(--text-1);
+}
+
+html[data-scene] #hud .hud-piece-bpm,
+html[data-scene] #hud .hud-metro-bpm {
+  font: var(--type-caption);
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-scene] #hud #hud-drag,
+html[data-scene] #hud .float-hud__handle,
+html[data-scene] #hud .scrubber-wrap .time-display,
+html[data-scene] #hud .hud-session-btn {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+html[data-scene] #hud .btn-skip,
+html[data-scene] #hud .ctrl-icon--btn,
+html[data-scene] #hud .speed-chip,
+html[data-scene] #hud .hud-transpose-step {
+  color: var(--text-2);
+  background: transparent;
+  border-radius: var(--radius-md);
+}
+
+html[data-scene] #hud .mini-slider {
+  accent-color: var(--accent);
+}
+
+html[data-scene] #hud.hud--play:not(.hud--live) .hud-metro,
+html[data-scene] #hud.hud--play:not(.hud--live) #hud-loop {
+  display: flex;
+}
+
+html[data-scene] #hud .hud-metro-toggle,
+html[data-scene] #hud #hud-loop {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-2);
+  border: 0;
+}
+
+html[data-scene] #hud .hud-metro--on .hud-metro-toggle,
+html[data-scene] #hud #hud-loop[data-loop-state="playing"],
+html[data-scene] #hud #hud-loop[data-loop-state="overdubbing"] {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 50%, transparent);
+}
+
+html[data-scene] #hud .hud-hand-track {
+  height: 36px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  box-shadow: var(--inset-1);
+  padding: 3px;
+}
+
+html[data-scene] #hud .hud-hand {
+  min-width: 52px;
+  border-radius: var(--radius-pill);
+  color: var(--text-2);
+  font: var(--type-label);
+  background: transparent;
+}
+
+html[data-scene] #hud .hud-hand.is-active {
+  background: var(--accent-soft);
+  color: var(--text-1);
+  box-shadow: var(--elev-1);
+}
+
+html[data-scene] #hud .hud-hands[data-hand="left"] .hud-hand.is-active {
+  background: color-mix(in srgb, var(--note-lh) 35%, var(--surface-solid));
+}
+
+html[data-scene] #hud .hud-hands[data-hand="right"] .hud-hand.is-active {
+  background: color-mix(in srgb, var(--note-rh) 40%, var(--surface-solid));
+}
+
+html[data-scene] #hud .scrubber-wrap {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  bottom: -10px;
+  height: 4px;
+  display: block;
+}
+
+html[data-scene] #hud .scrubber {
+  width: 100%;
+  height: 4px;
+  accent-color: var(--accent);
+}
+
+html[data-scene] .song-guide {
+  top: calc(152px + env(safe-area-inset-top));
+  left: calc(24px + env(safe-area-inset-left));
+  width: min(280px, calc(50vw - 36px));
+  color: var(--text-1);
+  transform: none;
+}
+
+html[data-scene] .song-guide--side {
+  top: calc(152px + env(safe-area-inset-top));
+  left: calc(24px + env(safe-area-inset-left));
+  width: min(280px, calc(50vw - 36px));
+}
+
+html[data-scene] .song-guide-card,
+html[data-scene] .song-guide-tab,
+html[data-scene] .kbd-range-panel,
+html[data-scene] .kbd-range-bar {
+  background: var(--surface);
+  backdrop-filter: blur(var(--blur-card)) saturate(1.15);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-2);
+  color: var(--text-1);
+}
+
+html[data-scene] .song-guide-card {
+  padding: var(--space-5);
+  max-height: min(460px, calc(100svh - 140px - var(--keyboard-h, 180px)));
+  overflow: auto;
+}
+
+html[data-scene] .song-guide-kicker,
+html[data-scene] .kbd-range-kicker {
+  font: var(--type-title);
+  font-variation-settings: var(--font-display-axes);
+  color: var(--text-1);
+}
+
+html[data-scene] .song-guide-name,
+html[data-scene] .song-guide-chord-name {
+  font: var(--type-body);
+  color: var(--text-2);
+}
+
+html[data-scene] .song-guide-chip {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  color: var(--text-1);
+  font: var(--type-label);
+}
+
+html[data-scene] .song-guide-chip--on {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--text-on-accent);
+}
+
+html[data-scene] .song-guide-close,
+html[data-scene] .song-guide-ranges button,
+html[data-scene] .song-guide-tempo button,
+html[data-scene] .song-guide-clean button,
+html[data-scene] .kbd-range-preset {
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-1);
+  font: var(--type-label);
+}
+
+html[data-scene] .song-guide-tempo--on,
+html[data-scene] .kbd-range-preset[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+html[data-scene] .song-guide-fingers {
+  color: var(--text-2);
+  font: var(--type-label);
+}
+
+/* Wide play view: the range card sits upper-right. The shortcuts card
+   stays in #lower-left, above the keys. */
+@media (min-width: 1100px) {
+  html[data-scene] #hud.float-hud {
+    top: calc(72px + env(safe-area-inset-top));
+    bottom: auto;
+    transform: translateX(calc(-50% + var(--hud-dx, 0px)));
+    max-width: min(760px, calc(100vw - 600px));
+  }
+
+  html[data-scene]
+    #lower-left:not(:has(#key-hint.kh--visible:not(.kh--collapsed)))
+    .kbd-range-mount,
+  html[data-scene] #lower-left .kbd-range-mount,
+  html[data-scene] #lower-left:has(.kbd-range--beside) .kbd-range-mount {
+    position: fixed;
+    top: calc(152px + env(safe-area-inset-top));
+    right: calc(24px + env(safe-area-inset-right));
+    left: auto;
+    bottom: auto;
+    width: min(260px, calc(50vw - 36px));
+    margin-bottom: 0;
+    z-index: 4;
+  }
+
+  html[data-scene] #lower-left #kbd-range,
+  html[data-scene] #lower-left:has(.kbd-range--beside) #kbd-range {
+    position: relative;
+    width: 100%;
+  }
+
+  html[data-scene] .kbd-range-panel,
+  html[data-scene] #lower-left:has(.kbd-range--beside) .kbd-range-panel {
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    max-height: min(420px, calc(100svh - 176px - var(--keyboard-h, 180px) - 96px));
+    overflow: auto;
+    margin-top: 8px;
+  }
+}
+
+html[data-scene] .kbd-range-face {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  align-items: end;
+}
+
+html[data-scene] .kbd-range-face .kbd-range-picker-wrap {
+  grid-column: 1 / -1;
+}
+
+html[data-scene] .kbd-range-picker {
+  height: 28px;
+  border-radius: var(--radius-xs);
+  background: var(--surface-sunken);
+}
+
+html[data-scene] .kbd-range-key {
+  background: var(--key-ivory);
+}
+
+html[data-scene] .kbd-range-key--black {
+  background: var(--key-ebony);
+  height: 62%;
+}
+
+html[data-scene] .kbd-range-window {
+  background: color-mix(in srgb, var(--accent-soft) 70%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  border-radius: 8px;
+}
+
+html[data-scene] .kbd-range-face-note {
+  font: var(--type-number-lg);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-1);
+}
+
+html[data-scene] .kbd-range-cal-badge {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+html[data-scene] #kbd-range-band {
+  background: color-mix(in srgb, var(--accent-soft) 32%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  border-radius: 12px;
+  backdrop-filter: blur(2px);
+}
+
+html[data-scene] .kbd-range-band--dragging #kbd-range-band,
+html[data-scene] #kbd-range-band.kbd-range-band--dragging {
+  box-shadow: var(--elev-3);
+  background: color-mix(in srgb, var(--accent-soft) 40%, transparent);
+}
+
+html[data-scene] .kbd-range-band-move {
+  background: var(--surface-solid);
+  box-shadow: var(--elev-1);
+  border-radius: var(--radius-pill);
+  color: var(--text-2);
+}
+
+html[data-scene] .home-card,
+html[data-scene] .ts-popover,
+html[data-scene] .modal,
+html[data-scene] #export-modal,
+html[data-scene] .panel {
+  background: var(--surface-solid);
+  color: var(--text-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--elev-3);
+}
+
+html[data-scene] .ts-customize-menu {
+  width: min(420px, calc(100vw - 32px));
+  max-height: min(78vh, 760px);
+  overflow: auto;
+  padding: 28px;
+}
+
+html[data-scene] .panel-header,
+html[data-scene] .customize-section-label,
+html[data-scene] .panel-label {
+  font: var(--type-title);
+  font-variation-settings: var(--font-display-axes);
+  color: var(--text-1);
+}
+
+html[data-scene] .customize-section-label {
+  font: var(--type-caption);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+html[data-scene] .customize-scene-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+html[data-scene] .customize-scene-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-1);
+  font: var(--type-label);
+}
+
+html[data-scene] .customize-scene-swatch {
+  width: 100%;
+  height: 72px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--elev-1);
+}
+
+html[data-scene] .customize-scene-card--on .customize-scene-swatch {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+html[data-scene] [data-tip]::after {
+  background: color-mix(in srgb, var(--text-1) 92%, transparent);
+  color: var(--text-on-accent);
+  border-radius: var(--radius-xs);
+  font: var(--type-label);
+}
+
+html[data-scene] .kbd-range-bar .kbd-range-step,
+html[data-scene] .kbd-range-calibrate-bar {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+@media (max-width: 1099px) {
+  html[data-scene] .song-guide,
+  html[data-scene] .song-guide--side {
+    top: calc(72px + env(safe-area-inset-top));
+    width: min(240px, calc(50vw - 24px));
+  }
+
+  html[data-scene] #kbd-range:not(.kbd-range--open) .kbd-range-panel {
+    display: none;
+  }
+
+  html[data-scene] .kbd-range-panel {
+    max-height: min(280px, calc(100svh - var(--keyboard-h, 160px) - 200px));
+  }
+}
+
+/* Phone play (P1–P3). Kept under 640px so the Live shortcut column at 700px
+   still uses the desktop stack. */
+@media (max-width: 640px) {
+  html[data-scene] #top-strip {
+    height: 48px;
+    padding-inline: 4px;
+  }
+
+  html[data-scene] .ts-mode-label,
+  html[data-scene] .ts-home-name,
+  html[data-scene] #top-strip .ts-pill > span + span,
+  html[data-scene] .ts-customize-label,
+  html[data-scene] .ts-record-btn span + span {
+    display: none;
+  }
+
+  html[data-scene] #hud.float-hud {
+    top: calc(64px + env(safe-area-inset-top));
+    max-width: calc(100vw - 16px);
+    height: 56px;
+    padding: 6px 8px;
+  }
+
+  html[data-scene] #hud .hud-piece,
+  html[data-scene] #hud .hud-transpose,
+  html[data-scene] #hud .ctrl-group:not(.hud-hands) {
+    display: none;
+  }
+
+  html[data-scene] .song-guide,
+  html[data-scene] .song-guide--side {
+    display: none;
+    position: fixed;
+    top: auto;
+    left: 12px;
+    right: 12px;
+    bottom: calc(var(--keyboard-h, 140px) + 72px + env(safe-area-inset-bottom));
+    width: auto;
+    max-height: 42svh;
+    z-index: 18;
+  }
+
+  html[data-scene][data-phone-sheet="guide"] .song-guide,
+  html[data-scene][data-phone-sheet="guide"] .song-guide--side {
+    display: block;
+  }
+
+  html[data-scene] #lower-left .kbd-range-mount {
+    display: none;
+    position: fixed;
+    top: auto;
+    left: 12px;
+    right: 12px;
+    bottom: calc(var(--keyboard-h, 140px) + 72px + env(safe-area-inset-bottom));
+    width: auto;
+    margin: 0;
+    max-height: 46svh;
+    overflow: auto;
+    z-index: 18;
+  }
+
+  html[data-scene][data-phone-sheet="range"] #lower-left .kbd-range-mount {
+    display: block;
+  }
+
+  html[data-scene][data-phone-sheet="range"] #kbd-range .kbd-range-panel {
+    display: block;
+    position: relative;
+    top: auto;
+    left: auto;
+    bottom: auto;
+    width: 100%;
+    max-height: none;
+  }
+
+  html[data-scene] .gh-phone-dock {
+    display: flex;
+  }
+
+  html[data-scene] .home-card {
+    width: min(100% - 8px, 420px);
+    padding: 28px 20px 20px;
+  }
+
+  html[data-scene] .popover--sheet {
+    border-radius: 28px 28px 0 0 !important;
+    background: var(--surface-solid) !important;
+    color: var(--text-1) !important;
+  }
+}
+
+html[data-scene] #ts-status {
+  flex: 1;
+  min-width: 0;
+}
+
+html[data-scene] .ts-status-title,
+html[data-scene] .ts-status-kicker {
+  color: var(--text-2);
+}
+
+html[data-scene] .ts-status-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-scene] .ts-home-name {
+  font: var(--type-heading);
+  color: var(--text-1);
+}
+
+html[data-scene] .home-title {
+  font: var(--type-display);
+  font-variation-settings: var(--font-display-axes);
+  font-size: clamp(40px, 5vw, 64px);
+  line-height: 1.05;
+  color: var(--text-1);
+}
+
+html[data-scene] .home-title em {
+  color: var(--accent);
+}
+
+html[data-scene] .home-kicker,
+html[data-scene] .home-samples-label {
+  background: transparent;
+  border: 0;
+  color: var(--text-2);
+  letter-spacing: 0.04em;
+}
+
+html[data-scene] .home-kicker::before {
+  background: var(--accent);
+  box-shadow: none;
+}
+
+html[data-scene] .home-primary-btn,
+html[data-scene] .modal-btn--accent,
+html[data-scene] .session-summary__btn--primary,
+html[data-scene] .post-session-option--primary {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  border: 0;
+  border-radius: var(--radius-md);
+  box-shadow: var(--elev-1);
+}
+
+html[data-scene] .home-primary-btn:hover {
+  background: var(--accent-hover);
+}
+
+html[data-scene] .home-secondary-btn,
+html[data-scene] .sample-card,
+html[data-scene] .ex-card,
+html[data-scene] .streak-row,
+html[data-scene] .kh-body,
+html[data-scene] .toast,
+html[data-scene] .session-summary,
+html[data-scene] .post-session-card,
+html[data-scene] .track-row,
+html[data-scene] .coachmark,
+html[data-scene] .float-hud.sr-hud,
+html[data-scene] .float-hud.pa-hud {
+  background: var(--surface);
+  color: var(--text-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-2);
+  backdrop-filter: blur(var(--blur-card)) saturate(1.15);
+}
+
+html[data-scene] .sample-card-title,
+html[data-scene] .ex-card__title,
+html[data-scene] .session-summary__value {
+  color: var(--text-1);
+  font: var(--type-heading);
+}
+
+html[data-scene] .sample-card-sub,
+html[data-scene] .ex-card__sub,
+html[data-scene] .kh-label,
+html[data-scene] .session-summary__label {
+  color: var(--text-2);
+}
+
+html[data-scene] .learn-hub__glow {
+  opacity: 0.35;
+}
+
+html[data-scene] .ex-card--coming {
+  opacity: 0.55;
+}
+
+html[data-scene] .gh-phone-dock {
+  display: none;
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--keyboard-h, 140px) + 16px + env(safe-area-inset-bottom));
+  z-index: 19;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  box-shadow: var(--elev-2);
+  pointer-events: auto;
+}
+
+html[data-scene] .gh-phone-dock__tab {
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-2);
+  font: var(--type-label);
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+html[data-scene] .gh-phone-dock__tab[aria-selected="true"] {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+html[data-scene] .modal-backdrop,
+html[data-scene] .dz-overlay {
+  background: rgba(74, 47, 30, 0.28);
+}
+
+@media (max-width: 640px) {
+  html[data-scene]:has(.song-guide) .gh-phone-dock,
+  html[data-scene]:has(#kbd-range:not(.kbd-range--hidden)) .gh-phone-dock {
+    display: flex;
+  }
+}

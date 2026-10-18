@@ -3,6 +3,7 @@ import { GlowFilter } from 'pixi-filters'
 import { getHandPractice, noteMatchesHand } from '../core/handPractice'
 import { getKeyboardRange, placedPitch } from '../core/keyboardRange'
 import { MIDI_MAX, MIDI_MIN, type MidiTrack } from '../core/midi/types'
+import { paintPrefs } from '../ui/paint'
 import {
   ACTIVE_NOTE_ALPHA,
   BakedGlow,
@@ -13,6 +14,7 @@ import {
 import { createNoteMaterial } from './createNoteMaterial'
 import type { NoteMaterial, NoteMaterialId } from './NoteMaterial'
 import { NoteLabelLayer } from './noteLabels'
+import { sceneForTheme } from './scenes'
 import { getTrackColor, type Theme } from './theme'
 import { type Viewport, visibleNoteRange } from './viewport'
 
@@ -22,7 +24,7 @@ import { type Viewport, visibleNoteRange } from './viewport'
 // Glow mode 'baked' (bakedGlow.ts, A/B switch) drops the filter and puts
 // pre-baked halo sprites under the same struck-note overlay instead.
 
-const PRACTICE_INACTIVE_ALPHA_SCALE = 0.24
+const PRACTICE_INACTIVE_ALPHA_SCALE = 0.3
 
 export class NoteRenderer {
   readonly container: Container
@@ -165,12 +167,12 @@ export class NoteRenderer {
 
       if (!visibleTrackIds.has(track.id)) continue
 
-      const noteColor = getTrackColor(track, this.theme)
+      const trackColor = getTrackColor(track, this.theme)
+      const sceneNotes = sceneForTheme(this.theme.id) !== null
+      const byHand = sceneNotes && paintPrefs().colorBy === 'hand'
+      const soft = sceneNotes && paintPrefs().noteLook !== 'flat' && this.theme.noteStyle === 'pill'
       const practiceInactive =
         practiceFocusTrackIds !== null && !practiceFocusTrackIds.has(track.id)
-      const colorR = (noteColor >> 16) & 0xff
-      const colorG = (noteColor >> 8) & 0xff
-      const colorB = noteColor & 0xff
 
       const [lo, hi] = visibleNoteRange(track.notes, visStart, visEnd)
       for (let ni = lo; ni < hi; ni++) {
@@ -188,6 +190,14 @@ export class NoteRenderer {
         const handDim =
           !track.isDrum && practiceHand !== 'both' && !noteMatchesHand(note.pitch, practiceHand)
         const dimmed = practiceInactive || handDim
+        const noteColor = byHand
+          ? note.pitch < 60
+            ? (this.theme.trackColors[1] ?? trackColor)
+            : (this.theme.trackColors[0] ?? trackColor)
+          : trackColor
+        const colorR = (noteColor >> 16) & 0xff
+        const colorG = (noteColor >> 8) & 0xff
+        const colorB = noteColor & 0xff
 
         // Inside the piano but outside the keys this frame can draw: a narrow
         // marker on the near edge. A note folded into the window is drawn on
@@ -201,11 +211,11 @@ export class NoteRenderer {
 
         const x = viewport.pitchToX(drawPitch)
         const rawW = Math.max(viewport.pitchWidth(drawPitch) - 1, 2)
-        const pill = this.theme.noteStyle === 'pill'
-        const inset = pill ? 1 : 0
+        const pill = soft
+        const inset = pill ? 4 : 0
         const w = Math.max(2, rawW - inset)
         const drawX = x + inset / 2
-        const radius = pill ? Math.min(noteRadius, w / 2, h / 2) : noteRadius
+        const radius = pill ? Math.min(8, w / 2, h / 2) : noteRadius
 
         // Velocity → alpha (0.5 minimum so faint notes are still visible)
         const alpha = (0.5 + note.velocity * 0.5) * (dimmed ? PRACTICE_INACTIVE_ALPHA_SCALE : 1)
@@ -229,13 +239,17 @@ export class NoteRenderer {
             active,
           )
         } else if (pill) {
-          g.roundRect(drawX + 0.5, y + 2, w, h, radius)
-          g.fill({ color: 0x6b3e2a, alpha: alpha * 0.22 })
+          if (!dimmed) {
+            g.roundRect(drawX, y + 2, w, h, radius)
+            g.fill({ color: 0x5e3b24, alpha: 0.12 * alpha })
+          }
           g.roundRect(drawX, y, w, h, radius)
           g.fill({ color: noteColor, alpha })
-          const cap = Math.min(radius, Math.max(3, h * 0.42), 8)
-          g.roundRect(drawX + 1.5, y + 1, Math.max(1, w - 3), cap, Math.min(radius, cap / 2))
-          g.fill({ color: 0xffffff, alpha: 0.24 * (0.45 + note.velocity * 0.55) })
+          const edge = noteColor === this.theme.trackColors[1] ? 0xb8706f : 0xc98a32
+          g.roundRect(drawX, y, w, h, radius)
+          g.stroke({ color: edge, width: 1, alpha: alpha })
+          g.rect(drawX + 2, y + 1, Math.max(1, w - 4), 1)
+          g.fill({ color: 0xfff8ee, alpha: 0.45 * alpha })
         } else {
           g.roundRect(drawX, y, w, h, noteRadius)
           g.fill({ color: noteColor, alpha })
@@ -292,8 +306,8 @@ export class NoteRenderer {
     alpha: number,
   ): void {
     const markAlpha = Math.min(1, alpha + 0.25)
-    this.foldGraphics.roundRect(x + 0.5, y + 0.5, Math.max(1, w - 1), Math.max(1, h - 1), 2)
-    this.foldGraphics.stroke({ color: 0xfff6e4, width: 1.25, alpha: markAlpha * 0.9 })
+    this.foldGraphics.roundRect(x + 0.5, y + 0.5, Math.max(1, w - 1), Math.max(1, h - 1), 8)
+    this.foldGraphics.stroke({ color: 0x7a5a44, width: 1.5, alpha: markAlpha * 0.9 })
     if (h < 8 || w < 4) return
     const cx = x + w / 2
     const up = octaves > 0

@@ -100,4 +100,12 @@ test('Golden Hour play view shows the living-room scene with a song loaded', asy
     path: '/opt/cursor/artifacts/screenshots/golden-hour-play-1440x900.png',
     fullPage: false,
   })
+
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.locator('#ts-customize').click()
+  await expect(page.locator('#ts-appearance-panel')).toBeVisible()
+  await page.screenshot({
+    path: '/opt/cursor/artifacts/screenshots/golden-hour-appearance.png',
+    fullPage: false,
+  })
 })

@@ -81,16 +81,16 @@ test('Piano M lights the physical key for the sounding note', async ({ page }) =
   await page.locator('#hud-play').click()
   const sent = () =>
     page.evaluate(() => (window as unknown as { __midiSent: number[][] }).__midiSent)
-  // Golden Hour default: left #e8a0a0 → 116,80,80 and right #f0b95a → 120,92,45.
+  // Golden Hour default: left #d9908f → 108,72,71 and right #e6a94f → 115,84,39.
   // CC 23 is the factory lowest key, MIDI 60.
   const goldenPalette = [
     [0xbb, 23, 60],
-    [0xbb, 20, 116],
-    [0xbb, 21, 80],
-    [0xbb, 22, 80],
-    [0xbc, 20, 120],
-    [0xbc, 21, 92],
-    [0xbc, 22, 45],
+    [0xbb, 20, 108],
+    [0xbb, 21, 72],
+    [0xbb, 22, 71],
+    [0xbc, 20, 115],
+    [0xbc, 21, 84],
+    [0xbc, 22, 39],
   ]
   await expect.poll(sent).toEqual(expect.arrayContaining([...goldenPalette, [0x9b, 60, 100]]))
 

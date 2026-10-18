@@ -11,10 +11,10 @@ export interface Scene {
   id: string
   name: string
   themeId: ThemeId
-  // Class toggled on <html> while this scene is showing. Its stylesheet
-  // owns the chrome (transport, cards, type). The canvas reads `background`
-  // and `keyboard` directly.
+  // Class toggled on <html> while this scene is showing. `token` is the
+  // data-scene value that selects the scene's colour file.
   className: string
+  token: string
   preview: string
   theme: Theme
   background: {

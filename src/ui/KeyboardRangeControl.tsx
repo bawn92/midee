@@ -32,6 +32,7 @@ import {
   subscribeKeyboardFocus,
 } from '../renderer/keyboardFocus'
 import type { AppStore } from '../store/state'
+import { Stepper, Toggle } from './kit/kit'
 
 // Floating control for the physical keyboard's reach. Shift by a semitone or
 // an octave to match a controller's octave buttons, or open the panel to set
@@ -87,10 +88,12 @@ function KeyboardRangeView(props: { store: AppStore }) {
     }
     // The detail panel opens upward. Keep it between the bar and the top
     // strip when the shortcuts card has already pushed the bar up.
-    // A scene pins the card itself (top-right, panel below). Toggling the
-    // beside layout from that spot flips the card between the two corners
-    // every frame, so the bar never settles.
-    const scenePinned = (): boolean => sceneNow()
+    // A wide scene pins the card itself (top-right, panel below). Toggling
+    // the beside layout from that spot flips the card between the two
+    // corners every frame, so the bar never settles. Narrow scenes keep
+    // the lower-left column, where beside is what keeps the panel on screen.
+    const scenePinned = (): boolean =>
+      sceneNow() && window.matchMedia('(min-width: 1100px)').matches
     const fitPanel = (): void => {
       setScene(scenePinned())
       const bar = root.querySelector('.kbd-range-bar')
@@ -337,7 +340,36 @@ function KeyboardRangeView(props: { store: AppStore }) {
           aria-label={t('kbdRange.title')}
         >
           <div class="kbd-range-face">
-            <span class="kbd-range-face-note">{lowName()}</span>
+            <div>
+              <span class="gh-caption">{t('kbdRange.start')}</span>
+              <Stepper
+                value={lowName()}
+                decLabel={t('kbdRange.semitoneDown')}
+                incLabel={t('kbdRange.semitoneUp')}
+                decDisabled={!canShift(range().start, range().size, -1)}
+                incDisabled={!canShift(range().start, range().size, 1)}
+                onDec={() => shiftKeyboardRangeBy(-1)}
+                onInc={() => shiftKeyboardRangeBy(1)}
+              />
+            </div>
+            <div>
+              <span class="gh-caption">{t('kbdRange.end')}</span>
+              <Stepper
+                value={highName()}
+                decLabel={t('kbdRange.highDown')}
+                incLabel={t('kbdRange.highUp')}
+                decDisabled={range().size <= KEYBOARD_SIZE_MIN}
+                incDisabled={range().size >= KEYBOARD_SIZE_MAX}
+                onDec={() => {
+                  const next = resizeRangeFromEdge(range(), 'end', rangeEnd(range()) - 1)
+                  setKeyboardRange({ start: next.start, size: next.size })
+                }}
+                onInc={() => {
+                  const next = resizeRangeFromEdge(range(), 'end', rangeEnd(range()) + 1)
+                  setKeyboardRange({ start: next.start, size: next.size })
+                }}
+              />
+            </div>
             <div class="kbd-range-picker-wrap">
               <p class="kbd-range-picker-label" id="kbd-range-picker-label">
                 {t('kbdRange.picker')}
@@ -371,7 +403,15 @@ function KeyboardRangeView(props: { store: AppStore }) {
                 </div>
               </div>
             </div>
-            <span class="kbd-range-face-note">{highName()}</span>
+            <div class="gh-field">
+              <span class="gh-label">{t('kbdRange.fit')}</span>
+              <Toggle
+                id="kbd-range-fit"
+                label={t('kbdRange.fit')}
+                pressed={range().fitToRange}
+                onChange={(next) => setKeyboardRange({ fitToRange: next })}
+              />
+            </div>
             <span class="kbd-range-face-count">({range().size})</span>
             <button
               type="button"
@@ -405,29 +445,6 @@ function KeyboardRangeView(props: { store: AppStore }) {
             >
               {calibrationLabel()}
             </p>
-
-            <div class="kbd-range-row">
-              <span class="kbd-range-row-label">{t('kbdRange.start')}</span>
-              <span class="kbd-range-stepper">
-                <button
-                  type="button"
-                  aria-label={t('kbdRange.semitoneDown')}
-                  disabled={!canShift(range().start, range().size, -1)}
-                  onClick={() => shiftKeyboardRangeBy(-1)}
-                >
-                  −
-                </button>
-                <span class="kbd-range-value">{lowName()}</span>
-                <button
-                  type="button"
-                  aria-label={t('kbdRange.semitoneUp')}
-                  disabled={!canShift(range().start, range().size, 1)}
-                  onClick={() => shiftKeyboardRangeBy(1)}
-                >
-                  +
-                </button>
-              </span>
-            </div>
 
             <div class="kbd-range-row">
               <span class="kbd-range-row-label">{t('kbdRange.size')}</span>
@@ -465,15 +482,6 @@ function KeyboardRangeView(props: { store: AppStore }) {
               </For>
             </fieldset>
 
-            <button
-              type="button"
-              class="kbd-range-follow"
-              id="kbd-range-fit"
-              aria-pressed={range().fitToRange}
-              onClick={() => setKeyboardRange({ fitToRange: !range().fitToRange })}
-            >
-              {t('kbdRange.fit')}
-            </button>
             <p class="kbd-range-cal-status">{t('kbdRange.fitTip')}</p>
 
             <button

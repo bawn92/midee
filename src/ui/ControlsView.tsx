@@ -375,6 +375,7 @@ export function HudView(props: HudProps) {
         'hud--live': props.showLiveHud(),
         'hud--play': props.showPlayHud(),
       })}
+      idleMs={4000}
       idleEnabled={() => (props.showPlayHud() && props.playing()) || props.showLiveHud()}
       locked={() => props.sessionRecording() || props.loopActive() || props.metroRunning()}
       wakeRef={props.wakeRef}

@@ -3,6 +3,7 @@ import { availableVisuals, FOR_LATER_THEME_IDS } from './forLater/visuals'
 import type { NoteMaterialId } from './NoteMaterial'
 import type { ParticleStyle } from './particleStyles'
 import { goldenHourTheme } from './scenes/goldenHour'
+import { rainyStudyTheme } from './scenes/rainyStudy'
 
 // Persisted in localStorage (`midee.theme`) — never rename. New ids are
 // appended; `ALL_THEMES` order is the legacy `midee.themeIndex` migration.
@@ -13,6 +14,7 @@ export type ThemeId =
   | 'sunset'
   | 'ocean'
   | 'golden-hour'
+  | 'rainy-study'
   | NoteMaterialId
 
 export interface Theme {
@@ -323,6 +325,7 @@ export const ALL_THEMES: readonly Theme[] = [
   liquidGlassTheme,
   emberMistTheme,
   goldenHourTheme,
+  rainyStudyTheme,
 ]
 
 // New visitors land in the living room. A saved id still wins.

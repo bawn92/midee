@@ -1,0 +1,40 @@
+/* Rainy Study. Same geometry, cooler light, oak-grey wood, no plant shadow. */
+
+:root[data-scene="rainy-study"] {
+  --bg-top: #e7e2d8;
+  --bg-bottom: #c5d0d4;
+  --bg-vignette: rgba(48, 62, 70, 0.12);
+  --scene-shadow-img: none;
+  --surface: rgba(244, 242, 236, 0.7);
+  --surface-solid: #f4f1ea;
+  --surface-sunken: rgba(62, 78, 86, 0.08);
+  --surface-hover: rgba(244, 242, 236, 0.86);
+  --border: rgba(62, 78, 86, 0.16);
+  --border-strong: rgba(62, 78, 86, 0.3);
+  --text-1: #2c3338;
+  --text-2: #5c6a72;
+  --text-3: #8a969c;
+  --text-on-accent: #f7f4ee;
+  --accent: #6e8494;
+  --accent-hover: #5d7383;
+  --accent-press: #4e6270;
+  --accent-soft: #d5e0e4;
+  --note-rh: #7ba3b0;
+  --note-rh-edge: #5d8490;
+  --note-lh: #c4897a;
+  --note-lh-edge: #a56d60;
+  --success: #6e8f5a;
+  --success-soft: #dce6cf;
+  --warning: #c7853a;
+  --warning-soft: #f6dfc0;
+  --danger: #b4574b;
+  --danger-soft: #f3d3cc;
+  --focus-ring: #4e6270;
+  --wood-light: #8d7356;
+  --wood-dark: #3e342c;
+  --key-ivory: #f3eee6;
+  --key-ivory-side: #d5cdc2;
+  --key-ebony: #2e3336;
+  --key-ebony-side: #1e2428;
+  --felt: #6e4038;
+}

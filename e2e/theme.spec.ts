@@ -19,7 +19,7 @@ const ACCENT = {
   neon: '#00d4aa',
   sunset: '#f97316',
   ocean: '#38bdf8',
-  'golden-hour': '#c4843a',
+  'golden-hour': '#b9773a',
 } as const
 const NEON_INDEX = 2
 const DEFAULT_ID = 'golden-hour' // App's fallback theme.

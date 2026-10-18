@@ -108,6 +108,7 @@ import { THROUGHPUT_KEY, throughputFrom } from './ui/exportSettings'
 import { InstrumentMenu } from './ui/InstrumentMenu'
 import { KeyboardRangeBand, KeyboardRangeControl } from './ui/KeyboardRangeControl'
 import { KeyboardResizer } from './ui/KeyboardResizer'
+import { mountPhoneDock } from './ui/PhoneDock'
 import type { SessionAction } from './ui/PostSessionModal'
 import { PEDAL_HIDDEN, type PedalIndicatorState, pedalIndicatorState } from './ui/pedalIndicator'
 import { SongGuideController } from './ui/SongGuide'
@@ -587,6 +588,7 @@ export class App {
     this.songGuide = new SongGuideController(overlay, this.store, this.clock, this.synth, (pitch) =>
       this.renderer.keyClientBox(pitch),
     )
+    this.unsubs.push(mountPhoneDock(overlay))
 
     this.chordOverlay = new ChordOverlay(this.controls.chordSlot)
     this.chordOverlayOn = chordOverlayStore.load()
@@ -622,10 +624,22 @@ export class App {
         onSelectLocale: (code) => {
           void setLocale(code).then(() => window.location.reload())
         },
+        volume: () => this.store.state.volume,
+        onVolume: (value) => this.store.setState('volume', value),
+        rollSpeed: () => 200 / Math.max(40, this.renderer.currentPixelsPerSecond),
+        onRollSpeed: (seconds) => this.renderer.setZoom(200 / Math.max(0.5, seconds)),
+        metroOn: () => this.metronome.running.value,
+        onMetro: () => this.metronome.toggle(),
       },
       { lights: this.keyLights, midiInput: this.midiInput },
     )
     this.customizeMenu.setChord(this.chordOverlayOn)
+    const onPaint = (): void => {
+      const theme = THEMES[this.themeIndex]
+      if (theme) this.renderer.setTheme(theme)
+    }
+    window.addEventListener('midee-paint', onPaint)
+    this.unsubs.push(() => window.removeEventListener('midee-paint', onPaint))
 
     this.noteLabelsOn = noteLabelsStore.load()
     this.renderer.setNoteLabels(this.noteLabelsOn)
