@@ -54,7 +54,7 @@ const ja: Messages = {
   'songGuide.lh': '左',
 
   'home.kicker': '{name} · MIDI ビジュアライザー',
-  'home.title.html': '<em>音符</em>を弾いて、<br/>咲かせよう。',
+  'home.title.html': '何を弾きましょう？',
   'home.subtitle':
     'MIDI ファイルを開いてアニメーションにするか、ライブモードでキーボード・マウス・MIDI コントローラーを使って弾いてみましょう。',
   'home.cta.openMidi': 'MIDI を開く',
@@ -77,6 +77,22 @@ const ja: Messages = {
   'home.midi.unavailable': 'このブラウザーでは Web MIDI を利用できません',
   'home.midi.disconnected': 'MIDI デバイスなし · キーボードとマウスでも弾けます',
   'home.aria': '{name} ホーム',
+  'landing.kicker': 'ピアノ練習',
+  'landing.headline.html': '音符を弾いて、<br/>咲かせよう。',
+  'landing.description':
+    'MIDIキーボードのためのピアノ練習。学習モード、小さな鍵盤の音域、落ち着いたシーンがあります。',
+  'landing.cta.start': '演奏を始める',
+  'landing.cta.plug': 'キーボードを接続',
+  'landing.midi.looking': 'MIDI を検索中…',
+  'landing.midi.stepPlug': 'キーボードを接続する',
+  'landing.midi.stepAllow': 'ブラウザーが尋ねたら MIDI を許可する',
+  'landing.midi.enable': 'MIDIデバイスを有効にする',
+  'landing.midi.connected': 'MIDI: {name} · 接続済み',
+  'landing.midi.playLive': 'ライブ演奏',
+  'landing.midi.orFile': 'または MIDI ファイルを開く',
+  'landing.midi.unavailable': 'このブラウザーでは MIDI を利用できません',
+  'landing.midi.computerKeys': 'キーボードがない場合は、パソコンのキーでライブ演奏できます。',
+  'landing.midi.close': '閉じる',
 
   'topStrip.home': 'ホーム',
   'topStrip.modePlay': 'MIDI ファイルを再生',

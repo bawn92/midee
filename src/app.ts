@@ -50,6 +50,7 @@ import {
 import type { ExportStage, VideoExporter } from './export/VideoExporter'
 import { audioBufferToWav } from './export/wav'
 import { setLocale, t } from './i18n'
+import { markStarted } from './landing/route'
 import { bindPlayKeyLights } from './midi/bindPlayKeyLights'
 import { CaptureFanout } from './midi/CaptureFanout'
 import { ComputerKeyboardInput } from './midi/ComputerKeyboardInput'
@@ -890,6 +891,7 @@ export class App {
 
   private handleLiveNoteOn(evt: BusNoteEvent): void {
     if (this.store.state.status === 'exporting') return
+    markStarted()
     const mode = this.store.state.mode
     const captures = MODE_CAPTURES_LIVE[mode]
     if (mode === 'home') this.enterLiveMode(false)
@@ -1152,6 +1154,7 @@ export class App {
       // drives renderer.loadMidi, trackPanel.render, document.title, and
       // dropzone.hide off the new loadedMidi.
       this.store.completePlayLoad(midi)
+      markStarted()
       this.synth.load(midi).catch((err) => {
         console.error('SynthEngine.load failed:', err)
         // Visuals load but there's no sound — a silent session-killer that
@@ -1706,6 +1709,14 @@ export class App {
   // the user is still choosing). If we read `store.state.mode` inside the
   // file callback, it would still be 'learn' and the file would route to
   // LearnController instead of Play. Explicit target avoids the race.
+  enterLive(): void {
+    this.enterLiveMode()
+  }
+
+  connectMidiFromUi(): Promise<void> {
+    return this.connectMidi()
+  }
+
   openFilePicker(target?: 'play' | 'learn'): void {
     const resolveTarget = (): 'play' | 'learn' =>
       target ?? (this.store.state.mode === 'learn' ? 'learn' : 'play')
@@ -1802,6 +1813,7 @@ export class App {
       return
     }
     this.loadSessionAsFile(midi)
+    markStarted()
     trackMidiLoaded({
       source: 'recent',
       trackCount: midi.tracks.length,

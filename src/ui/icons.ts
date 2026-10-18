@@ -19,6 +19,13 @@ const svgFilled = (size: Size, body: string, extra = ''): string =>
 export const icons = {
   play: (size: Size = 16): string => svgFilled(size, `<polygon points="6 3 20 12 6 21 6 3"/>`),
 
+  plug: (size: Size = 16): string =>
+    svgStroke(
+      size,
+      `<path d="M8 7v3"/><path d="M16 7v3"/><path d="M6 10h12v2a6 6 0 0 1-12 0v-2z"/><path d="M12 18v3"/>`,
+      1.8,
+    ),
+
   pause: (size: Size = 16): string =>
     svgFilled(
       size,

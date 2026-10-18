@@ -62,7 +62,7 @@ const pl: Messages & Record<PolishPluralKey, string> = {
   'songGuide.lh': 'LR',
 
   'home.kicker': '{name} · wizualizator MIDI',
-  'home.title.html': 'Graj <em>nuty</em>,<br/>patrz, jak rozkwitają.',
+  'home.title.html': 'Co zagramy?',
   'home.subtitle':
     'Otwórz plik MIDI, aby go zwizualizować, albo graj na żywo klawiaturą, myszą lub kontrolerem MIDI.',
   'home.cta.openMidi': 'Otwórz MIDI',
@@ -85,6 +85,22 @@ const pl: Messages & Record<PolishPluralKey, string> = {
   'home.midi.unavailable': 'Web MIDI niedostępne w tej przeglądarce',
   'home.midi.disconnected': 'Brak kontrolera MIDI - klawiatura i myszka też działają',
   'home.aria': 'Strona główna {name}',
+  'landing.kicker': 'Nauka pianina',
+  'landing.headline.html': 'Graj nuty,<br/>patrz, jak rozkwitają.',
+  'landing.description':
+    'Trener pianina do klawiatury MIDI, z trybem nauki, zakresem dla małych klawiatur i przytulnymi scenami.',
+  'landing.cta.start': 'Zacznij grać',
+  'landing.cta.plug': 'Podłącz klawiaturę',
+  'landing.midi.looking': 'Szukam MIDI…',
+  'landing.midi.stepPlug': 'Podłącz klawiaturę',
+  'landing.midi.stepAllow': 'Zezwól na MIDI, gdy przeglądarka zapyta',
+  'landing.midi.enable': 'Włącz urządzenie MIDI',
+  'landing.midi.connected': 'MIDI: {name} · połączono',
+  'landing.midi.playLive': 'Graj na żywo',
+  'landing.midi.orFile': 'lub otwórz plik MIDI',
+  'landing.midi.unavailable': 'MIDI niedostępne w tej przeglądarce',
+  'landing.midi.computerKeys': 'Nie masz klawiatury? Graj na żywo klawiszami komputera.',
+  'landing.midi.close': 'Zamknij',
 
   'topStrip.home': 'Start',
   'topStrip.modePlay': 'Odtwórz plik MIDI',

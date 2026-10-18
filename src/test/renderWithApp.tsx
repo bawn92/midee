@@ -81,6 +81,8 @@ function makeFakeCtx(): AppCtxValue {
     resetInteractionState: vi.fn(),
     openFilePicker: vi.fn(),
     primeInteractiveAudio: vi.fn(),
+    enterLive: vi.fn(),
+    connectMidi: vi.fn(async () => {}),
   }
 }
 

@@ -55,7 +55,7 @@ const es: Messages = {
 
   // ── Home / dropzone ─────────────────────────────────────────
   'home.kicker': '{name} · visualizador MIDI',
-  'home.title.html': 'Toca <em>notas</em>,<br/>míralas florecer.',
+  'home.title.html': '¿Qué tocamos?',
   'home.subtitle':
     'Abre un archivo MIDI para visualizarlo, o toca en vivo con tu teclado, ratón o un controlador MIDI.',
   'home.cta.openMidi': 'Abrir MIDI',
@@ -78,6 +78,22 @@ const es: Messages = {
   'home.midi.unavailable': 'Web MIDI no disponible en este navegador',
   'home.midi.disconnected': 'Sin dispositivo MIDI - el teclado y el ratón también funcionan',
   'home.aria': 'inicio de {name}',
+  'landing.kicker': 'Profesor de piano',
+  'landing.headline.html': 'Toca notas,<br/>míralas florecer.',
+  'landing.description':
+    'Un profesor de piano para tu teclado MIDI, con modo de aprendizaje, un rango para teclados pequeños y escenas acogedoras.',
+  'landing.cta.start': 'Empezar a tocar',
+  'landing.cta.plug': 'Conecta tu teclado',
+  'landing.midi.looking': 'Buscando MIDI…',
+  'landing.midi.stepPlug': 'Conecta tu teclado',
+  'landing.midi.stepAllow': 'Permite el MIDI cuando el navegador lo pida',
+  'landing.midi.enable': 'Activar dispositivo MIDI',
+  'landing.midi.connected': 'MIDI: {name} · conectado',
+  'landing.midi.playLive': 'Tocar en directo',
+  'landing.midi.orFile': 'o abrir un archivo MIDI',
+  'landing.midi.unavailable': 'MIDI no disponible en este navegador',
+  'landing.midi.computerKeys': '¿Sin teclado? Toca en directo con las teclas del ordenador.',
+  'landing.midi.close': 'Cerrar',
 
   // ── Top strip (primary nav) ─────────────────────────────────
   'topStrip.home': 'Inicio',

@@ -3,6 +3,27 @@
 
 <head>
   <meta charset="UTF-8" />
+  <!-- Decide the landing route before paint. Mirrors src/landing/route.ts:
+       returning visitors (midee.started) skip `/` for `/start`; `/welcome` stays the hero. -->
+  <script>
+    ;(function () {
+      try {
+        var path = location.pathname.replace(/\/+$/, '') || '/'
+        var started = false
+        try {
+          started = localStorage.getItem('midee.started') === '1'
+        } catch (e) {}
+        if (path === '/' && started) {
+          history.replaceState(null, '', '/start' + location.search + location.hash)
+          path = '/start'
+        }
+        var hero = path === '/welcome' || (path === '/' && !started)
+        document.documentElement.dataset.route = hero ? 'hero' : 'app'
+      } catch (e) {
+        document.documentElement.dataset.route = 'app'
+      }
+    })()
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <!-- Hide the skip link before the app stylesheet arrives; keep it focusable. -->
   <style>

@@ -65,13 +65,10 @@ export const en = {
   'songGuide.lh': 'LH',
 
   // ── Home / dropzone ─────────────────────────────────────────
-  // The title contains inline <em> markup — one of the rare keys allowed
-  // to carry HTML (rendered via innerHTML). We do this so word order stays
-  // translator-controlled (French/Spanish/Portuguese put the emphasised
-  // noun in different positions). No user-controlled interpolation, so no
-  // XSS risk.
+  // `landing.headline.html` is rendered via innerHTML and may include a
+  // <br/>. No user-controlled interpolation, so no XSS risk.
   'home.kicker': '{name} · MIDI visualizer',
-  'home.title.html': 'Play <em>notes</em>,<br/>see them bloom.',
+  'home.title.html': 'What shall we play?',
   'home.subtitle':
     'Open a MIDI file to animate it, or go live and play with your keyboard, mouse, or a MIDI controller.',
   'home.cta.openMidi': 'Open MIDI',
@@ -94,6 +91,22 @@ export const en = {
   'home.midi.unavailable': 'Web MIDI unavailable in this browser',
   'home.midi.disconnected': 'No MIDI device - keyboard & mouse work too',
   'home.aria': '{name} home',
+  'landing.kicker': 'Piano trainer',
+  'landing.headline.html': 'Play notes,<br/>see them bloom.',
+  'landing.description':
+    'A piano trainer for your MIDI keyboard, with learn mode, a range for small keyboards, and cozy scenes.',
+  'landing.cta.start': 'Start playing',
+  'landing.cta.plug': 'Plug in your keyboard',
+  'landing.midi.looking': 'Looking for MIDI…',
+  'landing.midi.stepPlug': 'Plug in your keyboard',
+  'landing.midi.stepAllow': 'Allow MIDI when the browser asks',
+  'landing.midi.enable': 'Enable MIDI device',
+  'landing.midi.connected': 'MIDI: {name} · connected',
+  'landing.midi.playLive': 'Play live',
+  'landing.midi.orFile': 'or open a MIDI file',
+  'landing.midi.unavailable': 'MIDI unavailable in this browser',
+  'landing.midi.computerKeys': 'No keyboard? Play live with your computer keys.',
+  'landing.midi.close': 'Close',
 
   // ── Top strip (primary nav) ─────────────────────────────────
   'topStrip.home': 'Home',

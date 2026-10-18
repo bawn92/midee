@@ -26,5 +26,11 @@
       ]
     }
   ],
-  "redirects": []
+  "redirects": [],
+  "rewrites": [
+    { "source": "/start", "destination": "/index.html" },
+    { "source": "/start/", "destination": "/index.html" },
+    { "source": "/welcome", "destination": "/index.html" },
+    { "source": "/welcome/", "destination": "/index.html" }
+  ]
 }

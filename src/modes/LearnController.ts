@@ -4,6 +4,7 @@ import type { MidiFile } from '../core/midi/types'
 import { forgetRecent, readRecentMidi, rememberRecent } from '../core/recentMidi'
 import { fetchSampleMidi, getSample } from '../core/samples'
 import { t } from '../i18n'
+import { markStarted } from '../landing/route'
 import type { ExerciseDescriptor } from '../learn/core/Exercise'
 import { ExerciseRunner } from '../learn/core/ExerciseRunner'
 import { createLearnState, type LearnState, type LearnStatus } from '../learn/core/LearnState'
@@ -185,6 +186,7 @@ export class LearnController {
         tempo_events: stats.tempoEvents,
       })
       await this.consumeMidi(midi)
+      markStarted()
       // Recents are shared with Play: a file practised here is one click away
       // from the home grid, and vice versa. Fire-and-forget — a storage
       // failure must never surface as a failed load.
@@ -262,6 +264,7 @@ export class LearnController {
       return
     }
     await this.consumeMidi(midi)
+    markStarted()
     trackMidiLoaded({
       source: 'recent',
       target: 'learn',

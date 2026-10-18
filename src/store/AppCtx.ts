@@ -28,6 +28,8 @@ export interface AppCtxValue {
   resetInteractionState: () => void
   openFilePicker: () => void
   primeInteractiveAudio: () => void
+  enterLive: () => void
+  connectMidi: () => Promise<void>
 }
 
 export const AppCtx = createContext<AppCtxValue>()

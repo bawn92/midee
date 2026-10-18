@@ -34,6 +34,16 @@ export default defineConfig({
     headless: true,
     trace: 'retain-on-failure',
     video: 'off',
+    // Existing specs land on Home. The hero is opt-in (see e2e/landing.spec.ts).
+    storageState: {
+      cookies: [],
+      origins: [
+        {
+          origin: BASE_URL,
+          localStorage: [{ name: 'midee.started', value: '1' }],
+        },
+      ],
+    },
   },
   projects: [
     {
