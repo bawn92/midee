@@ -7,10 +7,10 @@ import { KBD } from './keyboardMetrics'
 import {
   fittedDashes,
   inNextChord,
-  mergeNoteBodies,
   type NoteBody,
   type NoteShapeId,
   outlineFillRatio,
+  separateNoteBodies,
 } from './noteShape'
 import type { Theme } from './theme'
 import type { Viewport } from './viewport'
@@ -230,7 +230,7 @@ export function paintSceneNotes(args: PaintArgs): void {
   const rainy = theme.id === 'rainy-study'
   const soft = prefs.noteLook !== 'flat'
   const glowScale = rainy ? 0.8 : 1
-  const bodies = mergeNoteBodies(
+  const bodies = separateNoteBodies(
     args.notes.map((note) => ({
       drawPitch: note.drawPitch,
       pitch: note.pitch,
@@ -243,6 +243,7 @@ export function paintSceneNotes(args: PaintArgs): void {
       color: note.color,
       notes: [note.note],
     })),
+    viewport.config.pixelsPerSecond,
   )
   const bracket: { x: number; w: number; bottom: number }[] = []
 

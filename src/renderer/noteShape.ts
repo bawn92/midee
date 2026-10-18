@@ -1,10 +1,13 @@
-// Pure note-style decisions: which bodies join, which chord is next, and how
-// dashes and badges size themselves. Drawing lives in sceneNotes.ts.
+// Pure note-style decisions: how repeated notes stay apart, which chord is
+// next, and how dashes and badges size themselves. Drawing lives in sceneNotes.ts.
 
 export const NOTE_SHAPES = ['classic', 'glass', 'felt', 'beam', 'outline', 'petal'] as const
 export type NoteShapeId = (typeof NOTE_SHAPES)[number]
 
-export const MERGE_GAP_SEC = 0.04
+// Air between two presses on the same key. A few pixels, or a little of the
+// note's own height when that is larger, so the capsules never touch.
+export const NOTE_REPEAT_GAP_PX = 4
+export const NOTE_REPEAT_GAP_FRACTION = 0.06
 export const CHORD_CLUSTER_SEC = 0.04
 export const MIN_BADGE_PX = 14
 
@@ -25,29 +28,37 @@ export interface NoteBody {
   notes: { pitch: number; time: number; duration: number; velocity: number }[]
 }
 
-// Same key, same fold, and a gap too small to be a rest: one capsule.
-// A real rest (an eighth at 120 is 0.25s) stays two notes.
-export function mergeNoteBodies(spans: readonly NoteBody[], gap = MERGE_GAP_SEC): NoteBody[] {
+// One MIDI note is one body. A repeated press on the same key used to be
+// swallowed into the note before it, including when the two events touched
+// or overlapped. Shorten the earlier drawn end so each press keeps its own
+// caps, edge, badge, and landing. A single sustained event is left whole.
+export function separateNoteBodies(
+  spans: readonly NoteBody[],
+  pixelsPerSecond: number,
+): NoteBody[] {
+  const pps = Number.isFinite(pixelsPerSecond) && pixelsPerSecond > 0 ? pixelsPerSecond : 1
   const sorted = [...spans].sort(
     (a, b) => a.drawPitch - b.drawPitch || a.time - b.time || a.pitch - b.pitch,
   )
   const out: NoteBody[] = []
   for (const span of sorted) {
     const prev = out.at(-1)
-    const join =
-      prev !== undefined &&
-      prev.drawPitch === span.drawPitch &&
-      prev.shifted === span.shifted &&
-      prev.octaves === span.octaves &&
-      prev.dimmed === span.dimmed &&
-      span.time <= prev.end + gap
-    if (prev && join) {
-      prev.end = Math.max(prev.end, span.end)
-      prev.velocity = Math.max(prev.velocity, span.velocity)
-      prev.notes.push(...span.notes)
-    } else {
-      out.push({ ...span, notes: [...span.notes] })
+    const body: NoteBody = { ...span, notes: [...span.notes] }
+    if (prev && prev.drawPitch === body.drawPitch && body.time > prev.time) {
+      const naturalPx = Math.max(0, (prev.end - prev.time) * pps)
+      const gapPx = Math.max(NOTE_REPEAT_GAP_PX, naturalPx * NOTE_REPEAT_GAP_FRACTION)
+      const limit = body.time - gapPx / pps
+      if (prev.end > limit) prev.end = limit
+      // Legato and a zero gap both split at the next onset, then keep air.
+      const minAir = 1 / pps
+      if (prev.end > body.time - minAir) prev.end = body.time - minAir
+      const minBody = 2 / pps
+      if (prev.end < prev.time + minBody) {
+        const room = body.time - minAir - prev.time
+        prev.end = prev.time + Math.max(0, Math.min(minBody, room))
+      }
     }
+    out.push(body)
   }
   return out
 }

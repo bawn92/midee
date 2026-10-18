@@ -6,9 +6,9 @@ import {
   fittedDashes,
   inNextChord,
   MIN_BADGE_PX,
-  mergeNoteBodies,
   type NoteBody,
   outlineFillRatio,
+  separateNoteBodies,
 } from './noteShape'
 
 function body(patch: Partial<NoteBody> & Pick<NoteBody, 'time' | 'end' | 'drawPitch'>): NoteBody {
@@ -60,25 +60,59 @@ describe('note style defaults', () => {
   })
 })
 
-describe('continuous notes and next chords', () => {
-  it('joins notes separated by a tie and keeps a rest apart', () => {
-    const merged = mergeNoteBodies([
-      body({ drawPitch: 56, time: 30, end: 30.499 }),
-      body({ drawPitch: 56, time: 30.5, end: 30.999 }),
-      body({ drawPitch: 56, time: 31.5, end: 31.999 }),
-    ])
-    expect(merged.map((item) => [item.time, item.end])).toEqual([
-      [30, 30.999],
-      [31.5, 31.999],
+describe('repeated notes on one key', () => {
+  const pps = 100
+
+  it('leaves one sustained note as a single body', () => {
+    const bodies = separateNoteBodies([body({ drawPitch: 56, time: 1, end: 3 })], pps)
+    expect(bodies).toHaveLength(1)
+    expect(bodies[0]).toMatchObject({ time: 1, end: 3 })
+    expect(bodies[0]?.notes).toHaveLength(1)
+  })
+
+  it('keeps a visible gap when the next press touches or overlaps', () => {
+    const touching = separateNoteBodies(
+      [body({ drawPitch: 56, time: 2, end: 2.5 }), body({ drawPitch: 56, time: 2.5, end: 3 })],
+      pps,
+    )
+    expect(touching).toHaveLength(2)
+    expect(touching[0]?.notes).toHaveLength(1)
+    expect(touching[1]?.time).toBe(2.5)
+    expect(touching[1]?.end).toBe(3)
+    // 50px tall, so the gap is the 4px minimum.
+    expect(touching[0]?.end).toBeCloseTo(2.5 - 4 / pps, 5)
+    expect((touching[1]?.time ?? 0) - (touching[0]?.end ?? 0)).toBeGreaterThan(0)
+
+    const overlapping = separateNoteBodies(
+      [body({ drawPitch: 64, time: 0, end: 1 }), body({ drawPitch: 64, time: 0.5, end: 1.2 })],
+      pps,
+    )
+    expect(overlapping).toHaveLength(2)
+    expect(overlapping[1]?.time).toBe(0.5)
+    expect(overlapping[1]?.end).toBe(1.2)
+    // 100px tall, so the gap is 6% of that height and the first note ends
+    // before the second onset.
+    expect(overlapping[0]?.end).toBeCloseTo(0.5 - 0.06, 5)
+    expect(overlapping[0]?.end).toBeLessThan(0.5)
+  })
+
+  it('does not shorten a note that already has a rest before the next press', () => {
+    const bodies = separateNoteBodies(
+      [body({ drawPitch: 56, time: 30, end: 30.5 }), body({ drawPitch: 56, time: 31.5, end: 32 })],
+      pps,
+    )
+    expect(bodies.map((item) => [item.time, item.end])).toEqual([
+      [30, 30.5],
+      [31.5, 32],
     ])
   })
 
-  it('does not join a different key', () => {
-    const merged = mergeNoteBodies([
-      body({ drawPitch: 60, time: 1, end: 1.5 }),
-      body({ drawPitch: 62, time: 1.501, end: 2 }),
-    ])
-    expect(merged).toHaveLength(2)
+  it('does not borrow time from a different key', () => {
+    const bodies = separateNoteBodies(
+      [body({ drawPitch: 60, time: 1, end: 1.5 }), body({ drawPitch: 62, time: 1.5, end: 2 })],
+      pps,
+    )
+    expect(bodies.map((item) => item.end)).toEqual([1.5, 2])
   })
 
   it('marks only the earliest future cluster as next', () => {
