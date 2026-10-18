@@ -37,4 +37,11 @@
   --key-ebony: #2e3336;
   --key-ebony-side: #1e2428;
   --felt: #6e4038;
+  --key-out-of-range: rgba(48, 62, 70, 0.12);
+  --roll-lane-c: rgba(110, 132, 148, 0.16);
+  --roll-lane: rgba(110, 132, 148, 0.08);
+  --roll-fade: #d5e0e4;
+  --range-glass: rgba(213, 224, 228, 0.45);
+  --range-glass-drag: rgba(213, 224, 228, 0.62);
+  --range-border: rgba(110, 132, 148, 0.75);
 }

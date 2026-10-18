@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F8E3C8"/><stop offset="1" stop-color="#F2C9A0"/></linearGradient>
+<linearGradient id="rh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E6A94F"/><stop offset="1" stop-color="#D08A2E"/></linearGradient>
+<linearGradient id="lh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D9908F"/><stop offset="1" stop-color="#BF6C6A"/></linearGradient>
+<linearGradient id="wd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9A6640"/><stop offset="1" stop-color="#5E3B24"/></linearGradient>
+<radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#FFE7B0" stop-opacity="0.95"/><stop offset="1" stop-color="#FFE7B0" stop-opacity="0"/></radialGradient>
+</defs><rect width="512" height="512" fill="url(#bg)"/>
+<ellipse cx="256" cy="325.1" rx="136.8" ry="33.1" fill="url(#glow)"/>
+<rect x="163.8" y="186.9" width="69.1" height="115.2" rx="34.6" fill="url(#lh)"/>
+<rect x="279.0" y="117.8" width="69.1" height="184.3" rx="34.6" fill="url(#rh)"/>
+<rect x="178.2" y="202.7" width="10.1" height="64.8" rx="5.0" fill="#FFF8EE" opacity="0.4"/>
+<rect x="293.4" y="133.6" width="10.1" height="133.9" rx="5.0" fill="#FFF8EE" opacity="0.4"/>
+<rect x="140.8" y="325.1" width="230.4" height="74.9" rx="21.6" fill="url(#wd)"/><rect x="153.8" y="333.8" width="204.5" height="3.6" rx="1.4" fill="#8E3B32"/><rect x="153.8" y="339.5" width="204.5" height="50.4" rx="5.8" fill="#F6EBDA"/><rect x="181.9" y="339.5" width="2.2" height="50.4" fill="#DCCBB2"/><rect x="211.1" y="339.5" width="2.2" height="50.4" fill="#DCCBB2"/><rect x="240.3" y="339.5" width="2.2" height="50.4" fill="#DCCBB2"/><rect x="269.5" y="339.5" width="2.2" height="50.4" fill="#DCCBB2"/><rect x="298.7" y="339.5" width="2.2" height="50.4" fill="#DCCBB2"/><rect x="327.9" y="339.5" width="2.2" height="50.4" fill="#DCCBB2"/><rect x="174.8" y="339.5" width="16.4" height="30.2" rx="2.9" fill="#3E2A1F"/><rect x="204.0" y="339.5" width="16.4" height="30.2" rx="2.9" fill="#3E2A1F"/><rect x="262.4" y="339.5" width="16.4" height="30.2" rx="2.9" fill="#3E2A1F"/><rect x="291.6" y="339.5" width="16.4" height="30.2" rx="2.9" fill="#3E2A1F"/><rect x="320.8" y="339.5" width="16.4" height="30.2" rx="2.9" fill="#3E2A1F"/></svg>

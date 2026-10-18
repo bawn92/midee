@@ -1,9 +1,13 @@
 import type { Application, Ticker } from 'pixi.js'
 import { Container, Graphics, RenderTexture, Sprite, Text, Texture, TilingSprite } from 'pixi.js'
 import { isBlackKey, MIDI_MAX, MIDI_MIN } from '../core/midi/types'
-import { paintPrefs, WOOD } from '../ui/paint'
+import { paintPrefs } from '../ui/paint'
+import { readCssColor } from './cssColor'
+import { KBD, keyFrame, whiteKeyCount } from './keyboardMetrics'
+import { type KeyboardPalette, keyboardHighlightAlpha, keyboardPalette } from './keyboardStyle'
 import { keyRect } from './keyGeometry'
-import { keyboardMaterial, sceneForTheme } from './scenes'
+import { rangeOverlay, rangePlayAlpha, wantsDim } from './rangeOverlay'
+import { keyboardMaterial } from './scenes'
 import { liveNoteColor, type Theme } from './theme'
 import type { Viewport } from './viewport'
 
@@ -46,44 +50,105 @@ function getIvoryNoiseCanvas(): HTMLCanvasElement {
   return c
 }
 
-// Walnut keys are drawn as a top face plus a front lip so the key has
-// thickness. Geometry stays inside keyRect, which hit-testing still uses.
-function drawWalnutWhite(
-  g: Graphics,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  radius: number,
-): void {
-  const front = 10
-  const topH = Math.max(8, h - front)
-  g.roundRect(x, y, w, topH + 4, radius).fill({ color: 0xf6ebda })
-  g.rect(x, y, w, Math.max(2, topH * 0.04)).fill({ color: 0xfff8ee, alpha: 0.45 })
-  g.roundRect(x, y + topH, w, front, 2).fill({ color: 0xdccbb2 })
-  g.roundRect(x, y + topH - 2, w, front, 6).fill({ color: 0xdccbb2 })
+function cssHex(color: number): string {
+  return `#${color.toString(16).padStart(6, '0')}`
 }
 
-function drawWalnutBlack(
-  g: Graphics,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  radius: number,
+function mixHex(a: number, b: number, amount: number): string {
+  const ar = (a >> 16) & 0xff
+  const ag = (a >> 8) & 0xff
+  const ab = a & 0xff
+  const br = (b >> 16) & 0xff
+  const bg = (b >> 8) & 0xff
+  const bb = b & 0xff
+  const ch = (from: number, to: number) => Math.round(from + (to - from) * amount)
+  return `rgb(${ch(ar, br)} ${ch(ag, bg)} ${ch(ab, bb)})`
+}
+
+// Case, grain, felt and the top highlight. Keys are drawn on top, inset by
+// the cheeks, so the rounded corners stay the wood.
+function paintCase(
+  canvas: HTMLCanvasElement,
+  palette: KeyboardPalette,
+  frame: ReturnType<typeof keyFrame>,
 ): void {
-  const front = 8
-  const bodyH = Math.max(8, h - front)
-  g.roundRect(x, y + 3, w, bodyH, radius).fill({ color: 0x2e1f17, alpha: 0.35 })
-  g.roundRect(x, y, w, bodyH, radius).fill({ color: 0x3e2a1f })
-  g.rect(x + 1, y, w - 2, 1).fill({ color: 0xffe6c8, alpha: 0.12 })
-  g.roundRect(x, y + bodyH - 2, w, front, 2).fill({ color: 0x2e1f17 })
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+  const w = canvas.width
+  const h = canvas.height
+  ctx.clearRect(0, 0, w, h)
+  const r = Math.min(frame.caseR, h / 2, w / 2)
+  ctx.beginPath()
+  ctx.moveTo(0, r)
+  ctx.arcTo(0, 0, r, 0, r)
+  ctx.lineTo(w - r, 0)
+  ctx.arcTo(w, 0, w, r, r)
+  ctx.lineTo(w, h)
+  ctx.lineTo(0, h)
+  ctx.closePath()
+  ctx.fillStyle = cssHex(palette.caseDark)
+  ctx.fill()
+  if (!palette.hairline) {
+    const fade = ctx.createLinearGradient(0, 0, 0, h)
+    fade.addColorStop(0, cssHex(palette.caseLight))
+    fade.addColorStop(1, mixHex(palette.caseLight, palette.caseDark, 0.85))
+    ctx.fillStyle = fade
+    ctx.fill()
+  }
+  if (palette.grain > 0) {
+    ctx.save()
+    ctx.clip()
+    ctx.globalAlpha = palette.grain
+    ctx.translate(w / 2, h / 2)
+    ctx.rotate((-2.3 * Math.PI) / 180)
+    ctx.translate(-w / 2, -h / 2)
+    const grain = ctx.createLinearGradient(0, 0, w, 0)
+    for (let i = 0; i <= 24; i++) {
+      const alpha = i % 3 === 0 ? 0.18 : i % 2 === 1 ? 0.04 : 0.1
+      grain.addColorStop(i / 24, `rgba(0,0,0,${alpha})`)
+    }
+    ctx.fillStyle = grain
+    ctx.fillRect(-h, -h, w + h * 2, h * 3)
+    ctx.restore()
+  }
+  if (palette.lacquer) {
+    const lacquer = ctx.createLinearGradient(0, 0, 0, 40 * frame.v)
+    lacquer.addColorStop(0, 'rgba(255,255,255,0.22)')
+    lacquer.addColorStop(1, 'rgba(255,255,255,0)')
+    ctx.fillStyle = lacquer
+    ctx.fillRect(0, 0, w, 40 * frame.v)
+  }
+  if (!palette.hairline) {
+    const hi = Math.max(1, frame.v)
+    ctx.fillStyle = cssHex(palette.highlight)
+    ctx.globalAlpha = keyboardHighlightAlpha(palette.id)
+    ctx.fillRect(0, hi, w, hi)
+    ctx.globalAlpha = 1
+  }
+  const feltH = Math.max(palette.hairline ? 1 : frame.v, palette.feltPx * frame.v)
+  ctx.fillStyle = cssHex(palette.felt)
+  ctx.fillRect(
+    frame.cheek,
+    palette.hairline ? frame.feltY : frame.feltY,
+    w - frame.cheek * 2,
+    feltH,
+  )
+  if (palette.led) {
+    const stripH = Math.max(2, 6 * frame.v)
+    const stripY = 18 * frame.v
+    ctx.fillStyle = cssHex(palette.strip)
+    ctx.beginPath()
+    ctx.roundRect(frame.cheek, stripY, w - frame.cheek * 2, stripH, stripH / 2)
+    ctx.fill()
+  }
 }
 
 export class KeyboardRenderer {
   readonly container: Container
 
   // Static baked layers
+  private caseSprite: Sprite | null = null
+  private caseTexture: Texture | null = null
   private whiteSprite: Sprite | null = null
   private whiteTexture: RenderTexture | null = null
   private blackSprite: Sprite | null = null
@@ -169,44 +234,57 @@ export class KeyboardRenderer {
     // that tint the white/black keys and gap. Hitting this cache path turns
     // a theme re-apply or redundant rebuildStaticLayers() into a no-op.
     const walnut = keyboardMaterial(this.theme.id) === 'upright-walnut'
+    const palette = keyboardPalette(this.theme.id)
     const paint = paintPrefs()
     const sig =
       `${canvasWidth}x${keyboardHeight}|${pitchMin ?? 21}-${pitchMax ?? 108}|` +
       `${this.theme.whiteKey}.${this.theme.blackKey}.${this.theme.keyBorder}|` +
-      `${walnut ? paint.wood : 'flat'}|labels=${paint.keyLabels}|y=${yOffset}`
+      `${walnut ? palette.id : 'flat'}|labels=${paint.keyLabels}|y=${yOffset}`
     if (sig === this.lastBuildSignature && this.whiteSprite && this.blackSprite) return
     this.lastBuildSignature = sig
 
     // Destroy previous textures/sprites to avoid memory leaks. destroy()
     // also removes the sprite from its parent container.
+    this.caseTexture?.destroy(true)
+    this.caseSprite?.destroy()
     this.whiteTexture?.destroy()
     this.whiteSprite?.destroy()
     this.blackTexture?.destroy()
     this.blackSprite?.destroy()
+    this.caseTexture = null
+    this.caseSprite = null
+
+    const whites = whiteKeyCount(pitchMin ?? MIDI_MIN, pitchMax ?? MIDI_MAX)
+    const frame = keyFrame(canvasWidth, whites, keyboardHeight)
 
     // ─── White bake ──────────────────────────────────────────────────
-    // bg + white keys + depth cues + ivory wash + ivory grain noise.
     const whiteBake = new Container()
 
-    // Background fill (shows through the 1px seams between white keys)
-    const bg = new Graphics()
-    const bed = walnut
-      ? (sceneForTheme(this.theme.id)?.keyboard.case ?? this.theme.blackKey)
-      : this.theme.blackKey
-    bg.rect(0, 0, canvasWidth, keyboardHeight).fill({ color: bed })
-    whiteBake.addChild(bg)
+    if (walnut) {
+      const caseCanvas = document.createElement('canvas')
+      caseCanvas.width = Math.max(1, canvasWidth)
+      caseCanvas.height = Math.max(1, keyboardHeight)
+      paintCase(caseCanvas, palette, frame)
+      this.caseTexture = Texture.from(caseCanvas)
+      this.caseSprite = new Sprite(this.caseTexture)
+      this.caseSprite.y = yOffset
+    } else {
+      const bg = new Graphics()
+      bg.rect(0, 0, canvasWidth, keyboardHeight).fill({ color: this.theme.blackKey })
+      whiteBake.addChild(bg)
+    }
 
-    // White keys: body + ivory warmth + lighting depth.
     const whiteLayer = new Graphics()
     for (let p = MIDI_MIN; p <= MIDI_MAX; p++) {
       if (isBlackKey(p)) continue
       const pos = positions.get(p)
       if (!pos) continue
-      const { x, y, w, h, radius: wRadius } = keyRect(p, pos, keyboardHeight)
+      const { x, y, w, h } = keyRect(p, pos, keyboardHeight)
 
       if (walnut) {
-        drawWalnutWhite(whiteLayer, x, y, w, h, wRadius)
+        this.drawWhiteKey(whiteLayer, x, y, w, h, frame.v, palette, false)
       } else {
+        const wRadius = 3
         // Body
         whiteLayer.roundRect(x, y, w, h, wRadius).fill({ color: this.theme.whiteKey })
 
@@ -235,21 +313,21 @@ export class KeyboardRenderer {
     }
     whiteBake.addChild(whiteLayer)
 
-    // Ivory grain — tiled from a 96×96 noise canvas. Only appears on white
-    // keys; the dark inter-key seams absorb it to invisibility against
-    // the near-black bg.
-    const noiseTex = Texture.from(getIvoryNoiseCanvas())
-    const noise = new TilingSprite({
-      texture: noiseTex,
-      width: canvasWidth,
-      height: keyboardHeight,
-    })
-    whiteBake.addChild(noise)
+    let noiseTex: Texture | null = null
+    if (!walnut) {
+      noiseTex = Texture.from(getIvoryNoiseCanvas())
+      const noise = new TilingSprite({
+        texture: noiseTex,
+        width: canvasWidth,
+        height: keyboardHeight,
+      })
+      whiteBake.addChild(noise)
+    }
 
     this.whiteTexture = RenderTexture.create({ width: canvasWidth, height: keyboardHeight })
     this.app.renderer.render({ container: whiteBake, target: this.whiteTexture })
     whiteBake.destroy({ children: true })
-    noiseTex.destroy(true)
+    noiseTex?.destroy(true)
 
     // ─── Black bake ──────────────────────────────────────────────────
     // Black keys + bevels + rails. Transparent background so the active
@@ -263,7 +341,7 @@ export class KeyboardRenderer {
       const { x, y, w, h, radius: bRadius } = keyRect(p, pos, keyboardHeight)
 
       if (walnut) {
-        drawWalnutBlack(blackLayer, x, y, w, h, bRadius)
+        this.drawBlackKey(blackLayer, x, y, w, h, frame.v, palette, false)
       } else {
         // Body
         blackLayer.roundRect(x, y, w, h, bRadius).fill({ color: this.theme.blackKey })
@@ -306,12 +384,14 @@ export class KeyboardRenderer {
     //   blackSprite, blackPracticeHintLayer, blackActiveLayer, rangeLayer
     this.whiteSprite = new Sprite(this.whiteTexture)
     this.whiteSprite.y = yOffset
-    this.container.addChildAt(this.whiteSprite, 0)
+    const whiteIndex = this.caseSprite ? 1 : 0
+    if (this.caseSprite) this.container.addChildAt(this.caseSprite, 0)
+    this.container.addChildAt(this.whiteSprite, whiteIndex)
 
     this.blackSprite = new Sprite(this.blackTexture)
     this.blackSprite.y = yOffset
-    // Insert blackSprite between the white overlays and black overlays.
-    this.container.addChildAt(this.blackSprite, 3)
+    // Case, white sprite, white hint, white active, then the black sprite.
+    this.container.addChildAt(this.blackSprite, whiteIndex + 3)
 
     this.whitePracticeHintLayer.y = yOffset
     this.whiteActiveLayer.y = yOffset
@@ -339,33 +419,138 @@ export class KeyboardRenderer {
     this.whiteActiveLayer.clear()
     this.blackActiveLayer.clear()
 
-    const { keyboardHeight } = viewport.config
+    const { keyboardHeight, canvasWidth, pitchMin, pitchMax } = viewport.config
     const positions = viewport.getAllKeyPositions()
     const fallback = liveNoteColor(this.theme)
+    const walnut = keyboardMaterial(this.theme.id) === 'upright-walnut'
+    const palette = keyboardPalette(this.theme.id)
+    const frame = keyFrame(
+      canvasWidth,
+      whiteKeyCount(pitchMin ?? MIDI_MIN, pitchMax ?? MIDI_MAX),
+      keyboardHeight,
+    )
 
-    // Halos drawn first (so the solid body sits on top).
-    const halos: readonly [number, number][] = [
-      [10, 0.05],
-      [6, 0.1],
-      [3, 0.18],
-    ]
+    if (!walnut) {
+      const halos: readonly [number, number][] = [
+        [10, 0.05],
+        [6, 0.1],
+        [3, 0.18],
+      ]
+      for (const [pitch, color] of activeByPitch) {
+        const pos = positions.get(pitch)
+        if (!pos) continue
+        const tint = color || fallback
+        const isBlack = isBlackKey(pitch)
+        const layer = isBlack ? this.blackActiveLayer : this.whiteActiveLayer
+        const { x, y, w, h, radius } = keyRect(pitch, pos, keyboardHeight)
+        for (const [expand, alpha] of halos) {
+          layer.roundRect(x - expand, y - expand, w + expand * 2, h + expand * 2, radius + expand)
+          layer.fill({ color: tint, alpha })
+        }
+        layer.roundRect(x, y, w, h, radius)
+        layer.fill({ color: tint, alpha: isBlack ? 0.92 : 0.78 })
+      }
+      return
+    }
+
+    const drop = KBD.pressDrop * frame.v
     for (const [pitch, color] of activeByPitch) {
       const pos = positions.get(pitch)
       if (!pos) continue
       const tint = color || fallback
+      const left = tint === palette.noteLh || (tint !== palette.noteRh && pitch < 60)
       const isBlack = isBlackKey(pitch)
       const layer = isBlack ? this.blackActiveLayer : this.whiteActiveLayer
-      const { x, y, w, h, radius } = keyRect(pitch, pos, keyboardHeight)
-
-      for (const [expand, alpha] of halos) {
-        layer.roundRect(x - expand, y - expand, w + expand * 2, h + expand * 2, radius + expand)
-        layer.fill({ color: tint, alpha })
+      const { x, y, w, h } = keyRect(pitch, pos, keyboardHeight)
+      const hand = left ? palette.noteLh : palette.noteRh
+      if (isBlack) {
+        layer.rect(x, y, w, drop + 1).fill({ color: palette.ivory })
+        this.drawBlackKey(layer, x, y + drop, w, Math.max(6, h - drop), frame.v, palette, true)
+      } else {
+        layer.rect(x, y, w, h).fill({ color: palette.caseDark })
+        this.drawWhiteKey(layer, x, y + drop, w, Math.max(8, h - drop), frame.v, palette, true)
       }
-
-      // Body — exact static-key shape so the active state lives inside the key's border.
-      layer.roundRect(x, y, w, h, radius)
-      layer.fill({ color: tint, alpha: isBlack ? 0.92 : 0.78 })
+      const topH = isBlack
+        ? (KBD.blackTop / KBD.blackH) * (h - drop)
+        : (KBD.whiteTopH / KBD.keysH) * (h - drop)
+      layer.roundRect(x, y + drop, w, topH, isBlack ? 2 * frame.h : 0)
+      layer.fill({ color: hand, alpha: 0.55 })
+      const glow = 12 * frame.h
+      layer.roundRect(x - glow / 4, y + drop, w + glow / 2, topH, 4)
+      layer.fill({ color: hand, alpha: 0.08 })
+      if (isBlack) {
+        const barW = Math.max(2, w - 4 * frame.h)
+        const barH = Math.max(1, 3 * frame.v)
+        layer.roundRect(x + 2 * frame.h, y + drop + topH - 7 * frame.v, barW, barH, 1.5 * frame.h)
+        layer.fill({ color: hand })
+      } else {
+        const barW = Math.max(2, w - 6 * frame.h)
+        const barH = Math.max(1, 4 * frame.v)
+        const bar = left ? palette.pressLh : palette.pressRh
+        layer.roundRect(x + 3 * frame.h, y + drop + topH - 9 * frame.v, barW, barH, 2 * frame.h)
+        layer.fill({ color: bar })
+      }
+      if (palette.led) {
+        const stripH = Math.max(2, 6 * frame.v)
+        const stripY = 18 * frame.v
+        layer.roundRect(x, stripY, w, stripH, stripH / 2)
+        layer.fill({ color: hand })
+        layer.roundRect(x - 2, stripY - 2, w + 4, stripH + 4, stripH)
+        layer.fill({ color: hand, alpha: 0.35 })
+      }
     }
+  }
+
+  private drawWhiteKey(
+    g: Graphics,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    v: number,
+    palette: KeyboardPalette,
+    pressed: boolean,
+  ): void {
+    const front = Math.min(h - 4, Math.max(1, (pressed ? 7 : KBD.whiteFront) * v))
+    const topH = h - front
+    const radius = Math.min(front / 2, (KBD.whiteFrontR / 25) * w)
+    const side = palette.hairline ? palette.ivory : palette.ivorySide
+    if (radius > 0.5) {
+      g.roundRect(x, y + topH - radius, w, front + radius, radius).fill({ color: side })
+    } else {
+      g.rect(x, y + topH, w, front).fill({ color: side })
+    }
+    g.rect(x, y, w, topH).fill({ color: palette.ivory })
+    if (palette.shade) {
+      g.rect(x, y + topH * 0.72, w, topH * 0.28).fill({ color: palette.caseDark, alpha: 0.04 })
+    }
+  }
+
+  private drawBlackKey(
+    g: Graphics,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    v: number,
+    palette: KeyboardPalette,
+    pressed: boolean,
+  ): void {
+    const front = Math.min(h - 4, Math.max(1, (pressed ? 5 : KBD.blackFront) * v))
+    const topH = h - front
+    const topR = palette.hairline ? 0 : (KBD.blackTopR / KBD.blackW) * w
+    const frontR = palette.hairline ? 0 : (KBD.blackFrontR / KBD.blackW) * w
+    if (palette.shade) {
+      g.roundRect(x, y + 3 * v, w, topH, topR).fill({ color: palette.ebonySide, alpha: 0.35 })
+    }
+    g.roundRect(x, y, w, topH, topR).fill({ color: palette.ebony })
+    if (palette.shade) {
+      g.rect(x + 1, y, Math.max(1, w - 2), Math.max(1, v)).fill({
+        color: palette.highlight,
+        alpha: 0.12,
+      })
+    }
+    g.roundRect(x, y + topH, w, front, frontR).fill({ color: palette.ebonySide })
   }
 
   updateTheme(theme: Theme): void {
@@ -398,9 +583,12 @@ export class KeyboardRenderer {
           fill: 0xa4876f,
         },
       })
-      text.anchor.set(0.5, 1)
+      const v = keyboardHeight / KBD.caseH
+      text.anchor.set(0.5, 0.5)
       text.x = pos.x + pos.width / 2
-      text.y = yOffset + keyboardHeight - 8
+      // Caption sits 8px above the front face (key-bed y 106 of 140).
+      text.y = yOffset + KBD.keysY * v + 106 * v + 8 * v
+      text.style.fontSize = Math.max(8, 12 * (pos.width / KBD.pitch))
       this.container.addChild(text)
       this.keyLabels.push(text)
     }
@@ -417,12 +605,16 @@ export class KeyboardRenderer {
 
   drawRange(viewport: Viewport): void {
     const { canvasWidth, keyboardHeight, pitchMin, pitchMax } = viewport.config
+    const overlay = rangeOverlay()
+    const playAlpha = rangePlayAlpha()
     const sig =
       `${this.playStart}-${this.playEnd}|${canvasWidth}x${keyboardHeight}|` +
-      `${pitchMin ?? MIDI_MIN}-${pitchMax ?? MIDI_MAX}|${this.theme.accent}`
+      `${pitchMin ?? MIDI_MIN}-${pitchMax ?? MIDI_MAX}|${this.theme.id}|` +
+      `${overlay.style}|${Math.round(playAlpha * 20)}`
     if (sig === this.rangeSignature) return
     this.rangeSignature = sig
     this.rangeLayer.clear()
+    if (!wantsDim(overlay) || playAlpha < 0.02) return
 
     const lo = pitchMin ?? MIDI_MIN
     const hi = pitchMax ?? MIDI_MAX
@@ -434,64 +626,27 @@ export class KeyboardRenderer {
     if (!startPos || !endPos) return
     const x0 = startPos.x
     const x1 = endPos.x + endPos.width
-    const accent = this.theme.accent
     const walnut = keyboardMaterial(this.theme.id) === 'upright-walnut'
-    const dim = walnut ? 0x5e3b24 : 0x000000
-    const dimAlpha = walnut ? 0.1 : 0.34
+    const frame = keyFrame(
+      canvasWidth,
+      whiteKeyCount(pitchMin ?? MIDI_MIN, pitchMax ?? MIDI_MAX),
+      keyboardHeight,
+    )
+    const token = readCssColor('--key-out-of-range', { color: 0x5e3b24, alpha: 0.1 })
+    const dimAlpha = token.alpha * playAlpha
+    const y = walnut ? frame.keysY : 0
+    const h = walnut ? frame.keysH : keyboardHeight
 
-    if (x0 > 0) this.rangeLayer.rect(0, 0, x0, keyboardHeight).fill({ color: dim, alpha: dimAlpha })
+    if (x0 > 0) this.rangeLayer.rect(0, y, x0, h).fill({ color: token.color, alpha: dimAlpha })
     if (x1 < canvasWidth) {
-      this.rangeLayer
-        .rect(x1, 0, canvasWidth - x1, keyboardHeight)
-        .fill({ color: dim, alpha: dimAlpha })
-    }
-    this.rangeLayer
-      .rect(x0, 0, Math.max(1, x1 - x0), keyboardHeight)
-      .fill({ color: accent, alpha: walnut ? 0.14 : 0.18 })
-    if (!walnut) {
-      this.rangeLayer.rect(x0, 0, 2, keyboardHeight).fill({ color: accent, alpha: 0.95 })
-      this.rangeLayer
-        .rect(Math.max(x0, x1 - 2), 0, 2, keyboardHeight)
-        .fill({ color: accent, alpha: 0.95 })
-      this.rangeLayer.rect(x0, 0, Math.max(1, x1 - x0), 3).fill({ color: accent, alpha: 0.9 })
+      this.rangeLayer.rect(x1, y, canvasWidth - x1, h).fill({ color: token.color, alpha: dimAlpha })
     }
   }
 
-  // Walnut fallboard, cheeks, and key slip. Drawn above the keys and under
-  // the range glass so the playable window still reads on the case.
-  private drawCase(canvasWidth: number, keyboardHeight: number, walnut: boolean): void {
-    const g = this.caseLayer
-    g.clear()
-    if (!walnut) return
-    const scene = sceneForTheme(this.theme.id)
-    const paint = paintPrefs()
-    const woodChoice = WOOD[paint.wood]
-    const useSceneWood = paint.wood === 'walnut' && scene
-    const wood = useSceneWood ? scene.keyboard.case : woodChoice.dark
-    const light = useSceneWood ? scene.keyboard.caseLight : woodChoice.light
-    const rail = 28
-    const cheek = 18
-    const lip = 10
-    g.roundRect(0, 0, canvasWidth, rail, 18).fill({ color: wood })
-    g.roundRect(8, 3, canvasWidth - 16, 7, 4).fill({ color: light, alpha: 0.35 })
-    g.rect(cheek, rail, canvasWidth - cheek * 2, 6).fill({ color: 0x8e3b32 })
-    g.rect(0, rail - 3, canvasWidth, 3).fill({ color: 0x2a140c, alpha: 0.55 })
-    for (let i = 0; i < 5; i++) {
-      g.rect(cheek, 12 + i * 4, canvasWidth - cheek * 2, 1).fill({ color: light, alpha: 0.07 })
-    }
-    g.roundRect(0, 0, cheek, keyboardHeight, 14).fill({ color: wood })
-    g.roundRect(canvasWidth - cheek, 0, cheek, keyboardHeight, 14).fill({ color: wood })
-    g.roundRect(2, 4, 6, keyboardHeight - 16, 4).fill({ color: light, alpha: 0.22 })
-    g.roundRect(canvasWidth - 8, 4, 6, keyboardHeight - 16, 4).fill({
-      color: 0x2a140c,
-      alpha: 0.28,
-    })
-    g.roundRect(0, keyboardHeight - lip, canvasWidth, lip, 6).fill({ color: 0x4a2918 })
-    g.rect(cheek, keyboardHeight - lip, canvasWidth - cheek * 2, 1).fill({
-      color: light,
-      alpha: 0.4,
-    })
-    g.rect(cheek, rail, 1, keyboardHeight - rail - lip).fill({ color: light, alpha: 0.28 })
+  // The case is baked into its own sprite under the keys. This layer stays
+  // empty so a theme swap can clear an older fallboard without a leftover.
+  private drawCase(_canvasWidth: number, _keyboardHeight: number, _walnut: boolean): void {
+    this.caseLayer.clear()
   }
 
   // Public hook for the parent renderer to swap in the current practice-mode

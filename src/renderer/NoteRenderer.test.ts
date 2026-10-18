@@ -202,7 +202,9 @@ describe('glow mode switch', () => {
       keyboardHeight: 100,
       pixelsPerSecond: 100,
     })
-    const renderer = new NoteRenderer(goldenHourTheme, pixiRenderer)
+    // Scene pills skip the glow. This checks the filter path on a plain theme.
+    const { noteStyle: _scenePill, ...glowTheme } = goldenHourTheme
+    const renderer = new NoteRenderer(glowTheme, pixiRenderer)
     renderer.setTracks([track])
     const notes = renderer.container as unknown as MockNode
     // The bench toggles glowContainer.renderable: both paths must live in it.

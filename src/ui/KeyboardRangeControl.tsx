@@ -31,9 +31,16 @@ import {
   setKeyboardFocusEnabled,
   subscribeKeyboardFocus,
 } from '../renderer/keyboardFocus'
+import {
+  rangeOverlay,
+  setRangePhase,
+  subscribeRangeOverlay,
+  wantsStrip,
+} from '../renderer/rangeOverlay'
 import type { AppStore } from '../store/state'
 import { icons } from './icons'
 import { Stepper, Toggle } from './kit/kit'
+import { RangeStylePicker } from './RangeStylePicker'
 
 const RANGE_OPEN_KEY = 'midee.kbdRangeExpanded'
 
@@ -442,6 +449,10 @@ function KeyboardRangeView(props: { store: AppStore }) {
               </div>
             </div>
           </div>
+          <div class="kbd-range-style">
+            <span class="gh-caption">{t('customize.range')}</span>
+            <RangeStylePicker compact />
+          </div>
           <div class="gh-field kbd-range-fit-row">
             <span class="gh-label">{t('kbdRange.fit')}</span>
             <span class="kbd-range-fit-actions">
@@ -585,9 +596,30 @@ export interface KeyboardRangeBandLayout {
 
 function KeyboardRangeBandView(props: { store: AppStore; layout: KeyboardRangeBandLayout }) {
   const [prefs, setPrefs] = createSignal(getKeyboardRange())
+  const [overlay, setOverlay] = createSignal(rangeOverlay())
   const [box, setBox] = createSignal<KeyBandRect | null>(null)
   const [dragging, setDragging] = createSignal(false)
+  const [glass, setGlass] = createSignal(false)
   let drag: RangeDrag | null = null
+  let settleTimer = 0
+
+  createEffect(() => {
+    const playing = props.store.state.status === 'playing'
+    const dragOn = dragging()
+    const blur = overlay().blurWhileAdjusting
+    window.clearTimeout(settleTimer)
+    if (playing || !blur) {
+      setGlass(false)
+      return
+    }
+    if (dragOn) {
+      setGlass(true)
+      return
+    }
+    settleTimer = window.setTimeout(() => setGlass(false), 1500)
+  })
+
+  createEffect(() => setRangePhase(glass() ? 'glass' : 'play'))
 
   function measure(): void {
     const range = getKeyboardRange()
@@ -662,6 +694,7 @@ function KeyboardRangeBandView(props: { store: AppStore; layout: KeyboardRangeBa
       setPrefs(getKeyboardRange())
       measure()
     })
+    const offOverlay = subscribeRangeOverlay(() => setOverlay(rangeOverlay()))
     // Focus changes the key widths without changing the controller window,
     // so the glass has to be measured again after the roll updates.
     const offFocus = subscribeKeyboardFocus(() => {
@@ -678,7 +711,9 @@ function KeyboardRangeBandView(props: { store: AppStore; layout: KeyboardRangeBa
     window.addEventListener('resize', measure)
     onCleanup(() => {
       off()
+      offOverlay()
       offFocus()
+      window.clearTimeout(settleTimer)
       ro?.disconnect()
       mo.disconnect()
       window.removeEventListener('resize', measure)
@@ -698,7 +733,13 @@ function KeyboardRangeBandView(props: { store: AppStore; layout: KeyboardRangeBa
     <div
       id="kbd-range-band"
       hidden={placed() == null}
-      classList={{ 'kbd-range-band--dragging': dragging() }}
+      classList={{
+        'kbd-range-band--dragging': dragging(),
+        'kbd-range-band--glass': glass(),
+      }}
+      data-range-style={overlay().style}
+      data-range-outline={overlay().style === 'outline' ? 'on' : 'off'}
+      data-range-strip={wantsStrip(overlay()) ? 'on' : 'off'}
       style={
         placed()
           ? {
@@ -710,6 +751,9 @@ function KeyboardRangeBandView(props: { store: AppStore; layout: KeyboardRangeBa
           : undefined
       }
     >
+      <div class="kbd-range-band-glass" />
+      <div class="kbd-range-strip" />
+      <div class="kbd-range-band-tip">{formatKeyboardRange(prefs())}</div>
       <div
         class="kbd-range-band-move"
         role="slider"
@@ -723,10 +767,16 @@ function KeyboardRangeBandView(props: { store: AppStore; layout: KeyboardRangeBa
         onPointerDown={onDown}
         onKeyDown={onKey}
       >
-        {formatKeyboardRange(prefs())}
+        <i />
+        <i />
+        <i />
       </div>
-      <div class="kbd-range-band-edge kbd-range-band-edge--start" onPointerDown={onDown} />
-      <div class="kbd-range-band-edge kbd-range-band-edge--end" onPointerDown={onDown} />
+      <div class="kbd-range-band-edge kbd-range-band-edge--start" onPointerDown={onDown}>
+        <span class="kbd-range-handle" />
+      </div>
+      <div class="kbd-range-band-edge kbd-range-band-edge--end" onPointerDown={onDown}>
+        <span class="kbd-range-handle" />
+      </div>
     </div>
   )
 }

@@ -1,8 +1,10 @@
-import { Container, Graphics, type Renderer } from 'pixi.js'
+import { Container, Graphics, type Renderer, Text } from 'pixi.js'
 import { GlowFilter } from 'pixi-filters'
 import { getHandPractice, noteMatchesHand } from '../core/handPractice'
 import { getKeyboardRange, placedPitch } from '../core/keyboardRange'
-import { MIDI_MAX, MIDI_MIN, type MidiTrack } from '../core/midi/types'
+import { isBlackKey, MIDI_MAX, MIDI_MIN, type MidiNote, type MidiTrack } from '../core/midi/types'
+import { barAt, fingerFor } from '../songGuide/query'
+import type { SongGuide } from '../songGuide/types'
 import { paintPrefs } from '../ui/paint'
 import {
   ACTIVE_NOTE_ALPHA,
@@ -12,6 +14,8 @@ import {
   glowSettings,
 } from './bakedGlow'
 import { createNoteMaterial } from './createNoteMaterial'
+import { readCssColor } from './cssColor'
+import { KBD } from './keyboardMetrics'
 import type { NoteMaterial, NoteMaterialId } from './NoteMaterial'
 import { NoteLabelLayer } from './noteLabels'
 import { sceneForTheme } from './scenes'
@@ -46,6 +50,9 @@ export class NoteRenderer {
   // Octave-folded notes. A layer of its own so the mark stays visible when the
   // note body is drawn by a material mesh instead of the track Graphics.
   private foldGraphics = new Graphics()
+  private fingerGuide: SongGuide | null = null
+  private fingerLabels: Text[] = []
+  private fingerUsed = 0
 
   // `renderer` is only used by the baked glow to render its halo textures.
   constructor(
@@ -95,6 +102,10 @@ export class NoteRenderer {
     this.labels.setEnabled(on)
   }
 
+  setFingerGuide(guide: SongGuide | null): void {
+    this.fingerGuide = guide
+  }
+
   // Call once when tracks are loaded — sets up one Graphics per track
   setTracks(tracks: MidiTrack[]): void {
     // Remove stale graphics
@@ -130,6 +141,7 @@ export class NoteRenderer {
   ): void {
     const { noteRadius } = this.theme
     const nowLineY = viewport.nowLineY
+    this.fingerUsed = 0
     const { mode: glowMode, tint: glowTint } = glowSettings()
     if (glowMode !== this.glowMode) this.applyGlowMode(glowMode)
     const baked = glowMode === 'baked' ? this.bakedGlow : null
@@ -210,15 +222,20 @@ export class NoteRenderer {
         }
 
         const x = viewport.pitchToX(drawPitch)
-        const rawW = Math.max(viewport.pitchWidth(drawPitch) - 1, 2)
+        const rawW = Math.max(viewport.pitchWidth(drawPitch), 2)
         const pill = soft
-        const inset = pill ? 4 : 0
+        const hScale = rawW / (isBlackKey(drawPitch) ? KBD.blackW : KBD.pitch)
+        const inset = pill ? 4 * hScale : 0
         const w = Math.max(2, rawW - inset)
         const drawX = x + inset / 2
-        const radius = pill ? Math.min(8, w / 2, h / 2) : noteRadius
+        const radius = pill ? Math.min(8 * hScale, w / 2, h / 2) : noteRadius
 
-        // Velocity → alpha (0.5 minimum so faint notes are still visible)
-        const alpha = (0.5 + note.velocity * 0.5) * (dimmed ? PRACTICE_INACTIVE_ALPHA_SCALE : 1)
+        // Scene notes are a flat fill. Velocity still shapes the audio.
+        const alpha = pill
+          ? dimmed
+            ? 0.3
+            : 1
+          : (0.5 + note.velocity * 0.5) * (dimmed ? PRACTICE_INACTIVE_ALPHA_SCALE : 1)
 
         const active =
           !practiceInactive && note.time <= currentTime && note.time + note.duration > currentTime
@@ -239,17 +256,38 @@ export class NoteRenderer {
             active,
           )
         } else if (pill) {
-          if (!dimmed) {
-            g.roundRect(drawX, y + 2, w, h, radius)
-            g.fill({ color: 0x5e3b24, alpha: 0.12 * alpha })
+          const shiftedStroke = shifted
+          if (!dimmed && !shiftedStroke) {
+            g.roundRect(drawX, y + 2 * hScale, w, h, radius)
+            g.fill({ color: 0x5e3b24, alpha: 0.12 })
           }
           g.roundRect(drawX, y, w, h, radius)
           g.fill({ color: noteColor, alpha })
-          const edge = noteColor === this.theme.trackColors[1] ? 0xb8706f : 0xc98a32
-          g.roundRect(drawX, y, w, h, radius)
-          g.stroke({ color: edge, width: 1, alpha: alpha })
-          g.rect(drawX + 2, y + 1, Math.max(1, w - 4), 1)
-          g.fill({ color: 0xfff8ee, alpha: 0.45 * alpha })
+          if (shiftedStroke) {
+            const ink = readCssColor('--text-2', { color: 0x7a5a44, alpha: 1 })
+            const dash = 4 * hScale
+            const gap = 3 * hScale
+            const step = dash + gap
+            const strokeW = 1.5 * hScale
+            for (let i = 0; i < w; i += step) {
+              const len = Math.min(dash, w - i)
+              g.rect(drawX + i, y, len, strokeW)
+              g.rect(drawX + i, y + h - strokeW, len, strokeW)
+            }
+            for (let i = 0; i < h; i += step) {
+              const len = Math.min(dash, h - i)
+              g.rect(drawX, y + i, strokeW, len)
+              g.rect(drawX + w - strokeW, y + i, strokeW, len)
+            }
+            g.fill({ color: ink.color, alpha })
+          } else {
+            const edge = noteColor === this.theme.trackColors[1] ? 0xb8706f : 0xc98a32
+            g.roundRect(drawX + 0.5, y + 0.5, Math.max(1, w - 1), Math.max(1, h - 1), radius)
+            g.stroke({ color: edge, width: Math.max(1, hScale), alpha })
+          }
+          g.rect(drawX + hScale, y + hScale, Math.max(1, w - 2 * hScale), Math.max(1, hScale))
+          g.fill({ color: 0xfff8ee, alpha: 0.45 * (dimmed ? 1 : alpha) })
+          this.paintFinger(drawPitch, note, drawX, y, w, h, hScale, alpha)
         } else {
           g.roundRect(drawX, y, w, h, noteRadius)
           g.fill({ color: noteColor, alpha })
@@ -262,6 +300,7 @@ export class NoteRenderer {
 
         if (
           !this.material &&
+          !pill &&
           !dimmed &&
           note.time <= currentTime &&
           note.time + note.duration >= currentTime
@@ -278,6 +317,9 @@ export class NoteRenderer {
     }
 
     labels?.end()
+    for (let i = this.fingerUsed; i < this.fingerLabels.length; i++) {
+      this.fingerLabels[i]!.visible = false
+    }
     this.material?.end()
     this.raiseFoldMarks()
 
@@ -297,6 +339,51 @@ export class NoteRenderer {
 
   // A note moved by whole octaves keeps its colour and gains a light outline
   // plus a small chevron showing which way it moved.
+  private paintFinger(
+    drawPitch: number,
+    note: MidiNote,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    hScale: number,
+    alpha: number,
+  ): void {
+    const guide = this.fingerGuide
+    if (!guide || h < 16 * hScale || alpha < 0.2) return
+    const found = fingerFor(
+      guide,
+      barAt(note.time, guide.secondsPerBar),
+      note.pitch,
+      [{ pitch: note.pitch, time: note.time, duration: note.duration }],
+      null,
+    )
+    if (!found) return
+    const size = Math.max(8, 11 * hScale)
+    let label = this.fingerLabels[this.fingerUsed]
+    if (!label) {
+      label = new Text({
+        text: '',
+        style: {
+          fontFamily: 'Nunito Sans, system-ui, sans-serif',
+          fontWeight: '800',
+          fill: 0xfff8ee,
+        },
+      })
+      label.anchor.set(0.5, 1)
+      this.container.addChild(label)
+      this.fingerLabels.push(label)
+    }
+    label.visible = true
+    label.text = String(found.finger)
+    label.style.fontSize = size
+    label.alpha = alpha
+    label.x = x + w / 2
+    label.y = y + h - 6 * hScale
+    this.fingerUsed++
+    void drawPitch
+  }
+
   private paintShiftMark(
     x: number,
     y: number,

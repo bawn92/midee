@@ -1,0 +1,24 @@
+// Reads a custom property off the document so Pixi layers stay on the scene
+// tokens. Falls back when the stylesheet has not been applied (unit tests).
+
+export interface CssColor {
+  color: number
+  alpha: number
+}
+
+export function readCssColor(name: string, fallback: CssColor): CssColor {
+  if (typeof document === 'undefined' || typeof getComputedStyle !== 'function') return fallback
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+  if (!raw) return fallback
+  const hex = raw.match(/^#([0-9a-f]{6})$/i)
+  if (hex?.[1]) return { color: Number.parseInt(hex[1], 16), alpha: 1 }
+  const rgb = raw.match(
+    /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)$/i,
+  )
+  if (!rgb?.[1] || !rgb[2] || !rgb[3]) return fallback
+  const r = Math.round(Number(rgb[1]))
+  const g = Math.round(Number(rgb[2]))
+  const b = Math.round(Number(rgb[3]))
+  const alpha = rgb[4] === undefined ? 1 : Number(rgb[4])
+  return { color: (r << 16) | (g << 8) | b, alpha }
+}

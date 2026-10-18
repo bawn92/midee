@@ -318,8 +318,8 @@ html[data-scene] .song-guide-fingers {
     top: calc(80px + env(safe-area-inset-top));
     bottom: auto;
     transform: translateX(calc(-50% + var(--hud-dx, 0px)));
-    width: min(742px, calc(100vw - 520px));
-    max-width: min(742px, calc(100vw - 520px));
+    width: min(742px, calc(100vw - 712px));
+    max-width: min(742px, calc(100vw - 712px));
   }
 
   html[data-scene] .song-guide,
@@ -341,7 +341,7 @@ html[data-scene] .song-guide-fingers {
     right: calc(24px + env(safe-area-inset-right));
     left: auto;
     bottom: auto;
-    width: min(280px, calc(50vw - 36px));
+    width: min(360px, calc(50vw - 36px));
     margin-bottom: 0;
     z-index: 4;
   }
@@ -594,16 +594,34 @@ html[data-scene] .kbd-range-cal-badge {
 }
 
 html[data-scene] #kbd-range-band {
-  background: var(--range-glass);
-  border: 1.5px solid var(--range-border);
-  border-radius: 12px;
-  backdrop-filter: blur(2px);
+  background: transparent;
+  border: 0;
+  backdrop-filter: none;
 }
 
-html[data-scene] .kbd-range-band--dragging #kbd-range-band,
-html[data-scene] #kbd-range-band.kbd-range-band--dragging {
-  box-shadow: var(--elev-3);
+html[data-scene] .kbd-range-band-glass {
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+html[data-scene] #kbd-range-band.kbd-range-band--glass .kbd-range-band-glass {
+  background: var(--range-glass);
+  box-shadow: inset 0 0 0 1.5px var(--range-border);
+  backdrop-filter: blur(1px);
+}
+
+html[data-scene] #kbd-range-band[data-range-outline="on"]:not(.kbd-range-band--glass) .kbd-range-band-glass {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--range-border);
+  backdrop-filter: none;
+}
+
+html[data-scene] #kbd-range-band.kbd-range-band--dragging.kbd-range-band--glass .kbd-range-band-glass {
   background: var(--range-glass-drag);
+  box-shadow:
+    inset 0 0 0 1.5px var(--accent),
+    var(--elev-3);
 }
 
 html[data-scene] .kbd-range-band-move {
@@ -761,6 +779,99 @@ html[data-scene] .gh-studio .gh-overline {
 html[data-scene] .gh-studio .gh-field {
   min-height: 32px;
   margin: 0;
+}
+
+html[data-scene] .kbd-style-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+html[data-scene] .kbd-style-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-2);
+  font: var(--type-label);
+  text-align: start;
+  cursor: pointer;
+}
+
+html[data-scene] .kbd-style-card--on {
+  border-color: var(--accent);
+  color: var(--text-1);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+html[data-scene] .kbd-style-swatch {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 36px;
+  padding: 10px 6px 4px;
+  border-radius: 6px 6px 2px 2px;
+  overflow: hidden;
+}
+
+html[data-scene] .kbd-style-swatch i {
+  flex: 1;
+  height: 100%;
+  border-radius: 1px 1px 2px 2px;
+}
+
+html[data-scene] .kbd-style-swatch i:nth-child(2) {
+  height: 58%;
+  align-self: flex-start;
+}
+
+html[data-scene] .kbd-style-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-scene] .range-style-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+html[data-scene] .range-style-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+html[data-scene] .range-style-chip {
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-2);
+  font: var(--type-label);
+  cursor: pointer;
+}
+
+html[data-scene] .range-style-chip--on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text-1);
+}
+
+html[data-scene] .kbd-range-style {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+html[data-scene] .kbd-range-window .kbd-range-handle::after {
+  display: none;
 }
 
 html[data-scene] [data-tip]::after {

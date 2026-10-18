@@ -1,7 +1,66 @@
-import { createSignal, onCleanup } from 'solid-js'
+import { createSignal, For, onCleanup, onMount } from 'solid-js'
 import { t } from '../i18n'
+import {
+  KEYBOARD_STYLES,
+  type KeyboardStyleId,
+  keyboardPalette,
+  keyboardStyleId,
+  keyboardStyleName,
+  setKeyboardStyle,
+  subscribeKeyboardStyle,
+} from '../renderer/keyboardStyle'
 import { Segmented, Slider, Toggle } from './kit/kit'
 import { paintPrefs, setPaintPrefs, subscribePaint } from './paint'
+import { RangeStylePicker } from './RangeStylePicker'
+
+function cssHex(color: number): string {
+  return `#${color.toString(16).padStart(6, '0')}`
+}
+
+function KeyboardStylePicker() {
+  const [id, setId] = createSignal<KeyboardStyleId>(keyboardStyleId())
+  const [scene, setScene] = createSignal(document.documentElement.dataset.scene ?? 'golden-hour')
+  onCleanup(subscribeKeyboardStyle(setId))
+  onMount(() => {
+    const mo = new MutationObserver(() => {
+      setScene(document.documentElement.dataset.scene ?? 'golden-hour')
+    })
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-scene'] })
+    onCleanup(() => mo.disconnect())
+  })
+
+  return (
+    <div class="kbd-style-grid" role="radiogroup" aria-label={t('customize.style')}>
+      <For each={KEYBOARD_STYLES}>
+        {(style) => {
+          const pal = () => keyboardPalette(scene(), style)
+          return (
+            <button
+              class="kbd-style-card"
+              classList={{ 'kbd-style-card--on': id() === style }}
+              type="button"
+              aria-pressed={id() === style}
+              aria-label={keyboardStyleName(style)}
+              onClick={() => setKeyboardStyle(style)}
+            >
+              <span
+                class="kbd-style-swatch"
+                aria-hidden="true"
+                style={{ background: cssHex(pal().caseDark) }}
+              >
+                <i style={{ background: cssHex(pal().ivory) }} />
+                <i style={{ background: cssHex(pal().ebony) }} />
+                <i style={{ background: cssHex(pal().ivory) }} />
+                <i style={{ background: cssHex(pal().ivory) }} />
+              </span>
+              <span class="kbd-style-name">{t(`customize.style.${style}`)}</span>
+            </button>
+          )
+        }}
+      </For>
+    </div>
+  )
+}
 
 export function AppearanceStudio(props: {
   volume: () => number
@@ -45,20 +104,13 @@ export function AppearanceStudio(props: {
         />
       </div>
 
+      <p class="gh-overline">{t('customize.style')}</p>
+      <KeyboardStylePicker />
+
+      <p class="gh-overline">{t('customize.range')}</p>
+      <RangeStylePicker />
+
       <p class="gh-overline">{t('customize.keyboard')}</p>
-      <div class="gh-field">
-        <span class="gh-label">{t('customize.wood')}</span>
-        <Segmented
-          ariaLabel={t('customize.wood')}
-          value={paint().wood}
-          options={[
-            { id: 'walnut' as const, label: t('customize.walnut') },
-            { id: 'oak' as const, label: t('customize.oak') },
-            { id: 'cream' as const, label: t('customize.cream') },
-          ]}
-          onChange={(id) => setPaintPrefs({ wood: id })}
-        />
-      </div>
       <div class="gh-field">
         <span class="gh-label">{t('customize.keyLabels')}</span>
         <Toggle
