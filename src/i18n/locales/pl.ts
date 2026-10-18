@@ -74,6 +74,7 @@ const pl: Messages & Record<PolishPluralKey, string> = {
   'home.recents.label': 'wróć do ostatniego pliku albo odtwórz przykład',
   'home.recentsOnly.label': 'wróć do ostatniego pliku',
   'card.recent.tag': 'Ostatnie',
+  'card.sample.tag': 'Przykład',
   'card.recent.sub': 'Twój plik · {duration}',
   'card.recent.forget': 'Usuń {name} z ostatnich',
   'home.dropHint.html':
@@ -307,10 +308,10 @@ const pl: Messages & Record<PolishPluralKey, string> = {
   'modeError.title': 'Coś poszło nie tak',
   'modeError.retry': 'Spróbuj ponownie',
 
-  'doc.title.home': 'midee - Darmowy odtwarzacz MIDI online i alternatywa dla Synthesia',
+  'doc.title.home': 'Graj nuty, patrz, jak rozkwitają',
   'a11y.skipToMain': 'Przejdź do głównej treści',
-  'doc.title.live': 'midee · na żywo',
-  'doc.title.learn': 'midee · nauka',
+  'doc.title.live': 'Na żywo',
+  'doc.title.learn': 'Nauka',
 
   'learn.hub.recommended': 'Polecane',
   'learn.hub.uploadMidi': 'Wgraj MIDI',

@@ -1,17 +1,12 @@
 <!--
-  midee favicon — canonical source.
-  Used for browser tabs, Google SERPs, and PWA launcher icons.
-  Rastered by `npm run icons` via scripts/build-icons.mjs into public/icons/.
-
-  Design: three orange "falling note" bars over the theme-dark backdrop,
-  with a thin keybed line at the bottom — piano roll in miniature.
-  The filled background is important: Google SERPs are white, and a
-  transparent orange-on-white favicon reads poorly at 16–32px.
+  Tab and launcher icon. Warm wall, a walnut key, honey and rose notes.
+  Rastered by `npm run icons` into public/icons/.
+  The fill stays opaque so the mark still reads on a white results page.
 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="7" fill="#06060e"/>
-  <rect x="5"    y="11" width="4" height="14" rx="1" fill="#f97316"/>
-  <rect x="12.5" y="7"  width="4" height="18" rx="1" fill="#f97316"/>
-  <rect x="20"   y="10" width="4" height="12" rx="1" fill="#f97316" opacity="0.65"/>
-  <rect x="5"    y="26" width="22" height="1.5" rx="0.75" fill="#f97316" opacity="0.4"/>
+  <rect width="32" height="32" rx="7" fill="#f8e3c8"/>
+  <rect x="4" y="22" width="24" height="6" rx="1.5" fill="#5e3b24"/>
+  <rect x="6" y="8" width="5" height="14" rx="1.2" fill="#e6a94f"/>
+  <rect x="13.5" y="5" width="5" height="17" rx="1.2" fill="#d9908f"/>
+  <rect x="21" y="10" width="5" height="12" rx="1.2" fill="#b9773a"/>
 </svg>

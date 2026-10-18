@@ -1,19 +1,14 @@
 <!--
-  midee favicon — Android "maskable" variant.
-  Android launchers apply their own mask (circle, squircle, rounded square…)
-  to icons, clipping the outer ~20% of the canvas. The content must live
-  inside the inner 80% "safe zone" and the background must be full-bleed.
-
-  We keep the 32×32 logo untouched and center it in a 48×48 canvas —
-  that gives 8px of padding per side (~33% safe zone), which survives
-  any mask shape any launcher throws at it.
+  Maskable launcher icon. The mark sits inside the inner safe zone
+  on a full-bleed warm wall.
 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-  <rect width="48" height="48" fill="#06060e"/>
+  <rect width="48" height="48" fill="#f2c9a0"/>
   <g transform="translate(8 8)">
-    <rect x="5"    y="11" width="4" height="14" rx="1" fill="#f97316"/>
-    <rect x="12.5" y="7"  width="4" height="18" rx="1" fill="#f97316"/>
-    <rect x="20"   y="10" width="4" height="12" rx="1" fill="#f97316" opacity="0.65"/>
-    <rect x="5"    y="26" width="22" height="1.5" rx="0.75" fill="#f97316" opacity="0.4"/>
+    <rect width="32" height="32" rx="7" fill="#f8e3c8"/>
+    <rect x="4" y="22" width="24" height="6" rx="1.5" fill="#5e3b24"/>
+    <rect x="6" y="8" width="5" height="14" rx="1.2" fill="#e6a94f"/>
+    <rect x="13.5" y="5" width="5" height="17" rx="1.2" fill="#d9908f"/>
+    <rect x="21" y="10" width="5" height="12" rx="1.2" fill="#b9773a"/>
   </g>
 </svg>

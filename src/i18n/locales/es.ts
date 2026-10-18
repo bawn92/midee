@@ -67,6 +67,7 @@ const es: Messages = {
   'home.recents.label': 'retoma donde lo dejaste, o explora un ejemplo',
   'home.recentsOnly.label': 'retoma donde lo dejaste',
   'card.recent.tag': 'Reciente',
+  'card.sample.tag': 'Muestra',
   'card.recent.sub': 'Tu archivo · {duration}',
   'card.recent.forget': 'Quitar {name} de recientes',
   'home.dropHint.html':
@@ -310,10 +311,10 @@ const es: Messages = {
   'modeError.retry': 'Reintentar',
 
   // ── Document title ──────────────────────────────────────────
-  'doc.title.home': 'midee - Reproductor MIDI gratuito online y alternativa a Synthesia',
+  'doc.title.home': 'Toca notas, míralas florecer',
   'a11y.skipToMain': 'Saltar al contenido principal',
-  'doc.title.live': 'midee · en vivo',
-  'doc.title.learn': 'midee · aprender',
+  'doc.title.live': 'En vivo',
+  'doc.title.learn': 'Aprender',
 
   // ── Learn hub ───────────────────────────────────────────────
   'learn.hub.recommended': 'Recomendado',

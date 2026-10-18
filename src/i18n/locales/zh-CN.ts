@@ -64,6 +64,7 @@ const zhCN: Messages = {
   'home.recents.label': '继续上次的文件，或试试示例',
   'home.recentsOnly.label': '继续上次的文件',
   'card.recent.tag': '最近',
+  'card.sample.tag': '示例',
   'card.recent.sub': '你的文件 · {duration}',
   'card.recent.forget': '从最近列表中移除 {name}',
   'home.dropHint.html':
@@ -291,10 +292,10 @@ const zhCN: Messages = {
   'modeError.title': '出了点问题',
   'modeError.retry': '重试',
 
-  'doc.title.home': 'midee - 免费在线 MIDI 播放器与 Synthesia 替代品',
+  'doc.title.home': '弹奏音符，看它们盛放',
   'a11y.skipToMain': '跳转到主要内容',
-  'doc.title.live': 'midee · 实时弹奏',
-  'doc.title.learn': 'midee · 学习',
+  'doc.title.live': '实时',
+  'doc.title.learn': '学习',
 
   'learn.hub.recommended': '推荐',
   'learn.hub.uploadMidi': '上传 MIDI',

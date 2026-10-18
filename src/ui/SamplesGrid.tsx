@@ -59,6 +59,12 @@ function CardShell(props: CardShellProps) {
         {...(props.accent ? { style: { '--sample-accent': props.accent } } : {})}
         onClick={() => props.onSelect()}
       >
+        <Show
+          when={props.recent}
+          fallback={<span class="sample-card-tag">{t('card.sample.tag')}</span>}
+        >
+          <span class="sample-card-tag">{t('card.recent.tag')}</span>
+        </Show>
         <div class="sample-card-viz" aria-hidden="true">
           <div class="sample-card-bars">
             <For each={props.state().bars}>
@@ -74,9 +80,6 @@ function CardShell(props: CardShellProps) {
           </div>
         </div>
         <div class="sample-card-meta">
-          <Show when={props.recent}>
-            <span class="sample-card-tag">{t('card.recent.tag')}</span>
-          </Show>
           <div class="sample-card-title">{props.title}</div>
           <div class="sample-card-sub">{props.state().sub}</div>
         </div>
@@ -129,7 +132,6 @@ function SampleCard(props: { sample: Sample; onSelect: (id: string) => void }) {
     <CardShell
       id={props.sample.id}
       recent={false}
-      accent={props.sample.accent}
       title={props.sample.title}
       state={state}
       onSelect={() => props.onSelect(props.sample.id)}

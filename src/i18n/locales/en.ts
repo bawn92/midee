@@ -83,6 +83,7 @@ export const en = {
   'home.recents.label': 'jump back in, or explore a sample',
   'home.recentsOnly.label': 'jump back in',
   'card.recent.tag': 'Recent',
+  'card.sample.tag': 'Sample',
   'card.recent.sub': 'Your upload · {duration}',
   'card.recent.forget': 'Remove {name} from recents',
   'home.dropHint.html':
@@ -330,10 +331,10 @@ export const en = {
   'modeError.retry': 'Try again',
 
   // ── Document title (browser tab) ───────────────────────────
-  'doc.title.home': 'midee - Free Online MIDI Player & Synthesia Alternative',
+  'doc.title.home': 'Play notes, see them bloom',
   'a11y.skipToMain': 'Skip to main content',
-  'doc.title.live': 'midee · live',
-  'doc.title.learn': 'midee · learn',
+  'doc.title.live': 'Live',
+  'doc.title.learn': 'Learn',
 
   // ── Learn hub ───────────────────────────────────────────────
   'learn.hub.recommended': 'Recommended',

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-const HOME_TITLE = 'midee - Free Online MIDI Player & Synthesia Alternative'
+const HOME_TITLE = 'Play notes, see them bloom'
 
 test.describe('App navigation accessibility', () => {
   test('the skip link stays offscreen before the app stylesheet loads', async ({ page }) => {
@@ -63,7 +63,7 @@ test.describe('App navigation accessibility', () => {
   test('localized home metadata and skip link use the selected language', async ({ page }) => {
     await page.goto('/?lang=fr')
     await expect(page.locator('#home-open')).toBeVisible()
-    await expect(page).toHaveTitle('midee - Lecteur MIDI gratuit en ligne et alternative à Synthesia')
+    await expect(page).toHaveTitle('Jouez des notes, voyez-les éclore')
     await page.keyboard.press('Tab')
     await expect(page.getByRole('link', { name: 'Aller au contenu principal' })).toBeFocused()
   })

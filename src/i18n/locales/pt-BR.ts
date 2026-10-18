@@ -68,6 +68,7 @@ const ptBR: Messages = {
   'home.recents.label': 'retome de onde parou, ou explore um exemplo',
   'home.recentsOnly.label': 'retome de onde parou',
   'card.recent.tag': 'Recente',
+  'card.sample.tag': 'Amostra',
   'card.recent.sub': 'Seu arquivo · {duration}',
   'card.recent.forget': 'Remover {name} dos recentes',
   'home.dropHint.html':
@@ -311,10 +312,10 @@ const ptBR: Messages = {
   'modeError.retry': 'Tentar novamente',
 
   // ── Document title ──────────────────────────────────────────
-  'doc.title.home': 'midee - Player MIDI online gratuito e alternativa ao Synthesia',
+  'doc.title.home': 'Toque notas, veja-as florescer',
   'a11y.skipToMain': 'Pular para o conteúdo principal',
-  'doc.title.live': 'midee · ao vivo',
-  'doc.title.learn': 'midee · aprender',
+  'doc.title.live': 'Ao vivo',
+  'doc.title.learn': 'Aprender',
 
   // ── Learn hub ───────────────────────────────────────────────
   'learn.hub.recommended': 'Recomendado',

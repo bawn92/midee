@@ -25,7 +25,7 @@ function getHomeMidiStatus(status: MidiDeviceStatus, deviceName: string): string
   if (status === 'connected') return deviceName || t('home.midi.ready')
   if (status === 'blocked') return t('home.midi.blocked')
   if (status === 'unavailable') return t('home.midi.unavailable')
-  return t('home.midi.disconnected')
+  return t('home.midi.lookingFor')
 }
 
 function hasFiles(e: DragEvent): boolean {
@@ -173,12 +173,24 @@ function DropZoneView(props: DropZoneProps) {
                 type="button"
                 onClick={() => cb()()}
               >
-                <span innerHTML={icons.practice(13)} />
-                <span>{t('home.cta.learn.title')}</span>
+                <span class="home-learn-icon" innerHTML={icons.practice(18)} />
+                <span class="home-learn-copy">
+                  <span class="home-learn-title">{t('home.cta.learn.title')}</span>
+                  <span class="home-learn-sub">{t('home.cta.learn.sub')}</span>
+                </span>
                 <span class="home-learn-badge">{t('home.cta.learn.badge')}</span>
               </button>
             )}
           </Show>
+        </div>
+
+        <div
+          class="home-midi-status"
+          id="home-midi-status"
+          data-midi-status={props.midiStatus().status}
+        >
+          <span class="home-midi-glyph" aria-hidden="true" innerHTML={icons.midi(14)} />
+          <span>{getHomeMidiStatus(props.midiStatus().status, props.midiStatus().deviceName)}</span>
         </div>
 
         <div class="home-samples">
@@ -186,16 +198,7 @@ function DropZoneView(props: DropZoneProps) {
           <div class="home-samples-mount" ref={samplesHost} />
         </div>
 
-        <div class="home-footnotes">
-          <div
-            class="home-midi-status"
-            id="home-midi-status"
-            data-midi-status={props.midiStatus().status}
-          >
-            {getHomeMidiStatus(props.midiStatus().status, props.midiStatus().deviceName)}
-          </div>
-          <div class="home-drop-hint" innerHTML={t('home.dropHint.html')} />
-        </div>
+        <div class="home-drop-hint" innerHTML={t('home.dropHint.html')} />
         <input
           type="file"
           id="midi-input"

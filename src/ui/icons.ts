@@ -180,6 +180,14 @@ export const icons = {
   wordmark: (): string =>
     `<svg class="ts-home-mark" width="22" height="18" viewBox="0 0 32 24" fill="currentColor" aria-hidden="true"><rect x="1" y="6" width="5" height="15" rx="1.5"/><rect x="9" y="1" width="5" height="20" rx="1.5"/><rect x="17" y="4" width="5" height="12" rx="1.5" opacity="0.55"/><rect x="25" y="8" width="5" height="9" rx="1.5" opacity="0.35"/></svg>`,
 
+  home: (size: Size = 18): string =>
+    svgStroke(
+      size,
+      `<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>`,
+      1.8,
+      'aria-hidden="true"',
+    ),
+
   blog: (size: Size = 15): string =>
     svgStroke(
       size,

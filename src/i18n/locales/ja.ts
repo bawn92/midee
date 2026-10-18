@@ -66,6 +66,7 @@ const ja: Messages = {
   'home.recents.label': '続きから、またはサンプルを試す',
   'home.recentsOnly.label': '続きから',
   'card.recent.tag': '最近',
+  'card.sample.tag': 'サンプル',
   'card.recent.sub': 'あなたのファイル · {duration}',
   'card.recent.forget': '{name} を最近使ったファイルから削除',
   'home.dropHint.html':
@@ -300,10 +301,10 @@ const ja: Messages = {
   'modeError.title': '問題が発生しました',
   'modeError.retry': 'もう一度試す',
 
-  'doc.title.home': 'midee - 無料オンライン MIDI プレーヤー・Synthesia の代替',
+  'doc.title.home': '音符を弾いて、咲かせよう',
   'a11y.skipToMain': 'メインコンテンツへ移動',
-  'doc.title.live': 'midee · ライブ',
-  'doc.title.learn': 'midee · 学習',
+  'doc.title.live': 'ライブ',
+  'doc.title.learn': '学習',
 
   'learn.hub.recommended': 'おすすめ',
   'learn.hub.uploadMidi': 'MIDI をアップロード',
