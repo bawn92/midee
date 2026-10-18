@@ -1,4 +1,4 @@
-import { createSignal, For, onCleanup, onMount } from 'solid-js'
+import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import { t } from '../i18n'
 import {
   KEYBOARD_STYLES,
@@ -9,6 +9,13 @@ import {
   setKeyboardStyle,
   subscribeKeyboardStyle,
 } from '../renderer/keyboardStyle'
+import {
+  PLANT_SHADOWS,
+  type PlantShadowId,
+  plantShadowId,
+  setPlantShadow,
+  subscribePlantShadow,
+} from '../renderer/plantShadows'
 import { Segmented, Slider, Toggle } from './kit/kit'
 import { paintPrefs, setPaintPrefs, subscribePaint } from './paint'
 import { RangeStylePicker } from './RangeStylePicker'
@@ -62,6 +69,56 @@ function KeyboardStylePicker() {
   )
 }
 
+function PlantShadowPicker() {
+  const [id, setId] = createSignal<PlantShadowId>(plantShadowId())
+  const [scene, setScene] = createSignal(document.documentElement.dataset.scene ?? 'golden-hour')
+  onCleanup(subscribePlantShadow(setId))
+  onMount(() => {
+    const mo = new MutationObserver(() => {
+      setScene(document.documentElement.dataset.scene ?? 'golden-hour')
+    })
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-scene'] })
+    onCleanup(() => mo.disconnect())
+  })
+  const available = () => scene() === 'golden-hour'
+
+  return (
+    <div
+      class="plant-shadow-picker"
+      id="plant-shadows"
+      data-available={available() ? 'true' : 'false'}
+    >
+      <p class="gh-overline">{t('customize.plants')}</p>
+      <div
+        class="plant-shadow-grid"
+        role="radiogroup"
+        aria-label={t('customize.plants')}
+        aria-disabled={!available()}
+      >
+        <For each={PLANT_SHADOWS}>
+          {(plant) => (
+            <button
+              class="plant-shadow-chip"
+              classList={{ 'plant-shadow-chip--on': id() === plant }}
+              type="button"
+              aria-pressed={id() === plant}
+              disabled={!available()}
+              onClick={() => setPlantShadow(plant)}
+            >
+              {t(`customize.plants.${plant}`)}
+            </button>
+          )}
+        </For>
+      </div>
+      <Show when={!available()}>
+        <p class="plant-shadow-note" id="plant-shadows-note">
+          {t('customize.plants.goldenOnly')}
+        </p>
+      </Show>
+    </div>
+  )
+}
+
 export function AppearanceStudio(props: {
   volume: () => number
   onVolume?: ((value: number) => void) | undefined
@@ -108,6 +165,8 @@ export function AppearanceStudio(props: {
       <KeyboardStylePicker />
 
       <RangeStylePicker />
+
+      <PlantShadowPicker />
 
       <p class="gh-overline">{t('customize.keyboard')}</p>
       <div class="gh-field">

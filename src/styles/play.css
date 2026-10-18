@@ -23,10 +23,16 @@ html[data-scene] #app {
   inset: 0;
   pointer-events: none;
   z-index: 1;
-  /* The SVG is already 12% of the leaf shape. Multiply lets it sit on the wall. */
+  /* The SVG is already 12% of the leaf shape. Multiply lets it sit on the wall.
+     The play view paints its own animated shadows under the notes, so this
+     static mark stays on the landing hero only. */
   background: var(--scene-shadow-img) top right / 520px 530px no-repeat;
   mix-blend-mode: multiply;
   opacity: 1;
+}
+
+html[data-route="app"] #scene-shadow {
+  display: none;
 }
 
 html[data-scene] #ui-overlay {
@@ -898,6 +904,45 @@ html[data-scene] .kbd-style-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+html[data-scene] .plant-shadow-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+html[data-scene] .plant-shadow-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+html[data-scene] .plant-shadow-chip {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-2);
+  font: var(--type-label);
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+html[data-scene] .plant-shadow-chip--on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text-1);
+}
+
+html[data-scene] .plant-shadow-chip:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+html[data-scene] .plant-shadow-note {
+  margin: 0;
+  color: var(--text-3);
+  font: var(--type-caption);
 }
 
 html[data-scene] .range-style-picker {

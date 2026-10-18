@@ -17,6 +17,13 @@ import { LiveNoteRenderer } from './LiveNoteRenderer'
 import { makeMaterialAtmosphere } from './materialAtmosphere'
 import { NoteRenderer } from './NoteRenderer'
 import { type ParticleStyle, ParticleSystem } from './ParticleSystem'
+import { PlantShadowField } from './plantShadowField'
+import {
+  plantShadowId,
+  plantShadowsActive,
+  readPlantShadowBudget,
+  subscribePlantShadow,
+} from './plantShadows'
 import { layersAnimating, type RenderContext, type RenderLayer } from './RenderLayer'
 import { rangeLayerAlpha, rangePhaseAnimating, subscribeRangeOverlay } from './rangeOverlay'
 import { sceneForTheme } from './scenes'
@@ -109,6 +116,12 @@ export class PianoRollRenderer {
   private atmosphereThemeId: string | null = null
   private sceneBackdrop: Sprite | null = null
   private sceneBackdropKey = ''
+  private plantField: PlantShadowField | null = null
+  private plantSprite: Sprite | null = null
+  private plantGlowSprite: Sprite | null = null
+  private plantUnsub: (() => void) | null = null
+  private plantMotionQuery: MediaQueryList | null = null
+  private plantReduced = false
 
   private midi: MidiFile | null = null
   private liveNoteStore: LiveNoteStore | null = null
@@ -206,6 +219,7 @@ export class PianoRollRenderer {
     document.documentElement.style.setProperty('--keyboard-h', `${this.keyboardHeight}px`)
 
     this.buildScene()
+    this.mountPlantShadows()
     // handleResize calls resize() → rebuildStaticLayers() + renderStaticFrame(0),
     // so buildScene must not call rebuildStaticLayers itself.
     this.handleResize()
@@ -262,6 +276,7 @@ export class PianoRollRenderer {
     this.drawNowLine()
     this.keyboardRenderer.build(this.viewport, this.viewport.rollHeight)
     this.rebuildExternalLayers()
+    this.layoutPlantShadows()
   }
 
   private drawBackground(): void {
@@ -599,6 +614,13 @@ export class PianoRollRenderer {
       this.renderFrame(clock.currentTime, ticker.deltaMS / 1000, clock.playing)
       return
     }
+    // Shadows sway on a paused wall without rebuilding the note scene.
+    // The ticker still presents the stage, so the updated texture shows.
+    if (this.plantMoving()) {
+      this.idleFrames = 0
+      this.stepPlantShadows()
+      return
+    }
     // Static scene. Render through a short grace window so the settled state
     // is definitely presented, then stop the ticker entirely — a static
     // screen otherwise redraws identical pixels at display refresh rate
@@ -641,6 +663,7 @@ export class PianoRollRenderer {
   }
 
   private renderFrame(currentTime: number, dt: number, emitParticles: boolean): void {
+    this.stepPlantShadows()
     this.lastRenderTime = currentTime
     const curr = this.currActive
     const activeColors = this.activeKeyColors
@@ -1160,8 +1183,136 @@ export class PianoRollRenderer {
     this.resize(window.innerWidth, window.innerHeight, resolution)
   }
 
+  // Shadow buffer sits above the backdrop and under the lanes, notes, and
+  // keyboard. Golden Hour only; Rainy Study and Off leave the sprites hidden.
+  private mountPlantShadows(): void {
+    this.plantReduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+    this.plantField = new PlantShadowField(() => {
+      document.documentElement.dataset.plantReady = '1'
+      this.onPlantSetting()
+    })
+    this.plantField.setReducedMotion(this.plantReduced)
+    const id = plantShadowId()
+    if (id !== 'off') this.plantField.setPlant(id)
+    const shadow = new Sprite(Texture.from(this.plantField.shadow))
+    shadow.label = 'plant-shadows'
+    shadow.blendMode = 'multiply'
+    shadow.eventMode = 'none'
+    shadow.visible = false
+    const glow = new Sprite(Texture.from(this.plantField.glow))
+    glow.label = 'plant-glow'
+    glow.blendMode = 'soft-light'
+    glow.eventMode = 'none'
+    glow.visible = false
+    shadow.texture.source.autoGenerateMipmaps = false
+    glow.texture.source.autoGenerateMipmaps = false
+    this.plantSprite = shadow
+    this.plantGlowSprite = glow
+    // Under the notes until the backdrop exists; layout then pins them to it.
+    this.app.stage.addChildAt(glow, 0)
+    this.app.stage.addChildAt(shadow, 0)
+    if (this.plantField.ready) {
+      document.documentElement.dataset.plantReady = '1'
+      this.onPlantSetting()
+    }
+    this.plantUnsub = subscribePlantShadow(this.onPlantSetting)
+    this.plantMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    this.plantMotionQuery.addEventListener('change', this.onPlantMotion)
+    document.addEventListener('visibilitychange', this.onPlantVisibility)
+  }
+
+  private onPlantSetting = (): void => {
+    const id = plantShadowId()
+    if (id !== 'off') this.plantField?.setPlant(id)
+    this.layoutPlantShadows()
+    this.stepPlantShadows()
+    if (!this.exportMode) this.presentFrame()
+    if (this.plantMoving()) this.wake()
+  }
+
+  private onPlantMotion = (event: MediaQueryListEvent): void => {
+    this.plantReduced = event.matches
+    this.plantField?.setReducedMotion(event.matches)
+    this.stepPlantShadows()
+    if (this.plantMoving()) this.wake()
+    else if (!this.exportMode) this.presentFrame()
+  }
+
+  private onPlantVisibility = (): void => {
+    if (!document.hidden && this.plantMoving()) this.wake()
+  }
+
+  private plantMoving(): boolean {
+    return (
+      this.plantSprite?.visible === true &&
+      this.plantField?.ready === true &&
+      !this.plantReduced &&
+      !document.hidden &&
+      !this.exportMode
+    )
+  }
+
+  private layoutPlantShadows(): void {
+    const field = this.plantField
+    const shadow = this.plantSprite
+    const glow = this.plantGlowSprite
+    if (!field || !shadow || !glow) return
+    const active = plantShadowsActive(this.theme.id)
+    shadow.visible = active
+    glow.visible = active
+    document.documentElement.dataset.plantShadows = active ? plantShadowId() : 'off'
+    if (!active) return
+    field.setBudget(readPlantShadowBudget())
+    const w = Math.max(1, this.viewport.config.canvasWidth)
+    const h = Math.max(1, this.viewport.rollHeight)
+    field.resize(w, h)
+    shadow.position.set(0, 0)
+    glow.position.set(0, 0)
+    shadow.width = w
+    glow.width = w
+    shadow.height = h
+    glow.height = h
+    this.placePlantSprites()
+  }
+
+  private placePlantSprites(): void {
+    const shadow = this.plantSprite
+    const glow = this.plantGlowSprite
+    const backdrop = this.sceneBackdrop
+    if (!shadow || !glow || !backdrop) return
+    const stage = this.app.stage
+    const at = stage.getChildIndex(backdrop)
+    stage.addChildAt(shadow, at + 1)
+    stage.addChildAt(glow, stage.getChildIndex(shadow) + 1)
+  }
+
+  private stepPlantShadows(): void {
+    if (document.hidden && !this.exportMode) return
+    const field = this.plantField
+    const shadow = this.plantSprite
+    const glow = this.plantGlowSprite
+    if (!field || !shadow?.visible || !glow) return
+    // Matching the texture to the buffer clears the canvas, so resize first
+    // and paint once into the final bitmap. Export frames stay on the parked pose.
+    this.preparePlantTexture(shadow, field.shadow)
+    this.preparePlantTexture(glow, field.glow)
+    field.paint(performance.now(), this.exportMode)
+    shadow.texture.source.update()
+    glow.texture.source.update()
+    if (field.ready) document.documentElement.dataset.plantReady = '1'
+  }
+
+  private preparePlantTexture(sprite: Sprite, canvas: HTMLCanvasElement): void {
+    const source = sprite.texture.source
+    if (source.width === canvas.width && source.height === canvas.height) return
+    source.resize(canvas.width, canvas.height)
+  }
+
   destroy(): void {
     window.removeEventListener('resize', this.handleResize)
+    this.plantUnsub?.()
+    this.plantMotionQuery?.removeEventListener('change', this.onPlantMotion)
+    document.removeEventListener('visibilitychange', this.onPlantVisibility)
     this.clockUnsub?.()
     this.liveStoreUnsub?.()
     this.loopStoreUnsub?.()
