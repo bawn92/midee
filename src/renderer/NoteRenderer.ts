@@ -14,10 +14,11 @@ import {
   glowSettings,
 } from './bakedGlow'
 import { createNoteMaterial } from './createNoteMaterial'
-import { readCssColor } from './cssColor'
 import { KBD } from './keyboardMetrics'
 import type { NoteMaterial, NoteMaterialId } from './NoteMaterial'
 import { NoteLabelLayer } from './noteLabels'
+import { badgeDiameter, countOnsets, earliestFutureOnset, prefersReducedMotion } from './noteShape'
+import { paintSceneNotes, type SceneNoteInput } from './sceneNotes'
 import { sceneForTheme } from './scenes'
 import { getTrackColor, type Theme } from './theme'
 import { type Viewport, visibleNoteRange } from './viewport'
@@ -53,6 +54,9 @@ export class NoteRenderer {
   private fingerGuide: SongGuide | null = null
   private fingerLabels: Text[] = []
   private fingerUsed = 0
+  private landing = new Graphics()
+  private badgeGraphics = new Graphics()
+  private bpm = 120
 
   // `renderer` is only used by the baked glow to render its halo textures.
   constructor(
@@ -83,8 +87,12 @@ export class NoteRenderer {
     this.glowContainer.addChild(this.glowGraphics)
     this.applyGlowMode(glowSettings().mode)
     this.foldGraphics.label = 'note-fold'
+    this.landing.label = 'note-landing'
+    this.badgeGraphics.label = 'note-badges'
     this.container.addChild(this.glowContainer)
+    this.container.addChild(this.landing)
     this.container.addChild(this.foldGraphics)
+    this.container.addChild(this.badgeGraphics)
     this.container.addChild(this.labels.container)
     this.updateTheme(theme)
   }
@@ -104,6 +112,10 @@ export class NoteRenderer {
 
   setFingerGuide(guide: SongGuide | null): void {
     this.fingerGuide = guide
+  }
+
+  setTempo(bpm: number): void {
+    this.bpm = bpm > 0 ? bpm : 120
   }
 
   // Call once when tracks are loaded — sets up one Graphics per track
@@ -148,6 +160,8 @@ export class NoteRenderer {
     baked?.begin(this.theme.noteGlowDistance, this.theme.noteGlowStrength, noteRadius)
     this.glowGraphics.clear()
     this.foldGraphics.clear()
+    this.landing.clear()
+    this.badgeGraphics.clear()
     if (
       this.material &&
       (this.clipWidth !== viewport.config.canvasWidth || this.clipHeight !== nowLineY)
@@ -170,6 +184,7 @@ export class NoteRenderer {
 
     const visStart = currentTime - viewport.trailSeconds - 0.5
     const visEnd = currentTime + viewport.lookaheadSeconds + 0.5
+    const sceneBatches = new Map<string, SceneNoteInput[]>()
 
     for (const track of tracks) {
       const g = this.trackGraphics.get(track.id)
@@ -182,7 +197,7 @@ export class NoteRenderer {
       const trackColor = getTrackColor(track, this.theme)
       const sceneNotes = sceneForTheme(this.theme.id) !== null
       const byHand = sceneNotes && paintPrefs().colorBy === 'hand'
-      const soft = sceneNotes && paintPrefs().noteLook !== 'flat' && this.theme.noteStyle === 'pill'
+      const soft = sceneNotes && this.theme.noteStyle === 'pill'
       const practiceInactive =
         practiceFocusTrackIds !== null && !practiceFocusTrackIds.has(track.id)
 
@@ -256,46 +271,33 @@ export class NoteRenderer {
             active,
           )
         } else if (pill) {
-          const shiftedStroke = shifted
-          if (!dimmed && !shiftedStroke) {
-            g.roundRect(drawX, y + 2 * hScale, w, h, radius)
-            g.fill({ color: 0x5e3b24, alpha: 0.12 })
+          let batch = sceneBatches.get(track.id)
+          if (!batch) {
+            batch = []
+            sceneBatches.set(track.id, batch)
           }
-          g.roundRect(drawX, y, w, h, radius)
-          g.fill({ color: noteColor, alpha })
-          if (shiftedStroke) {
-            const ink = readCssColor('--text-2', { color: 0x7a5a44, alpha: 1 })
-            const dash = 4 * hScale
-            const gap = 3 * hScale
-            const step = dash + gap
-            const strokeW = 1.5 * hScale
-            for (let i = 0; i < w; i += step) {
-              const len = Math.min(dash, w - i)
-              g.rect(drawX + i, y, len, strokeW)
-              g.rect(drawX + i, y + h - strokeW, len, strokeW)
-            }
-            for (let i = 0; i < h; i += step) {
-              const len = Math.min(dash, h - i)
-              g.rect(drawX, y + i, strokeW, len)
-              g.rect(drawX + w - strokeW, y + i, strokeW, len)
-            }
-            g.fill({ color: ink.color, alpha })
-          } else {
-            const edge = noteColor === this.theme.trackColors[1] ? 0xb8706f : 0xc98a32
-            g.roundRect(drawX + 0.5, y + 0.5, Math.max(1, w - 1), Math.max(1, h - 1), radius)
-            g.stroke({ color: edge, width: Math.max(1, hScale), alpha })
-          }
-          g.rect(drawX + hScale, y + hScale, Math.max(1, w - 2 * hScale), Math.max(1, hScale))
-          g.fill({ color: 0xfff8ee, alpha: 0.45 * (dimmed ? 1 : alpha) })
-          this.paintFinger(drawPitch, note, drawX, y, w, h, hScale, alpha)
+          batch.push({
+            pitch: note.pitch,
+            drawPitch,
+            time: note.time,
+            duration: note.duration,
+            velocity: note.velocity,
+            shifted,
+            octaves: placement?.octaves ?? 0,
+            dimmed,
+            color: noteColor,
+            note,
+          })
         } else {
           g.roundRect(drawX, y, w, h, noteRadius)
           g.fill({ color: noteColor, alpha })
         }
 
-        labels?.place(drawPitch, x, w, noteBottom, h, noteColor, alpha)
-        if (shifted && placement) {
-          this.paintShiftMark(x, y, w, h, placement.octaves, alpha)
+        if (!pill) {
+          labels?.place(drawPitch, x, w, noteBottom, h, noteColor, alpha)
+          if (shifted && placement) {
+            this.paintShiftMark(x, y, w, h, placement.octaves, alpha, false)
+          }
         }
 
         if (
@@ -315,6 +317,8 @@ export class NoteRenderer {
         }
       }
     }
+
+    this.paintSceneBatches(sceneBatches, viewport, nowLineY, currentTime, labels)
 
     labels?.end()
     for (let i = this.fingerUsed; i < this.fingerLabels.length; i++) {
@@ -337,20 +341,91 @@ export class NoteRenderer {
     }
   }
 
-  // A note moved by whole octaves keeps its colour and gains a light outline
-  // plus a small chevron showing which way it moved.
+  private paintSceneBatches(
+    batches: Map<string, SceneNoteInput[]>,
+    viewport: Viewport,
+    nowLineY: number,
+    currentTime: number,
+    labels: NoteLabelLayer | null,
+  ): void {
+    if (batches.size === 0) return
+    const times: number[] = []
+    for (const list of batches.values()) for (const note of list) times.push(note.time)
+    const onset = earliestFutureOnset(times, currentTime)
+    const dense = this.bpm > 160 || countOnsets(times, currentTime) > 10
+    const pools = { used: 0 }
+    const prefs = paintPrefs()
+    const reduced = prefersReducedMotion()
+    for (const [id, notes] of batches) {
+      const g = this.trackGraphics.get(id)
+      if (!g) continue
+      paintSceneNotes({
+        g,
+        landing: this.landing,
+        notes,
+        viewport,
+        nowLineY,
+        currentTime,
+        theme: this.theme,
+        bpm: this.bpm,
+        prefs,
+        reduced,
+        onset,
+        dense,
+        pools,
+        onPlaced: (placed) => {
+          labels?.place(
+            placed.drawPitch,
+            placed.x,
+            placed.w,
+            placed.bottom,
+            placed.h,
+            placed.color,
+            placed.alpha,
+          )
+          if (placed.shifted) {
+            this.paintShiftMark(
+              placed.x,
+              placed.y,
+              placed.w,
+              placed.h,
+              placed.octaves,
+              placed.alpha,
+              true,
+            )
+          }
+        },
+        onFinger: (finger) => {
+          this.paintFinger(
+            finger.note,
+            finger.x,
+            finger.y,
+            finger.w,
+            finger.h,
+            finger.alpha,
+            finger.hand,
+            finger.edge,
+            prefs.noteHandShapes,
+          )
+        },
+      })
+    }
+  }
+
+  // Finger numbers sit inside the note, pinned to its lower edge, at least 12px.
   private paintFinger(
-    drawPitch: number,
     note: MidiNote,
     x: number,
     y: number,
     w: number,
     h: number,
-    hScale: number,
     alpha: number,
+    hand: 'rh' | 'lh',
+    edge: number,
+    hands: boolean,
   ): void {
     const guide = this.fingerGuide
-    if (!guide || h < 16 * hScale || alpha < 0.2) return
+    if (!guide || h < 8 || alpha < 0.2) return
     const found = fingerFor(
       guide,
       barAt(note.time, guide.secondsPerBar),
@@ -359,7 +434,25 @@ export class NoteRenderer {
       null,
     )
     if (!found) return
-    const size = Math.max(8, 11 * hScale)
+    const size = Math.max(14, badgeDiameter(w))
+    const cx = x + w / 2
+    // Pinned to the bottom edge. A short note lets the badge rise rather than
+    // slip under the keyboard.
+    const cy = y + h - size / 2 - 2
+    if (hands) {
+      if (hand === 'lh') {
+        this.badgeGraphics.roundRect(cx - size / 2, cy - size / 2, size, size, 3.5)
+      } else {
+        this.badgeGraphics.circle(cx, cy, size / 2)
+      }
+      this.badgeGraphics.fill({ color: 0xfff8ee, alpha })
+      if (hand === 'lh') {
+        this.badgeGraphics.roundRect(cx - size / 2, cy - size / 2, size, size, 3.5)
+      } else {
+        this.badgeGraphics.circle(cx, cy, size / 2)
+      }
+      this.badgeGraphics.stroke({ color: edge, width: 1, alpha })
+    }
     let label = this.fingerLabels[this.fingerUsed]
     if (!label) {
       label = new Text({
@@ -370,18 +463,18 @@ export class NoteRenderer {
           fill: 0xfff8ee,
         },
       })
-      label.anchor.set(0.5, 1)
+      label.anchor.set(0.5, 0.5)
       this.container.addChild(label)
       this.fingerLabels.push(label)
     }
     label.visible = true
     label.text = String(found.finger)
-    label.style.fontSize = size
+    label.style.fontSize = 12
+    label.style.fill = hands ? edge : 0xfff8ee
     label.alpha = alpha
-    label.x = x + w / 2
-    label.y = y + h - 6 * hScale
+    label.x = cx
+    label.y = cy
     this.fingerUsed++
-    void drawPitch
   }
 
   private paintShiftMark(
@@ -391,10 +484,13 @@ export class NoteRenderer {
     h: number,
     octaves: number,
     alpha: number,
+    chevronOnly: boolean,
   ): void {
     const markAlpha = Math.min(1, alpha + 0.25)
-    this.foldGraphics.roundRect(x + 0.5, y + 0.5, Math.max(1, w - 1), Math.max(1, h - 1), 8)
-    this.foldGraphics.stroke({ color: 0x7a5a44, width: 1.5, alpha: markAlpha * 0.9 })
+    if (!chevronOnly) {
+      this.foldGraphics.roundRect(x + 0.5, y + 0.5, Math.max(1, w - 1), Math.max(1, h - 1), 8)
+      this.foldGraphics.stroke({ color: 0x7a5a44, width: 1.5, alpha: markAlpha * 0.9 })
+    }
     if (h < 8 || w < 4) return
     const cx = x + w / 2
     const up = octaves > 0
@@ -409,7 +505,12 @@ export class NoteRenderer {
   // stay on top of either note body.
   private raiseFoldMarks(): void {
     const index = this.container.children.indexOf(this.labels.container)
-    if (index >= 0) this.container.addChildAt(this.foldGraphics, index)
+    if (index >= 0) {
+      this.container.addChildAt(this.landing, index)
+      this.container.addChildAt(this.badgeGraphics, index)
+      this.container.addChildAt(this.foldGraphics, index)
+    }
+    for (const label of this.fingerLabels) this.container.addChild(label)
   }
 
   // Out-of-range notes stay visible so the song doesn't appear to skip, but
@@ -477,6 +578,8 @@ export class NoteRenderer {
     })
     this.glowGraphics.clear()
     this.foldGraphics.clear()
+    this.landing.clear()
+    this.badgeGraphics.clear()
     this.glowContainer.visible = false
     this.labels.clear()
     this.material?.clear()

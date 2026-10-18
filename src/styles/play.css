@@ -907,6 +907,198 @@ html[data-scene] .kbd-style-name {
   white-space: nowrap;
 }
 
+html[data-scene] .note-shape-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+html[data-scene] .note-shape-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+html[data-scene] .note-shape-head .gh-overline {
+  margin: 0;
+  border-top: 0;
+  padding-top: 0;
+}
+
+html[data-scene] .note-shape-current {
+  color: var(--accent);
+  font: var(--type-label);
+}
+
+html[data-scene] .note-shape-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+html[data-scene] .note-shape-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-2);
+  font: var(--type-label);
+  text-align: center;
+  cursor: pointer;
+}
+
+html[data-scene] .note-shape-card--on {
+  border-color: var(--accent);
+  color: var(--text-1);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+html[data-scene] .note-shape-swatch {
+  position: relative;
+  height: 36px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--surface-sunken);
+}
+
+html[data-scene] .note-shape-swatch i {
+  position: absolute;
+  display: block;
+  bottom: 5px;
+}
+
+html[data-scene] .note-shape-swatch[data-shape="classic"] i:nth-child(1),
+html[data-scene] .note-shape-swatch[data-shape="glass"] i:nth-child(1),
+html[data-scene] .note-shape-swatch[data-shape="felt"] i:nth-child(1),
+html[data-scene] .note-shape-swatch[data-shape="beam"] i:nth-child(1),
+html[data-scene] .note-shape-swatch[data-shape="outline"] i:nth-child(1),
+html[data-scene] .note-shape-swatch[data-shape="petal"] i:nth-child(1) {
+  left: 16%;
+  width: 26%;
+  top: 7px;
+  background: var(--note-rh);
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px var(--note-rh-edge);
+}
+
+html[data-scene] .note-shape-swatch[data-shape="classic"] i:nth-child(2),
+html[data-scene] .note-shape-swatch[data-shape="glass"] i:nth-child(2),
+html[data-scene] .note-shape-swatch[data-shape="felt"] i:nth-child(2),
+html[data-scene] .note-shape-swatch[data-shape="beam"] i:nth-child(2),
+html[data-scene] .note-shape-swatch[data-shape="outline"] i:nth-child(2),
+html[data-scene] .note-shape-swatch[data-shape="petal"] i:nth-child(2) {
+  left: 54%;
+  width: 26%;
+  top: 14px;
+  background: var(--note-lh);
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px var(--note-lh-edge);
+}
+
+html[data-scene] .note-shape-swatch[data-shape="glass"] i {
+  opacity: 0.72;
+  border-radius: 999px;
+  box-shadow:
+    inset 0 0 0 1px var(--note-rh-edge),
+    inset 0 6px 0 color-mix(in srgb, white 35%, transparent);
+}
+
+html[data-scene] .note-shape-swatch[data-shape="felt"] i {
+  border-radius: 3px;
+  box-shadow: inset 0 3px 0 var(--note-rh-edge);
+}
+
+html[data-scene] .note-shape-swatch[data-shape="felt"] i:nth-child(2) {
+  box-shadow: inset 0 3px 0 var(--note-lh-edge);
+}
+
+html[data-scene] .note-shape-swatch[data-shape="beam"] i {
+  left: 22%;
+  width: 8%;
+  border-radius: 999px;
+  box-shadow: none;
+}
+
+html[data-scene] .note-shape-swatch[data-shape="beam"] i:nth-child(2) {
+  left: 62%;
+  width: 8%;
+}
+
+html[data-scene] .note-shape-swatch[data-shape="outline"] i {
+  background: transparent;
+}
+
+html[data-scene] .note-shape-swatch[data-shape="petal"] i {
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+}
+
+html[data-scene] .note-shape-swatch[data-shape="petal"] i:nth-child(2) {
+  border-radius: 50% 50% 40% 40%;
+}
+
+html[data-scene] .note-shape-name {
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-scene] .note-shape-check {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  width: 14px;
+  height: 14px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+html[data-scene] .note-shape-desc {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+html[data-scene] .note-shape-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+}
+
+html[data-scene] .note-shape-toggle-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+html[data-scene] .note-shape-toggle-name {
+  color: var(--text-1);
+  font: var(--type-label);
+}
+
+html[data-scene] .note-shape-toggle-sub {
+  color: var(--text-3);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
 html[data-scene] .plant-shadow-picker {
   display: flex;
   flex-direction: column;

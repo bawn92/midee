@@ -17,6 +17,7 @@ import {
   subscribePlantShadow,
 } from '../renderer/plantShadows'
 import { Segmented, Slider, Toggle } from './kit/kit'
+import { NoteStylePicker } from './NoteStylePicker'
 import { paintPrefs, setPaintPrefs, subscribePaint } from './paint'
 import { RangeStylePicker } from './RangeStylePicker'
 
@@ -165,6 +166,8 @@ export function AppearanceStudio(props: {
       <KeyboardStylePicker />
 
       <RangeStylePicker />
+
+      <NoteStylePicker />
 
       <PlantShadowPicker />
 

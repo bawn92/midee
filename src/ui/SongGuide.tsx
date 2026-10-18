@@ -11,6 +11,7 @@ import type { FingerMark, GuideSnapshot, SongGuide } from '../songGuide/types'
 import type { AppStore } from '../store/state'
 import { watch } from '../store/watch'
 import { Chip, Dropdown } from './kit/kit'
+import { paintPrefs, subscribePaint } from './paint'
 
 const CLEAN_GOAL = 3
 const DEFAULT_TEMPO = 120
@@ -394,6 +395,10 @@ export class SongGuideController {
         this.fingerBucket = Number.NaN
         this.onTick()
       }),
+      subscribePaint(() => {
+        this.fingerKey = ''
+        this.renderBadges()
+      }),
     )
     this.syncSong()
   }
@@ -567,10 +572,17 @@ export class SongGuideController {
     return this.cachedNotes
   }
 
+  private fingersOnNotes(): boolean {
+    const scene = document.documentElement.dataset.scene
+    const sceneNotes = scene === 'golden-hour' || scene === 'rainy-study'
+    return sceneNotes && paintPrefs().noteFingerNumbers
+  }
+
   private renderBadges(): void {
     const guide = this.guide
-    const marks = guide && this.visible() ? this.marksNow(guide) : []
-    const key = marks.map((m) => `${m.drawPitch}:${m.finger}`).join('|')
+    const onNotes = this.fingersOnNotes()
+    const marks = guide && this.visible() && !onNotes ? this.marksNow(guide) : []
+    const key = onNotes ? 'on-notes' : marks.map((m) => `${m.drawPitch}:${m.finger}`).join('|')
     if (key === this.fingerKey) return
     this.fingerKey = key
     this.badges.replaceChildren()

@@ -1,6 +1,7 @@
 import { Container, type Renderer } from 'pixi.js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MidiTrack } from '../core/midi/types'
+import { setPaintPrefs } from '../ui/paint'
 import { setGlowMode } from './bakedGlow'
 import { createNoteMaterial } from './createNoteMaterial'
 import { NoteRenderer } from './NoteRenderer'
@@ -32,6 +33,9 @@ vi.mock('pixi.js', () => {
     }
     rect = vi.fn(() => this)
     roundRect = vi.fn(() => this)
+    circle = vi.fn(() => this)
+    ellipse = vi.fn(() => this)
+    poly = vi.fn(() => this)
     fill() {
       return this
     }
@@ -89,6 +93,7 @@ const track: MidiTrack = {
 }
 
 beforeEach(() => {
+  setPaintPrefs({ noteStyle: 'classic', noteLook: 'soft', colorBy: 'hand' })
   vi.mocked(createNoteMaterial).mockImplementation(() => ({
     container: new Container(),
     setViewport: vi.fn(),
@@ -187,6 +192,35 @@ describe('notes outside the keyboard range', () => {
     expect(widths.some((w) => w > 40)).toBe(true)
     expect(xs.some((x) => x < 20)).toBe(true)
     expect(xs.some((x) => x > 760)).toBe(true)
+    renderer.destroy()
+  })
+})
+
+describe('continuous classic bodies', () => {
+  it('draws abutting same-pitch notes as one tall bar', () => {
+    const viewport = new Viewport({
+      canvasWidth: 800,
+      canvasHeight: 500,
+      keyboardHeight: 100,
+      pixelsPerSecond: 100,
+    })
+    const spanned: MidiTrack = {
+      ...track,
+      notes: [
+        { pitch: 60, time: 2, duration: 0.5, velocity: 1 },
+        { pitch: 60, time: 2.501, duration: 0.5, velocity: 1 },
+      ],
+    }
+    const renderer = new NoteRenderer(goldenHourTheme, pixiRenderer)
+    renderer.setTracks([spanned])
+    renderer.draw([spanned], 1, viewport, new Set([track.id]), null)
+    const g = (
+      renderer.container as unknown as {
+        children: Array<{ label: string; roundRect: ReturnType<typeof vi.fn> }>
+      }
+    ).children.find((c) => c.label === 'notes-held-note')!
+    const heights = g.roundRect.mock.calls.map((call) => call[3] as number)
+    expect(Math.max(...heights)).toBeGreaterThan(90)
     renderer.destroy()
   })
 })

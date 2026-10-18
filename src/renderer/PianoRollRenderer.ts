@@ -430,6 +430,7 @@ export class PianoRollRenderer {
     this.practiceFocusTrackIds = null
     this.noteRenderer.setTracks(midi.tracks)
     this.noteRenderer.setFingerGuide(guideForMidi(midi))
+    this.noteRenderer.setTempo(midi.bpm)
     this.particles.clear()
     this.prevActive.clear()
     this.currActive.clear()

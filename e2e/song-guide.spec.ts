@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test'
 
 // The bundled untitled piece opens a song guide: section, bar, chord loop,
-// a clickable timeline, and finger numbers on the keys.
+// and a clickable timeline. Finger numbers live on the notes, so the old
+// key-top badge row stays empty.
 
 test.use({ viewport: { width: 1280, height: 900 } })
 
@@ -26,8 +27,9 @@ test('song guide follows the untitled piece and can loop a section', async ({ pa
 
   const play = page.locator('#hud-play')
   await expect(play).toBeVisible()
-  await play.hover()
-  if ((await play.getAttribute('data-playing')) === 'true') await play.click()
+  await play.evaluate((el) => {
+    if (el.getAttribute('data-playing') === 'true') (el as HTMLButtonElement).click()
+  })
 
   const scrubber = page.locator('#hud-scrubber')
   await scrubber.evaluate((el) => {
@@ -43,7 +45,8 @@ test('song guide follows the untitled piece and can loop a section', async ({ pa
   await expect(guide.locator('.song-guide-chip--on')).toHaveText('E')
   await expect(guide.locator('.song-guide-step')).toContainText('1')
 
-  await expect.poll(async () => page.locator('.song-guide-badge').count()).toBeGreaterThan(0)
+  await expect(page.locator('html')).toHaveAttribute('data-note-fingers', 'on')
+  await expect(page.locator('.song-guide-badge')).toHaveCount(0)
   await page.screenshot({ path: '/opt/cursor/artifacts/screenshots/song-guide-melody.png' })
 
   await guide.locator('.song-guide-more > summary').click()
@@ -60,8 +63,9 @@ test('song guide follows the untitled piece and can loop a section', async ({ pa
   await clean.click()
   await clean.click()
   await expect(guide.locator('.song-guide-ready')).toBeVisible()
-  await play.hover()
-  if ((await play.getAttribute('data-playing')) === 'true') await play.click()
+  await play.evaluate((el) => {
+    if (el.getAttribute('data-playing') === 'true') (el as HTMLButtonElement).click()
+  })
   await page.screenshot({ path: '/opt/cursor/artifacts/screenshots/song-guide-climax.png' })
 
   const guideBox = await guide.locator('.song-guide-card').boundingBox()
