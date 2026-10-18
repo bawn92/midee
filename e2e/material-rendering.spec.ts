@@ -39,7 +39,7 @@ async function openAppearance(page: Page): Promise<void> {
 }
 
 async function closeAppearance(page: Page): Promise<void> {
-  await page.locator('#ts-customize').click()
+  await page.locator('#ts-appearance-panel .panel-close-btn').click()
   await expect(page.locator('.ts-customize-menu')).not.toHaveClass(/ts-popover--open/)
 }
 

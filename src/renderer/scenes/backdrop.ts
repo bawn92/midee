@@ -15,25 +15,53 @@ export function paintSceneBackdrop(
   const ctx = canvas.getContext('2d')
   if (!ctx) return
 
-  const wash = ctx.createLinearGradient(0, 0, w * 0.15, h)
-  wash.addColorStop(0, scene.background.top)
-  wash.addColorStop(0.42, scene.background.mid)
-  wash.addColorStop(1, scene.background.bottom)
-  ctx.fillStyle = wash
-  ctx.fillRect(0, 0, w, h)
+  if (scene.token === 'golden-hour') {
+    // 212deg, matching the Screens page: warm at the top-right, deeper at the bottom-left.
+    const angle = (212 * Math.PI) / 180
+    const dx = Math.sin(angle)
+    const dy = -Math.cos(angle)
+    const len = Math.abs(w * dx) + Math.abs(h * dy)
+    const wash = ctx.createLinearGradient(
+      w / 2 - (dx * len) / 2,
+      h / 2 - (dy * len) / 2,
+      w / 2 + (dx * len) / 2,
+      h / 2 + (dy * len) / 2,
+    )
+    wash.addColorStop(0, scene.background.top)
+    wash.addColorStop(0.167, scene.background.top)
+    wash.addColorStop(0.833, scene.background.bottom)
+    wash.addColorStop(1, scene.background.bottom)
+    ctx.fillStyle = wash
+    ctx.fillRect(0, 0, w, h)
+  } else {
+    const wash = ctx.createLinearGradient(0, 0, w * 0.15, h)
+    wash.addColorStop(0, scene.background.top)
+    wash.addColorStop(0.42, scene.background.mid)
+    wash.addColorStop(1, scene.background.bottom)
+    ctx.fillStyle = wash
+    ctx.fillRect(0, 0, w, h)
 
-  const bloom = ctx.createRadialGradient(w * 0.46, h * 0.4, 24, w * 0.5, h * 0.46, w * 0.48)
-  bloom.addColorStop(0, 'rgba(255, 236, 196, 0.62)')
-  bloom.addColorStop(0.42, 'rgba(255, 210, 150, 0.22)')
-  bloom.addColorStop(1, 'rgba(255, 210, 150, 0)')
-  ctx.fillStyle = bloom
-  ctx.fillRect(0, 0, w, h)
+    const bloom = ctx.createRadialGradient(w * 0.46, h * 0.4, 24, w * 0.5, h * 0.46, w * 0.48)
+    bloom.addColorStop(0, 'rgba(255, 236, 196, 0.62)')
+    bloom.addColorStop(0.42, 'rgba(255, 210, 150, 0.22)')
+    bloom.addColorStop(1, 'rgba(255, 210, 150, 0)')
+    ctx.fillStyle = bloom
+    ctx.fillRect(0, 0, w, h)
+  }
 
   if (scene.background.decor === 'window-leaf') paintLeafShadow(ctx, w, h)
 
-  const vignette = ctx.createRadialGradient(w * 0.5, h * 0.42, w * 0.2, w * 0.5, h * 0.45, w * 0.72)
+  const vignette = ctx.createRadialGradient(
+    w * 0.5,
+    h * 0.42,
+    w * 0.28,
+    w * 0.5,
+    h * 0.45,
+    w * 0.78,
+  )
   vignette.addColorStop(0, 'rgba(255, 244, 226, 0)')
-  vignette.addColorStop(1, 'rgba(122, 72, 40, 0.12)')
+  const edge = scene.token === 'golden-hour' ? 'rgba(120, 70, 30, 0.1)' : 'rgba(48, 62, 70, 0.12)'
+  vignette.addColorStop(1, edge)
   ctx.fillStyle = vignette
   ctx.fillRect(0, 0, w, h)
 }

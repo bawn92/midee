@@ -340,35 +340,38 @@ function KeyboardRangeView(props: { store: AppStore }) {
           aria-label={t('kbdRange.title')}
         >
           <div class="kbd-range-face">
-            <div>
-              <span class="gh-caption">{t('kbdRange.start')}</span>
-              <Stepper
-                value={lowName()}
-                decLabel={t('kbdRange.semitoneDown')}
-                incLabel={t('kbdRange.semitoneUp')}
-                decDisabled={!canShift(range().start, range().size, -1)}
-                incDisabled={!canShift(range().start, range().size, 1)}
-                onDec={() => shiftKeyboardRangeBy(-1)}
-                onInc={() => shiftKeyboardRangeBy(1)}
-              />
-            </div>
-            <div>
-              <span class="gh-caption">{t('kbdRange.end')}</span>
-              <Stepper
-                value={highName()}
-                decLabel={t('kbdRange.highDown')}
-                incLabel={t('kbdRange.highUp')}
-                decDisabled={range().size <= KEYBOARD_SIZE_MIN}
-                incDisabled={range().size >= KEYBOARD_SIZE_MAX}
-                onDec={() => {
-                  const next = resizeRangeFromEdge(range(), 'end', rangeEnd(range()) - 1)
-                  setKeyboardRange({ start: next.start, size: next.size })
-                }}
-                onInc={() => {
-                  const next = resizeRangeFromEdge(range(), 'end', rangeEnd(range()) + 1)
-                  setKeyboardRange({ start: next.start, size: next.size })
-                }}
-              />
+            <div class="kbd-range-ends">
+              <div>
+                <span class="gh-caption">{t('kbdRange.start')}</span>
+                <Stepper
+                  value={lowName()}
+                  decLabel={t('kbdRange.semitoneDown')}
+                  incLabel={t('kbdRange.semitoneUp')}
+                  decDisabled={!canShift(range().start, range().size, -1)}
+                  incDisabled={!canShift(range().start, range().size, 1)}
+                  onDec={() => shiftKeyboardRangeBy(-1)}
+                  onInc={() => shiftKeyboardRangeBy(1)}
+                />
+              </div>
+              <span class="kbd-range-rail" aria-hidden="true" />
+              <div>
+                <span class="gh-caption">{t('kbdRange.end')}</span>
+                <Stepper
+                  value={highName()}
+                  decLabel={t('kbdRange.highDown')}
+                  incLabel={t('kbdRange.highUp')}
+                  decDisabled={range().size <= KEYBOARD_SIZE_MIN}
+                  incDisabled={range().size >= KEYBOARD_SIZE_MAX}
+                  onDec={() => {
+                    const next = resizeRangeFromEdge(range(), 'end', rangeEnd(range()) - 1)
+                    setKeyboardRange({ start: next.start, size: next.size })
+                  }}
+                  onInc={() => {
+                    const next = resizeRangeFromEdge(range(), 'end', rangeEnd(range()) + 1)
+                    setKeyboardRange({ start: next.start, size: next.size })
+                  }}
+                />
+              </div>
             </div>
             <div class="kbd-range-picker-wrap">
               <p class="kbd-range-picker-label" id="kbd-range-picker-label">

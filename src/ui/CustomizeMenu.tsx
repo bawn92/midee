@@ -1,4 +1,4 @@
-import { createSignal, For } from 'solid-js'
+import { createSignal, For, Show } from 'solid-js'
 import { render } from 'solid-js/web'
 import { LOCALES, type LocaleCode, locale, t } from '../i18n'
 import type { KeyLights } from '../midi/KeyLights'
@@ -125,6 +125,7 @@ function MenuView(props: MenuProps) {
       }}
     >
       <div class="panel-header">
+        <span class="gh-appearance-mark" aria-hidden="true" innerHTML={icons.palette(22)} />
         <span class="panel-label" id="ts-appearance-title">
           {t('customize.title')}
         </span>
@@ -166,7 +167,7 @@ function MenuView(props: MenuProps) {
                       aria-hidden="true"
                       style={{ background: scene.preview }}
                     />
-                    <span class="customize-scene-name">{scene.name}</span>
+                    <span class="customize-scene-name">{scene.theme.name}</span>
                   </button>
                 )
               }}
@@ -439,32 +440,47 @@ export class CustomizeMenu {
     this.menuWrapper = menuWrapper
     this.disposeMenu = render(
       () => (
-        <MenuView
-          keyLights={keyLights}
-          themes={themes}
-          particles={particles}
-          themeIndex={themeIdx}
-          particleIndex={particleIdx}
-          chordOn={chordOn}
-          noteLabelsOn={noteLabelsOn}
-          isOpen={isOpen}
-          isSheet={isSheet}
-          onSelectTheme={(i) => callbacks.onSelectTheme(i)}
-          onSelectParticle={(i) => callbacks.onSelectParticle(i)}
-          onToggleChord={() => callbacks.onToggleChord()}
-          onToggleNoteLabels={() => callbacks.onToggleNoteLabels()}
-          onSelectLocale={(code) => callbacks.onSelectLocale(code)}
-          volume={callbacks.volume}
-          onVolume={callbacks.onVolume}
-          rollSpeed={callbacks.rollSpeed}
-          onRollSpeed={callbacks.onRollSpeed}
-          metroOn={callbacks.metroOn}
-          onMetro={callbacks.onMetro}
-          onClose={() => this.close(true)}
-          registerEl={(el) => {
-            this.menu = el
-          }}
-        />
+        <>
+          <Show when={isOpen()}>
+            <button
+              class="gh-appearance-scrim"
+              type="button"
+              tabindex="-1"
+              aria-label={t('midiPicker.close')}
+              onPointerDown={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+                this.close()
+              }}
+            />
+          </Show>
+          <MenuView
+            keyLights={keyLights}
+            themes={themes}
+            particles={particles}
+            themeIndex={themeIdx}
+            particleIndex={particleIdx}
+            chordOn={chordOn}
+            noteLabelsOn={noteLabelsOn}
+            isOpen={isOpen}
+            isSheet={isSheet}
+            onSelectTheme={(i) => callbacks.onSelectTheme(i)}
+            onSelectParticle={(i) => callbacks.onSelectParticle(i)}
+            onToggleChord={() => callbacks.onToggleChord()}
+            onToggleNoteLabels={() => callbacks.onToggleNoteLabels()}
+            onSelectLocale={(code) => callbacks.onSelectLocale(code)}
+            volume={callbacks.volume}
+            onVolume={callbacks.onVolume}
+            rollSpeed={callbacks.rollSpeed}
+            onRollSpeed={callbacks.onRollSpeed}
+            metroOn={callbacks.metroOn}
+            onMetro={callbacks.onMetro}
+            onClose={() => this.close(true)}
+            registerEl={(el) => {
+              this.menu = el
+            }}
+          />
+        </>
       ),
       menuWrapper,
     )

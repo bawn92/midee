@@ -39,7 +39,7 @@ export const goldenHourScene: Scene = {
     top: '#f8e3c8',
     mid: '#f5d4ae',
     bottom: '#f2c9a0',
-    decor: 'window-leaf',
+    decor: 'none',
   },
   keyboard: {
     material: 'upright-walnut',

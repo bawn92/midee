@@ -76,7 +76,7 @@ test('Piano M lights the physical key for the sounding note', async ({ page }) =
     path: '/opt/cursor/artifacts/screenshots/piano_m_key_lights.png',
     fullPage: false,
   })
-  await page.locator('#ts-customize').click()
+  await page.locator('#ts-appearance-panel .panel-close-btn').click()
 
   await page.locator('#hud-play').click()
   const sent = () =>

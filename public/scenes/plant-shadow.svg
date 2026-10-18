@@ -1,0 +1,24 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="520" height="530" viewBox="0 0 520 530" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Plant shadow (12% multiply)" style="mix-blend-mode:multiply" opacity="0.12" filter="url(#filter0_f_0_1137)">
+<g clip-path="url(#clip0_0_1137)">
+<ellipse id="Ellipse" cx="227.763" cy="350.311" rx="110" ry="35" transform="rotate(30 227.763 350.311)" fill="#5E3B24"/>
+<ellipse id="Ellipse_2" cx="203.309" cy="194.927" rx="100" ry="30" transform="rotate(-25 203.309 194.927)" fill="#5E3B24"/>
+<ellipse id="Ellipse_3" cx="234.47" cy="266.149" rx="90" ry="28" transform="rotate(70 234.47 266.149)" fill="#5E3B24"/>
+<ellipse id="Ellipse_4" cx="130.017" cy="243.388" rx="85" ry="26" transform="rotate(-60 130.017 243.388)" fill="#5E3B24"/>
+<ellipse id="Ellipse_5" cx="333.521" cy="346.056" rx="95" ry="29" transform="rotate(10 333.521 346.056)" fill="#5E3B24"/>
+<ellipse id="Ellipse_6" cx="185.59" cy="199.237" rx="75" ry="23" transform="rotate(50 185.59 199.237)" fill="#5E3B24"/>
+<ellipse id="Ellipse_7" cx="117.353" cy="162.728" rx="80" ry="25" transform="rotate(-40 117.353 162.728)" fill="#5E3B24"/>
+<rect id="Rectangle" x="250" y="200" width="6" height="420" transform="rotate(12 250 200)" fill="#5E3B24"/>
+</g>
+</g>
+<defs>
+<filter id="filter0_f_0_1137" x="-10" y="-10" width="540" height="540" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="5" result="effect1_foregroundBlur_0_1137"/>
+</filter>
+<clipPath id="clip0_0_1137">
+<rect width="520" height="520" fill="white"/>
+</clipPath>
+</defs>
+</svg>

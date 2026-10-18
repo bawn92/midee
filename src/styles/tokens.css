@@ -4,17 +4,23 @@
 :root {
   --font-display: "Fraunces Variable", Georgia, "Times New Roman", serif;
   --font-ui: "Nunito Sans", system-ui, sans-serif;
-  --font-display-axes: "SOFT" 100, "WONK" 0, "opsz" 48, "wght" 500;
+  --font-serif: var(--font-display);
+  --font-sans: var(--font-ui);
+  /* Screens set Fraunces Regular at SOFT 0, WONK 1. Weight stays on the
+     type shorthand so Display can be 500 while titles stay 400. */
+  --font-display-axes: "SOFT" 0, "WONK" 1, "opsz" 48;
 
   --type-display: 500 32px / 40px var(--font-display);
-  --type-title: 500 22px / 28px var(--font-display);
+  --type-title: 400 22px / 28px var(--font-display);
   --type-heading: 700 16px / 22px var(--font-ui);
   --type-body: 500 15px / 22px var(--font-ui);
   --type-label: 600 13px / 18px var(--font-ui);
   --type-caption: 600 12px / 16px var(--font-ui);
   --type-number-lg: 600 28px / 32px var(--font-ui);
+  --type-number: 600 15px / 22px var(--font-ui);
   --type-finger: 800 11px / 11px var(--font-ui);
-  --type-transport: 500 17px / 22px var(--font-display);
+  --type-transport: 400 17px / 22px var(--font-display);
+  --type-transport-title: var(--type-transport);
 
   --space-1: 4px;
   --space-2: 8px;
@@ -26,6 +32,9 @@
   --space-10: 40px;
   --space-12: 48px;
   --space-16: 64px;
+  --card-padding: 20px;
+  --gutter: 24px;
+  --gutter-phone: 16px;
 
   --radius-xs: 6px;
   --radius-sm: 10px;
@@ -39,6 +48,7 @@
   --elev-2: 0 4px 12px rgba(94, 59, 36, 0.1), 0 12px 32px rgba(94, 59, 36, 0.08);
   --elev-3: 0 12px 28px rgba(94, 59, 36, 0.14), 0 28px 64px rgba(94, 59, 36, 0.12);
   --inset-1: inset 0 1px 2px rgba(94, 59, 36, 0.1);
+  --note-shadow: 0 2px 6px rgba(94, 59, 36, 0.12);
 
   --blur-card: 18px;
   --blur-overlay: 8px;
@@ -88,6 +98,25 @@
   --key-ebony: #3e2a1f;
   --key-ebony-side: #2e1f17;
   --felt: #8e3b32;
+  --scrim: rgba(74, 47, 30, 0.24);
+  --surface-sunken-hover: rgba(122, 78, 44, 0.1);
+  --surface-active: rgba(122, 78, 44, 0.12);
+  --key-gap: rgba(94, 59, 36, 0.25);
+  --key-out-of-range: rgba(94, 59, 36, 0.1);
+  --roll-lane-c: rgba(122, 78, 44, 0.08);
+  --roll-lane: rgba(122, 78, 44, 0.04);
+  --range-glass: rgba(235, 201, 154, 0.32);
+  --range-glass-drag: rgba(235, 201, 154, 0.4);
+  --range-border: rgba(185, 119, 58, 0.7);
+  --segment-lh-thumb: rgba(217, 144, 143, 0.35);
+  --segment-rh-thumb: rgba(230, 169, 79, 0.4);
+  --icon-toggled-bg: rgba(235, 201, 154, 0.5);
+  --key-pressed-rh: rgba(230, 169, 79, 0.55);
+  --key-pressed-lh: rgba(217, 144, 143, 0.55);
+  --key-wrong: rgba(180, 87, 75, 0.45);
+  --tooltip-bg: rgba(74, 47, 30, 0.92);
+  --hit-line: rgba(185, 119, 58, 0.7);
+  --wood-highlight: rgba(255, 230, 200, 0.25);
 
   color-scheme: light;
 }

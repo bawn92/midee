@@ -15,7 +15,7 @@ html[data-scene] {
 
 html[data-scene] body,
 html[data-scene] #app {
-  background: linear-gradient(to bottom left, var(--bg-top), var(--bg-bottom));
+  background: linear-gradient(212deg, var(--bg-top) 16.7%, var(--bg-bottom) 83.3%);
 }
 
 #scene-shadow {
@@ -23,9 +23,10 @@ html[data-scene] #app {
   inset: 0;
   pointer-events: none;
   z-index: 1;
-  background: var(--scene-shadow-img) top right / min(78%, 820px) auto no-repeat;
+  /* The SVG is already 12% of the leaf shape. Multiply lets it sit on the wall. */
+  background: var(--scene-shadow-img) top right / 520px 530px no-repeat;
   mix-blend-mode: multiply;
-  opacity: 0.55;
+  opacity: 1;
 }
 
 html[data-scene] #ui-overlay {
@@ -172,7 +173,7 @@ html[data-scene] #hud .hud-metro--on .hud-metro-toggle,
 html[data-scene] #hud #hud-loop[data-loop-state="playing"],
 html[data-scene] #hud #hud-loop[data-loop-state="overdubbing"] {
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent-soft) 50%, transparent);
+  background: var(--icon-toggled-bg);
 }
 
 html[data-scene] #hud .hud-hand-track {
@@ -198,11 +199,11 @@ html[data-scene] #hud .hud-hand.is-active {
 }
 
 html[data-scene] #hud .hud-hands[data-hand="left"] .hud-hand.is-active {
-  background: color-mix(in srgb, var(--note-lh) 35%, var(--surface-solid));
+  background: var(--segment-lh-thumb);
 }
 
 html[data-scene] #hud .hud-hands[data-hand="right"] .hud-hand.is-active {
-  background: color-mix(in srgb, var(--note-rh) 40%, var(--surface-solid));
+  background: var(--segment-rh-thumb);
 }
 
 html[data-scene] #hud .scrubber-wrap {
@@ -221,7 +222,7 @@ html[data-scene] #hud .scrubber {
 }
 
 html[data-scene] .song-guide {
-  top: calc(152px + env(safe-area-inset-top));
+  top: calc(104px + env(safe-area-inset-top));
   left: calc(24px + env(safe-area-inset-left));
   width: min(280px, calc(50vw - 36px));
   color: var(--text-1);
@@ -229,7 +230,7 @@ html[data-scene] .song-guide {
 }
 
 html[data-scene] .song-guide--side {
-  top: calc(152px + env(safe-area-inset-top));
+  top: calc(104px + env(safe-area-inset-top));
   left: calc(24px + env(safe-area-inset-left));
   width: min(280px, calc(50vw - 36px));
 }
@@ -247,8 +248,8 @@ html[data-scene] .kbd-range-bar {
 }
 
 html[data-scene] .song-guide-card {
-  padding: var(--space-5);
-  max-height: min(460px, calc(100svh - 140px - var(--keyboard-h, 180px)));
+  padding: 12px 12px 20px 20px;
+  max-height: min(520px, calc(100svh - 104px - var(--keyboard-h, 180px) - 24px));
   overflow: auto;
 }
 
@@ -308,10 +309,51 @@ html[data-scene] .song-guide-fingers {
    stays in #lower-left, above the keys. */
 @media (min-width: 1100px) {
   html[data-scene] #hud.float-hud {
-    top: calc(72px + env(safe-area-inset-top));
+    top: calc(16px + env(safe-area-inset-top));
     bottom: auto;
     transform: translateX(calc(-50% + var(--hud-dx, 0px)));
-    max-width: min(760px, calc(100vw - 600px));
+    width: min(702px, calc(100vw - 620px));
+    max-width: min(702px, calc(100vw - 620px));
+  }
+
+  html[data-scene] #top-strip {
+    top: calc(16px + env(safe-area-inset-top));
+    left: calc(16px + env(safe-area-inset-left));
+    right: calc(16px + env(safe-area-inset-right));
+    height: 40px;
+    padding: 0;
+    gap: 6px;
+  }
+
+  html[data-scene] .ts-mode-label,
+  html[data-scene] .ts-home-name,
+  html[data-scene] #top-strip .ts-pill > span + span,
+  html[data-scene] .ts-customize-label,
+  html[data-scene] .ts-record-btn span + span,
+  html[data-scene] .ts-midi-label {
+    display: none;
+  }
+
+  html[data-scene] #ts-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    flex: none;
+  }
+
+  html[data-scene] .ts-end {
+    gap: 4px;
+  }
+
+  html[data-scene] .ts-pill,
+  html[data-scene] .ts-home,
+  html[data-scene] #ts-customize,
+  html[data-scene] .ts-record-btn {
+    height: 36px;
+    min-width: 36px;
+    padding: 0 8px;
   }
 
   html[data-scene]
@@ -320,7 +362,7 @@ html[data-scene] .song-guide-fingers {
   html[data-scene] #lower-left .kbd-range-mount,
   html[data-scene] #lower-left:has(.kbd-range--beside) .kbd-range-mount {
     position: fixed;
-    top: calc(152px + env(safe-area-inset-top));
+    top: calc(104px + env(safe-area-inset-top));
     right: calc(24px + env(safe-area-inset-right));
     left: auto;
     bottom: auto;
@@ -333,6 +375,8 @@ html[data-scene] .song-guide-fingers {
   html[data-scene] #lower-left:has(.kbd-range--beside) #kbd-range {
     position: relative;
     width: 100%;
+    gap: 0;
+    align-items: stretch;
   }
 
   html[data-scene] .kbd-range-panel,
@@ -343,17 +387,60 @@ html[data-scene] .song-guide-fingers {
     right: auto;
     bottom: auto;
     width: 100%;
-    max-height: min(420px, calc(100svh - 176px - var(--keyboard-h, 180px) - 96px));
+    max-height: min(520px, calc(100svh - 120px - var(--keyboard-h, 180px) - 88px));
     overflow: auto;
-    margin-top: 8px;
+    margin-top: 0;
+    border-top: 0;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    padding: 4px 12px 20px 20px;
+  }
+
+  html[data-scene] .kbd-range-bar {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-bottom: 0;
+    box-shadow: none;
+    padding: 12px 8px 4px 16px;
+  }
+
+  html[data-scene] .kbd-range-label {
+    min-width: 0;
   }
 }
 
 html[data-scene] .kbd-range-face {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-3);
-  align-items: end;
+  align-items: stretch;
+}
+
+html[data-scene] .kbd-range-ends {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  padding-left: 14px;
+}
+
+html[data-scene] .kbd-range-ends > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+html[data-scene] .kbd-range-rail {
+  position: absolute;
+  left: 4px;
+  top: 16px;
+  bottom: 16px;
+  width: 2px;
+  height: auto;
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
 }
 
 html[data-scene] .kbd-range-face .kbd-range-picker-wrap {
@@ -393,8 +480,8 @@ html[data-scene] .kbd-range-cal-badge {
 }
 
 html[data-scene] #kbd-range-band {
-  background: color-mix(in srgb, var(--accent-soft) 32%, transparent);
-  border: 1.5px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  background: var(--range-glass);
+  border: 1.5px solid var(--range-border);
   border-radius: 12px;
   backdrop-filter: blur(2px);
 }
@@ -402,7 +489,7 @@ html[data-scene] #kbd-range-band {
 html[data-scene] .kbd-range-band--dragging #kbd-range-band,
 html[data-scene] #kbd-range-band.kbd-range-band--dragging {
   box-shadow: var(--elev-3);
-  background: color-mix(in srgb, var(--accent-soft) 40%, transparent);
+  background: var(--range-glass-drag);
 }
 
 html[data-scene] .kbd-range-band-move {
@@ -426,9 +513,52 @@ html[data-scene] .panel {
 
 html[data-scene] .ts-customize-menu {
   width: min(420px, calc(100vw - 32px));
-  max-height: min(78vh, 760px);
-  overflow: auto;
-  padding: 28px;
+  max-height: min(868px, calc(100svh - 32px));
+  overflow: hidden;
+  padding: 0;
+}
+
+@media (min-width: 641px) {
+  html[data-scene] .ts-customize-menu.ts-popover--open {
+    top: calc(16px + env(safe-area-inset-top)) !important;
+    right: calc(16px + env(safe-area-inset-right)) !important;
+    left: auto !important;
+    bottom: auto !important;
+    width: min(420px, calc(100vw - 32px));
+    height: min(868px, calc(100svh - 32px));
+    max-height: min(868px, calc(100svh - 32px));
+    padding: 24px;
+    border-radius: var(--radius-xl);
+    gap: 12px;
+  }
+}
+
+html[data-scene] .gh-appearance-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--scrim);
+  backdrop-filter: blur(var(--blur-overlay));
+  -webkit-backdrop-filter: blur(var(--blur-overlay));
+  cursor: pointer;
+}
+
+.gh-appearance-scrim {
+  display: none;
+}
+
+html[data-scene] .gh-appearance-mark {
+  display: inline-flex;
+  color: var(--accent);
+  flex: none;
+}
+
+.gh-appearance-mark {
+  display: none;
 }
 
 html[data-scene] .panel-header,
@@ -456,24 +586,68 @@ html[data-scene] .customize-scene-card {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 6px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: transparent;
+  gap: 8px;
+  width: 100%;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
   color: var(--text-1);
   font: var(--type-label);
+  text-align: left;
 }
 
 html[data-scene] .customize-scene-swatch {
   width: 100%;
-  height: 72px;
-  border-radius: var(--radius-sm);
-  box-shadow: var(--elev-1);
+  height: 96px;
+  border-radius: var(--radius-md);
+  box-shadow: none;
 }
 
-html[data-scene] .customize-scene-card--on .customize-scene-swatch {
-  box-shadow: 0 0 0 2px var(--accent);
+html[data-scene] .customize-scene-name {
+  padding: 0 4px 4px;
+}
+
+html[data-scene] .customize-scene-card--on {
+  border: 2px solid var(--accent);
+  padding: 5px;
+}
+
+html[data-scene] .customize-section:has(.customize-scene-row) .customize-section-value {
+  display: none;
+}
+
+html[data-scene] .ts-customize-menu .panel-header {
+  gap: 12px;
+  padding: 0;
+  border-bottom: 0;
+}
+
+html[data-scene] .ts-customize-menu .panel-label {
+  flex: 1;
+}
+
+html[data-scene] .ts-customize-menu .panel-close-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+}
+
+html[data-scene] .gh-studio {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+html[data-scene] .gh-studio .gh-overline {
+  margin: 6px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+html[data-scene] .gh-studio .gh-field {
+  min-height: 32px;
+  margin: 0;
 }
 
 html[data-scene] [data-tip]::after {
