@@ -80,6 +80,7 @@ const zhCN: Messages = {
   'topStrip.modeLive': '实时弹奏',
   'topStrip.modeLearn': '学习 · 练习、听音、视奏',
   'topStrip.openMidi': '打开 MIDI 文件',
+  'topStrip.more': '更多',
   'topStrip.tracks': '音轨',
   'topStrip.midi': 'MIDI 设备',
   'topStrip.pedal': '延音踏板',
@@ -524,6 +525,7 @@ const zhCN: Messages = {
   'kbdRange.focusKeys': '聚焦',
   'kbdRange.tip':
     '屏幕钢琴始终显示 88 键。这个窗口是控制器实际演奏的范围：MIDI 会移调，使最低键对应该窗口的最低音。等待模式会跳过窗口外的音符。',
+  'kbdRange.keyCount': '{count} 键',
   'kbdRange.aria': '键盘音域 {low} 至 {high}，共 {count} 键',
   'kbdRange.semitoneDown': '音域下移半音',
   'kbdRange.semitoneUp': '音域上移半音',

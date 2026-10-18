@@ -35,8 +35,9 @@ test('Golden Hour play view shows the living-room scene with a song loaded', asy
   })
   await expect(guide).toHaveAttribute('data-bar', '20')
 
-  await page.locator('#kbd-range-label').click()
-  await expect(page.locator('#kbd-range-panel')).toBeVisible()
+  const rangePanel = page.locator('#kbd-range-panel')
+  if (!(await rangePanel.isVisible())) await page.locator('#kbd-range-label').click()
+  await expect(rangePanel).toBeVisible()
   await expect(page.locator('#kbd-range-band')).toBeVisible()
   // The label's tooltip stays up while it is focused. Park the pointer
   // and blur so the shot shows the room, not the help text.

@@ -143,8 +143,7 @@ function MenuView(props: MenuProps) {
           <div class="customize-section-head">
             <span class="customize-section-label">{t('customize.scene')}</span>
             <span class="customize-section-value">
-              {SCENES.find((scene) => scene.themeId === props.themes[props.themeIndex()]?.id)
-                ?.name ?? t('customize.sceneClassic')}
+              {SCENES.find((scene) => scene.themeId === props.themes[props.themeIndex()]?.id)?.name}
             </span>
           </div>
           <div class="customize-scene-row">
@@ -183,50 +182,6 @@ function MenuView(props: MenuProps) {
           metroOn={props.metroOn ?? (() => false)}
           onMetro={props.onMetro}
         />
-
-        <div class="customize-section">
-          <div class="customize-section-head">
-            <span class="customize-section-label">{t('customize.theme')}</span>
-            <span class="customize-section-value">{props.themes[props.themeIndex()]?.name}</span>
-          </div>
-          <div class="customize-theme-grid">
-            <For each={props.themes}>
-              {(theme, index) => {
-                const isNew = theme.id === 'opal' || theme.id === 'liquid-glass'
-                return (
-                  <button
-                    class="customize-theme-tile"
-                    classList={{
-                      'customize-theme-tile--on': props.themeIndex() === index(),
-                      'customize-theme-tile--material': !!theme.noteMaterial,
-                      'customize-theme-tile--new': isNew,
-                    }}
-                    style={{ '--theme-accent': accentCSS(theme) }}
-                    data-material={theme.noteMaterial}
-                    type="button"
-                    title={theme.name}
-                    aria-label={`${theme.name} theme`}
-                    aria-describedby={isNew ? `new-theme-${theme.id}` : undefined}
-                    aria-pressed={props.themeIndex() === index()}
-                    onClick={() => props.onSelectTheme(index())}
-                  >
-                    <span
-                      class="customize-theme-tile-dot"
-                      aria-hidden="true"
-                      style={{ background: theme.preview ?? accentCSS(theme) }}
-                    />
-                    <span class="customize-theme-tile-label">{theme.name}</span>
-                    {isNew && (
-                      <span class="customize-theme-new" id={`new-theme-${theme.id}`}>
-                        {t('customize.new')}
-                      </span>
-                    )}
-                  </button>
-                )
-              }}
-            </For>
-          </div>
-        </div>
 
         <div class="customize-section">
           <div class="customize-section-head">

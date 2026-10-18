@@ -95,16 +95,16 @@ test('Piano M lights the physical key for the sounding note', async ({ page }) =
   await expect.poll(sent).toEqual(expect.arrayContaining([...goldenPalette, [0x9b, 60, 100]]))
 
   await openAppearance(page)
-  await page.getByRole('button', { name: 'Ocean theme', exact: true }).click()
-  // Ocean: left #06b6d4 → 3,91,106 and right #38bdf8 → 28,94,124.
+  await page.getByRole('button', { name: 'Rainy Study scene', exact: true }).click()
+  // Rainy Study: left #c4897a → 98,68,61 and right #7ba3b0 → 61,81,88.
   await expect.poll(sent).toEqual(
     expect.arrayContaining([
-      [0xbb, 20, 3],
-      [0xbb, 21, 91],
-      [0xbb, 22, 106],
-      [0xbc, 20, 28],
-      [0xbc, 21, 94],
-      [0xbc, 22, 124],
+      [0xbb, 20, 98],
+      [0xbb, 21, 68],
+      [0xbb, 22, 61],
+      [0xbc, 20, 61],
+      [0xbc, 21, 81],
+      [0xbc, 22, 88],
     ]),
   )
 

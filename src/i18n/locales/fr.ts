@@ -88,6 +88,7 @@ const fr: Messages = {
   'topStrip.modeLive': 'Jouer en direct',
   'topStrip.modeLearn': 'Apprendre · exercices, travail de l’oreille, lecture à vue',
   'topStrip.openMidi': 'Ouvrir un fichier MIDI',
+  'topStrip.more': 'Plus',
   'topStrip.tracks': 'Pistes',
   'topStrip.midi': 'Périphérique MIDI',
   'topStrip.pedal': 'Pédale de sustain',
@@ -562,6 +563,7 @@ const fr: Messages = {
   'kbdRange.focusKeys': 'Cadrer',
   'kbdRange.tip':
     'Le piano à l’écran reste à 88 touches. Cette fenêtre est ce que joue votre contrôleur : le MIDI est transposé pour que sa touche la plus grave corresponde à la fenêtre. Le mode attente ignore les notes hors de celle-ci.',
+  'kbdRange.keyCount': '{count} touches',
   'kbdRange.aria': 'Tessiture de {low} à {high}, {count} touches',
   'kbdRange.semitoneDown': 'Descendre la tessiture d’un demi-ton',
   'kbdRange.semitoneUp': 'Monter la tessiture d’un demi-ton',

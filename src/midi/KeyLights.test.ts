@@ -4,7 +4,8 @@ import { setHandPractice } from '../core/handPractice'
 import { FULL_PIANO_RANGE, getKeyboardRange, setKeyboardRange } from '../core/keyboardRange'
 import { deriveMidi } from '../core/midi/derive'
 import { type MidiFile, nominalTempoMap } from '../core/midi/types'
-import { oceanTheme, sunsetTheme } from '../renderer/theme'
+import { goldenHourTheme } from '../renderer/scenes/goldenHour'
+import { rainyStudyTheme } from '../renderer/scenes/rainyStudy'
 import { KeyLights } from './KeyLights'
 import { pianoMPaletteMessages, themeHandLights } from './pianoMColors'
 
@@ -517,21 +518,21 @@ describe('ROLI Piano M key lights', () => {
     ])
   })
 
-  it('sends Sunset hand colours, then replaces them when the theme changes', () => {
-    lights.setTheme(sunsetTheme)
+  it('sends Golden Hour hand colours, then replaces them when the scene changes', () => {
+    lights.setTheme(goldenHourTheme)
     expect(send.mock.calls.map(([data]) => data)).toEqual(
-      pianoMPaletteMessages(themeHandLights(sunsetTheme), getKeyboardRange()),
+      pianoMPaletteMessages(themeHandLights(goldenHourTheme), getKeyboardRange()),
     )
     send.mockClear()
-    lights.setTheme(oceanTheme)
+    lights.setTheme(rainyStudyTheme)
     expect(send.mock.calls.map(([data]) => data)).toEqual(
-      pianoMPaletteMessages(themeHandLights(oceanTheme), getKeyboardRange()),
+      pianoMPaletteMessages(themeHandLights(rainyStudyTheme), getKeyboardRange()),
     )
 
     send.mockClear()
     lights.configure({ channelMode: 'original' })
     send.mockClear()
-    lights.setTheme(sunsetTheme)
+    lights.setTheme(goldenHourTheme)
     expect(send).not.toHaveBeenCalled()
 
     lights.configure({ channelMode: 'pianoM' })
@@ -544,7 +545,7 @@ describe('ROLI Piano M key lights', () => {
       fitToRange: true,
     })
     expect(send.mock.calls.map(([data]) => data)).toEqual(
-      pianoMPaletteMessages(themeHandLights(sunsetTheme), getKeyboardRange()),
+      pianoMPaletteMessages(themeHandLights(goldenHourTheme), getKeyboardRange()),
     )
     send.mockClear()
     play(song([48]))

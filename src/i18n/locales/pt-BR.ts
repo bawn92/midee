@@ -85,6 +85,7 @@ const ptBR: Messages = {
   'topStrip.modeLive': 'Tocar ao vivo',
   'topStrip.modeLearn': 'Aprender · exercícios, treino auditivo, leitura à vista',
   'topStrip.openMidi': 'Abrir arquivo MIDI',
+  'topStrip.more': 'Mais',
   'topStrip.tracks': 'Faixas',
   'topStrip.midi': 'Dispositivo MIDI',
   'topStrip.pedal': 'Pedal de sustain',
@@ -555,6 +556,7 @@ const ptBR: Messages = {
   'kbdRange.focusKeys': 'Enquadrar',
   'kbdRange.tip':
     'O piano na tela continua com 88 teclas. Esta janela é o que o controlador toca: o MIDI é transposto para a tecla mais grave coincidir com a janela. O modo espera ignora as notas fora dela.',
+  'kbdRange.keyCount': '{count} teclas',
   'kbdRange.aria': 'Extensão de {low} a {high}, {count} teclas',
   'kbdRange.semitoneDown': 'Descer o intervalo um semitom',
   'kbdRange.semitoneUp': 'Subir o intervalo um semitom',

@@ -90,6 +90,12 @@ export const icons = {
   chevronDown: (size: Size = 11): string =>
     svgStroke(size, `<polyline points="6 9 12 15 18 9"/>`, 2.2, 'aria-hidden="true"'),
 
+  more: (size: Size = 16): string =>
+    svgFilled(
+      size,
+      `<circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/>`,
+    ),
+
   tracks: (size: Size = 14): string =>
     svgStroke(
       size,

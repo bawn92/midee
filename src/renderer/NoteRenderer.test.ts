@@ -4,7 +4,8 @@ import type { MidiTrack } from '../core/midi/types'
 import { setGlowMode } from './bakedGlow'
 import { createNoteMaterial } from './createNoteMaterial'
 import { NoteRenderer } from './NoteRenderer'
-import { sunsetTheme, THEMES } from './theme'
+import { goldenHourTheme } from './scenes/goldenHour'
+import { THEMES } from './theme'
 import { Viewport } from './viewport'
 
 vi.mock('pixi.js', () => {
@@ -32,6 +33,9 @@ vi.mock('pixi.js', () => {
     rect = vi.fn(() => this)
     roundRect = vi.fn(() => this)
     fill() {
+      return this
+    }
+    stroke() {
       return this
     }
   }
@@ -97,7 +101,11 @@ beforeEach(() => {
 })
 
 describe('material note consumption', () => {
-  for (const theme of THEMES.filter((theme) => theme.noteMaterial)) {
+  const materials = THEMES.filter((theme) => theme.noteMaterial)
+  it('shipping scenes draw with scene colours, without a note material', () => {
+    expect(materials).toEqual([])
+  })
+  for (const theme of materials) {
     it(`${theme.name} keeps its texture dimensions while crossing the keyboard`, () => {
       const viewport = new Viewport({
         canvasWidth: 800,
@@ -165,7 +173,7 @@ describe('notes outside the keyboard range', () => {
         { pitch: 96, time: 2, duration: 1, velocity: 1 },
       ],
     }
-    const renderer = new NoteRenderer(sunsetTheme, pixiRenderer)
+    const renderer = new NoteRenderer(goldenHourTheme, pixiRenderer)
     renderer.setTracks([spanned])
     renderer.draw([spanned], 2.2, viewport, new Set(['span']), null)
     const g = (
@@ -194,7 +202,7 @@ describe('glow mode switch', () => {
       keyboardHeight: 100,
       pixelsPerSecond: 100,
     })
-    const renderer = new NoteRenderer(sunsetTheme, pixiRenderer)
+    const renderer = new NoteRenderer(goldenHourTheme, pixiRenderer)
     renderer.setTracks([track])
     const notes = renderer.container as unknown as MockNode
     // The bench toggles glowContainer.renderable: both paths must live in it.
@@ -212,7 +220,7 @@ describe('glow mode switch', () => {
     draw(3)
     expect(glow).toMatchObject({ filters: null, visible: true })
     expect(baked.visible).toBe(true)
-    expect(halos().map((s) => s.tint)).toEqual([sunsetTheme.trackColors[0]])
+    expect(halos().map((s) => s.tint)).toEqual([goldenHourTheme.trackColors[0]])
     draw(6.5) // past the note's end: nothing sounds
     expect(glow.visible).toBe(false)
     expect(halos()).toHaveLength(0)

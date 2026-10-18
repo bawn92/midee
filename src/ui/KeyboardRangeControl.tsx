@@ -32,7 +32,31 @@ import {
   subscribeKeyboardFocus,
 } from '../renderer/keyboardFocus'
 import type { AppStore } from '../store/state'
+import { icons } from './icons'
 import { Stepper, Toggle } from './kit/kit'
+
+const RANGE_OPEN_KEY = 'midee.kbdRangeExpanded'
+
+function loadRangeOpen(): boolean {
+  try {
+    const raw = localStorage.getItem(RANGE_OPEN_KEY)
+    if (raw === '0') return false
+    if (raw === '1') return true
+  } catch {
+    return false
+  }
+  return typeof window.matchMedia === 'function'
+    ? window.matchMedia('(min-width: 1000px)').matches
+    : false
+}
+
+function saveRangeOpen(open: boolean): void {
+  try {
+    localStorage.setItem(RANGE_OPEN_KEY, open ? '1' : '0')
+  } catch {
+    // Persistence is best-effort.
+  }
+}
 
 // Floating control for the physical keyboard's reach. Shift by a semitone or
 // an octave to match a controller's octave buttons, or open the panel to set
@@ -64,7 +88,11 @@ function sceneNow(): boolean {
 }
 
 function KeyboardRangeView(props: { store: AppStore }) {
-  const [open, setOpen] = createSignal(false)
+  const [open, setOpen] = createSignal(loadRangeOpen())
+  const setExpanded = (next: boolean): void => {
+    setOpen(next)
+    saveRangeOpen(next)
+  }
   const [scene, setScene] = createSignal(sceneNow())
   const [focus, setFocus] = createSignal(keyboardFocusEnabled())
   const [armed, setArmed] = createSignal(isControllerCalibrateArmed())
@@ -79,12 +107,14 @@ function KeyboardRangeView(props: { store: AppStore }) {
     const offFocus = subscribeKeyboardFocus(setFocus)
     const onDoc = (e: PointerEvent): void => {
       if (!open()) return
+      // The pinned card stays where the player left it, like the song guide.
+      if (sceneNow() && window.matchMedia('(min-width: 1000px)').matches) return
       const target = e.target
       if (target instanceof Node && root.contains(target)) return
-      setOpen(false)
+      setExpanded(false)
     }
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') setOpen(false)
+      if (e.key === 'Escape') setExpanded(false)
     }
     // The detail panel opens upward. Keep it between the bar and the top
     // strip when the shortcuts card has already pushed the bar up.
@@ -93,7 +123,7 @@ function KeyboardRangeView(props: { store: AppStore }) {
     // corners every frame, so the bar never settles. Narrow scenes keep
     // the lower-left column, where beside is what keeps the panel on screen.
     const scenePinned = (): boolean =>
-      sceneNow() && window.matchMedia('(min-width: 1100px)').matches
+      sceneNow() && window.matchMedia('(min-width: 1000px)').matches
     const fitPanel = (): void => {
       setScene(scenePinned())
       const bar = root.querySelector('.kbd-range-bar')
@@ -279,11 +309,18 @@ function KeyboardRangeView(props: { store: AppStore }) {
           })}
           data-tip={t('kbdRange.tip')}
           data-custom={isFullPianoRange(range()) ? undefined : ''}
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => setExpanded(!open())}
         >
-          <span class="kbd-range-kicker">{t('kbdRange.title')}</span>
-          <span class="kbd-range-notes">{formatKeyboardRange(range())}</span>
-          <span class="kbd-range-count">{range().size}</span>
+          <span class="kbd-range-label-top">
+            <span class="kbd-range-kicker">{t('kbdRange.title')}</span>
+            <span class="kbd-range-chevron" aria-hidden="true" innerHTML={icons.chevronDown()} />
+          </span>
+          <span class="kbd-range-summary">
+            <span class="kbd-range-notes">{formatKeyboardRange(range())}</span>
+            <span class="kbd-range-count">
+              {`· ${t('kbdRange.keyCount', { count: range().size })}`}
+            </span>
+          </span>
         </button>
         <button
           class="kbd-range-step"
@@ -332,183 +369,182 @@ function KeyboardRangeView(props: { store: AppStore }) {
         </Show>
       </fieldset>
 
-      <Show when={open() || scene()}>
-        <div
-          id="kbd-range-panel"
-          class="kbd-range-panel"
-          role="dialog"
-          aria-label={t('kbdRange.title')}
-        >
-          <div class="kbd-range-face">
-            <div class="kbd-range-ends">
-              <div>
-                <span class="gh-caption">{t('kbdRange.start')}</span>
-                <Stepper
-                  value={lowName()}
-                  decLabel={t('kbdRange.semitoneDown')}
-                  incLabel={t('kbdRange.semitoneUp')}
-                  decDisabled={!canShift(range().start, range().size, -1)}
-                  incDisabled={!canShift(range().start, range().size, 1)}
-                  onDec={() => shiftKeyboardRangeBy(-1)}
-                  onInc={() => shiftKeyboardRangeBy(1)}
-                />
-              </div>
-              <span class="kbd-range-rail" aria-hidden="true" />
-              <div>
-                <span class="gh-caption">{t('kbdRange.end')}</span>
-                <Stepper
-                  value={highName()}
-                  decLabel={t('kbdRange.highDown')}
-                  incLabel={t('kbdRange.highUp')}
-                  decDisabled={range().size <= KEYBOARD_SIZE_MIN}
-                  incDisabled={range().size >= KEYBOARD_SIZE_MAX}
-                  onDec={() => {
-                    const next = resizeRangeFromEdge(range(), 'end', rangeEnd(range()) - 1)
-                    setKeyboardRange({ start: next.start, size: next.size })
-                  }}
-                  onInc={() => {
-                    const next = resizeRangeFromEdge(range(), 'end', rangeEnd(range()) + 1)
-                    setKeyboardRange({ start: next.start, size: next.size })
-                  }}
-                />
+      <div
+        id="kbd-range-panel"
+        class="kbd-range-panel"
+        role="dialog"
+        aria-label={t('kbdRange.title')}
+      >
+        <div class="kbd-range-face">
+          <div class="kbd-range-ends">
+            <div>
+              <span class="gh-caption">{t('kbdRange.start')}</span>
+              <Stepper
+                value={lowName()}
+                decLabel={t('kbdRange.semitoneDown')}
+                incLabel={t('kbdRange.semitoneUp')}
+                decDisabled={!canShift(range().start, range().size, -1)}
+                incDisabled={!canShift(range().start, range().size, 1)}
+                onDec={() => shiftKeyboardRangeBy(-1)}
+                onInc={() => shiftKeyboardRangeBy(1)}
+              />
+            </div>
+            <span class="kbd-range-rail" aria-hidden="true" />
+            <div>
+              <span class="gh-caption">{t('kbdRange.end')}</span>
+              <Stepper
+                value={highName()}
+                decLabel={t('kbdRange.highDown')}
+                incLabel={t('kbdRange.highUp')}
+                decDisabled={range().size <= KEYBOARD_SIZE_MIN}
+                incDisabled={range().size >= KEYBOARD_SIZE_MAX}
+                onDec={() => {
+                  const next = resizeRangeFromEdge(range(), 'end', rangeEnd(range()) - 1)
+                  setKeyboardRange({ start: next.start, size: next.size })
+                }}
+                onInc={() => {
+                  const next = resizeRangeFromEdge(range(), 'end', rangeEnd(range()) + 1)
+                  setKeyboardRange({ start: next.start, size: next.size })
+                }}
+              />
+            </div>
+          </div>
+          <div class="kbd-range-picker-wrap">
+            <p class="kbd-range-picker-label" id="kbd-range-picker-label">
+              {t('kbdRange.picker')}
+            </p>
+            <div class="kbd-range-picker" ref={pickerEl} onPointerDown={onPickerDown}>
+              <For each={PIANO_PITCHES}>
+                {(pitch) => (
+                  <span
+                    class="kbd-range-key"
+                    classList={{ 'kbd-range-key--black': isBlackKey(pitch) }}
+                    style={{ left: `${((pitch - MIDI_MIN) / KEYBOARD_SIZE_MAX) * 100}%` }}
+                    aria-hidden="true"
+                  />
+                )}
+              </For>
+              <div
+                class="kbd-range-window"
+                role="slider"
+                tabIndex={0}
+                aria-labelledby="kbd-range-picker-label"
+                aria-orientation="horizontal"
+                aria-valuemin={MIDI_MIN}
+                aria-valuemax={MIDI_MAX - range().size + 1}
+                aria-valuenow={range().start}
+                aria-valuetext={formatKeyboardRange(range())}
+                style={windowStyle(range().start, range().size)}
+                onKeyDown={onWindowKey}
+              >
+                <span class="kbd-range-handle kbd-range-handle--start" />
+                <span class="kbd-range-handle kbd-range-handle--end" />
               </div>
             </div>
-            <div class="kbd-range-picker-wrap">
-              <p class="kbd-range-picker-label" id="kbd-range-picker-label">
-                {t('kbdRange.picker')}
-              </p>
-              <div class="kbd-range-picker" ref={pickerEl} onPointerDown={onPickerDown}>
-                <For each={PIANO_PITCHES}>
-                  {(pitch) => (
-                    <span
-                      class="kbd-range-key"
-                      classList={{ 'kbd-range-key--black': isBlackKey(pitch) }}
-                      style={{ left: `${((pitch - MIDI_MIN) / KEYBOARD_SIZE_MAX) * 100}%` }}
-                      aria-hidden="true"
-                    />
-                  )}
-                </For>
-                <div
-                  class="kbd-range-window"
-                  role="slider"
-                  tabIndex={0}
-                  aria-labelledby="kbd-range-picker-label"
-                  aria-orientation="horizontal"
-                  aria-valuemin={MIDI_MIN}
-                  aria-valuemax={MIDI_MAX - range().size + 1}
-                  aria-valuenow={range().start}
-                  aria-valuetext={formatKeyboardRange(range())}
-                  style={windowStyle(range().start, range().size)}
-                  onKeyDown={onWindowKey}
-                >
-                  <span class="kbd-range-handle kbd-range-handle--start" />
-                  <span class="kbd-range-handle kbd-range-handle--end" />
-                </div>
-              </div>
-            </div>
-            <div class="gh-field">
-              <span class="gh-label">{t('kbdRange.fit')}</span>
+          </div>
+          <div class="gh-field kbd-range-fit-row">
+            <span class="gh-label">{t('kbdRange.fit')}</span>
+            <span class="kbd-range-fit-actions">
+              <button
+                type="button"
+                id="kbd-view-all"
+                class="kbd-range-view"
+                aria-pressed={!focus()}
+                onClick={() => setKeyboardFocusEnabled(!focus())}
+              >
+                {focus() ? t('kbdRange.allKeys') : t('kbdRange.focusKeys')}
+              </button>
               <Toggle
                 id="kbd-range-fit"
                 label={t('kbdRange.fit')}
                 pressed={range().fitToRange}
                 onChange={(next) => setKeyboardRange({ fitToRange: next })}
               />
-            </div>
-            <span class="kbd-range-face-count">({range().size})</span>
-            <button
-              type="button"
-              id="kbd-view-all"
-              class="kbd-range-view"
-              aria-pressed={!focus()}
-              onClick={() => setKeyboardFocusEnabled(!focus())}
-            >
-              {focus() ? t('kbdRange.allKeys') : t('kbdRange.focusKeys')}
-            </button>
+            </span>
+          </div>
+        </div>
+
+        <details class="kbd-range-advanced" open={scene() ? undefined : true}>
+          <summary>{t('kbdRange.more')}</summary>
+          <p class="kbd-range-hint">{t('kbdRange.tip')}</p>
+
+          <button
+            type="button"
+            id="kbd-range-calibrate"
+            class="kbd-range-calibrate"
+            aria-pressed={armed()}
+            data-tip={t('kbdRange.calibrateTip')}
+            onClick={() => setControllerCalibrateArmed(!armed())}
+          >
+            {armed() ? t('kbdRange.calibrateArmed') : t('kbdRange.calibrate')}
+          </button>
+          <p
+            class="kbd-range-cal-status"
+            classList={{ 'is-unset': !calibrated() }}
+            id="kbd-range-cal-status"
+          >
+            {calibrationLabel()}
+          </p>
+
+          <div class="kbd-range-row">
+            <span class="kbd-range-row-label">{t('kbdRange.size')}</span>
+            <span class="kbd-range-stepper">
+              <button
+                type="button"
+                disabled={range().size <= KEYBOARD_SIZE_MIN}
+                onClick={() => applySnappedSize(range().size - 1)}
+              >
+                −
+              </button>
+              <span class="kbd-range-value">{range().size}</span>
+              <button
+                type="button"
+                disabled={range().size >= KEYBOARD_SIZE_MAX}
+                onClick={() => applySnappedSize(range().size + 1)}
+              >
+                +
+              </button>
+            </span>
           </div>
 
-          <details class="kbd-range-advanced" open={scene() ? undefined : true}>
-            <summary>{t('kbdRange.more')}</summary>
-            <p class="kbd-range-hint">{t('kbdRange.tip')}</p>
-
-            <button
-              type="button"
-              id="kbd-range-calibrate"
-              class="kbd-range-calibrate"
-              aria-pressed={armed()}
-              data-tip={t('kbdRange.calibrateTip')}
-              onClick={() => setControllerCalibrateArmed(!armed())}
-            >
-              {armed() ? t('kbdRange.calibrateArmed') : t('kbdRange.calibrate')}
-            </button>
-            <p
-              class="kbd-range-cal-status"
-              classList={{ 'is-unset': !calibrated() }}
-              id="kbd-range-cal-status"
-            >
-              {calibrationLabel()}
-            </p>
-
-            <div class="kbd-range-row">
-              <span class="kbd-range-row-label">{t('kbdRange.size')}</span>
-              <span class="kbd-range-stepper">
+          <fieldset class="kbd-range-presets" aria-label={t('kbdRange.presets')}>
+            <For each={KEYBOARD_SIZE_PRESETS}>
+              {(size) => (
                 <button
                   type="button"
-                  disabled={range().size <= KEYBOARD_SIZE_MIN}
-                  onClick={() => applySnappedSize(range().size - 1)}
+                  class="kbd-range-preset"
+                  aria-pressed={range().size === size}
+                  onClick={() => applySnappedSize(size)}
                 >
-                  −
+                  {size}
                 </button>
-                <span class="kbd-range-value">{range().size}</span>
-                <button
-                  type="button"
-                  disabled={range().size >= KEYBOARD_SIZE_MAX}
-                  onClick={() => applySnappedSize(range().size + 1)}
-                >
-                  +
-                </button>
-              </span>
-            </div>
+              )}
+            </For>
+          </fieldset>
 
-            <fieldset class="kbd-range-presets" aria-label={t('kbdRange.presets')}>
-              <For each={KEYBOARD_SIZE_PRESETS}>
-                {(size) => (
-                  <button
-                    type="button"
-                    class="kbd-range-preset"
-                    aria-pressed={range().size === size}
-                    onClick={() => applySnappedSize(size)}
-                  >
-                    {size}
-                  </button>
-                )}
-              </For>
-            </fieldset>
+          <p class="kbd-range-cal-status">{t('kbdRange.fitTip')}</p>
 
-            <p class="kbd-range-cal-status">{t('kbdRange.fitTip')}</p>
+          <button
+            type="button"
+            class="kbd-range-follow"
+            id="kbd-range-follow"
+            aria-pressed={range().followMidi}
+            data-tip={t('kbdRange.followTip')}
+            onClick={() => setKeyboardRange({ followMidi: !range().followMidi })}
+          >
+            {t('kbdRange.follow')}
+          </button>
 
-            <button
-              type="button"
-              class="kbd-range-follow"
-              id="kbd-range-follow"
-              aria-pressed={range().followMidi}
-              data-tip={t('kbdRange.followTip')}
-              onClick={() => setKeyboardRange({ followMidi: !range().followMidi })}
-            >
-              {t('kbdRange.follow')}
-            </button>
-
-            <button
-              type="button"
-              class="kbd-range-full"
-              disabled={isFullPianoRange(range())}
-              onClick={() => setKeyboardRange({ start: MIDI_MIN, size: KEYBOARD_SIZE_MAX })}
-            >
-              {t('kbdRange.full')}
-            </button>
-          </details>
-        </div>
-      </Show>
+          <button
+            type="button"
+            class="kbd-range-full"
+            disabled={isFullPianoRange(range())}
+            onClick={() => setKeyboardRange({ start: MIDI_MIN, size: KEYBOARD_SIZE_MAX })}
+          >
+            {t('kbdRange.full')}
+          </button>
+        </details>
+      </div>
     </div>
   )
 }

@@ -1571,21 +1571,20 @@ interface StageConfig {
 }
 
 const STAGE_CONFIGS: readonly StageConfig[] = [
-  { name: 'base', theme: 'sunset', particles: 'embers', glow: true, labels: false },
+  { name: 'base', theme: 'golden-hour', particles: 'embers', glow: true, labels: false },
   {
     name: 'filterglow',
-    theme: 'sunset',
+    theme: 'golden-hour',
     particles: 'embers',
     glow: true,
     glowMode: 'filter',
     labels: false,
   },
-  { name: 'noparticles', theme: 'sunset', particles: 'none', glow: true, labels: false },
-  { name: 'noglow', theme: 'sunset', particles: 'embers', glow: false, labels: false },
-  { name: 'labels', theme: 'sunset', particles: 'embers', glow: true, labels: true },
-  { name: 'bare', theme: 'sunset', particles: 'none', glow: false, labels: false },
-  // A shipping material theme: textured layers per note, no glow filter.
-  { name: 'glass', theme: 'liquid-glass', particles: 'embers', glow: true, labels: false },
+  { name: 'noparticles', theme: 'golden-hour', particles: 'none', glow: true, labels: false },
+  { name: 'noglow', theme: 'golden-hour', particles: 'embers', glow: false, labels: false },
+  { name: 'labels', theme: 'golden-hour', particles: 'embers', glow: true, labels: true },
+  { name: 'bare', theme: 'golden-hour', particles: 'none', glow: false, labels: false },
+  { name: 'rain', theme: 'rainy-study', particles: 'embers', glow: true, labels: false },
 ]
 const STAGE_LOOP_FRAMES = 240
 const STAGE_SYNC_FRAMES = 120
@@ -2414,7 +2413,7 @@ async function suiteGlowShots(
 ): Promise<Record<string, number>> {
   const params = new URLSearchParams(window.location.search)
   const res = exportParams().res ?? '1080p'
-  const themes = (params.get('themes') ?? 'sunset').split(',') as ThemeId[]
+  const themes = (params.get('themes') ?? 'golden-hour').split(',') as ThemeId[]
   const midi = await loadFixture(ctx, fixtureId)
   const notes = midi.tracks.flatMap((t) => t.notes)
   const sounding = (t: number) => notes.filter((n) => n.time <= t && n.time + n.duration >= t)

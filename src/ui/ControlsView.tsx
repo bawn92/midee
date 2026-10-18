@@ -1,4 +1,4 @@
-import { createEffect, onCleanup, onMount, Show } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { t } from '../i18n'
 import type { LiveLooperState } from '../midi/LiveLooper'
 import type { MidiDeviceStatus } from '../midi/MidiInputManager'
@@ -152,13 +152,31 @@ export function TopStripView(props: TopStripProps) {
     primed = true
   })
 
+  const [moreOpen, setMoreOpen] = createSignal(false)
+
   onMount(() => {
     // Web-font swap can change label metrics after first paint.
     if (document.fonts?.ready) void document.fonts.ready.then(() => positionThumb(false))
     // Breakpoints toggle labels / padding, changing segment widths.
     const onResize = (): void => positionThumb(false)
+    const onClick = (e: MouseEvent): void => {
+      const target = e.target
+      if (!(target instanceof Node)) return
+      const more = document.getElementById('ts-more')
+      if (more?.contains(target)) return
+      const end = document.getElementById('ts-end')
+      if (target instanceof Element && end?.contains(target)) {
+        setMoreOpen(false)
+        return
+      }
+      setMoreOpen(false)
+    }
     window.addEventListener('resize', onResize)
-    onCleanup(() => window.removeEventListener('resize', onResize))
+    document.addEventListener('click', onClick)
+    onCleanup(() => {
+      window.removeEventListener('resize', onResize)
+      document.removeEventListener('click', onClick)
+    })
   })
 
   return (
@@ -270,83 +288,96 @@ export function TopStripView(props: TopStripProps) {
         <span id="ts-chord-slot" class="ts-chord-slot" />
       </div>
 
-      <div class="ts-end">
+      <div class="ts-end-wrap">
         <button
-          class="ts-pill"
-          id="ts-open"
+          class="ts-more"
+          id="ts-more"
           type="button"
-          aria-label={t('topStrip.openMidi')}
-          data-tip={t('topStrip.openMidi')}
-          onClick={() => props.onOpenFile()}
-        >
-          <span innerHTML={icons.upload()} />
-          <span>{t('home.cta.openMidi')}</span>
-        </button>
-        {/* Appearance/Customize is pinned near the start of the right cluster
+          aria-label={t('topStrip.more')}
+          aria-expanded={moreOpen()}
+          aria-controls="ts-end"
+          data-tip={t('topStrip.more')}
+          onClick={() => setMoreOpen((open) => !open)}
+          innerHTML={icons.more()}
+        />
+        <div class="ts-end" id="ts-end" classList={{ 'is-open': moreOpen() }}>
+          <button
+            class="ts-pill"
+            id="ts-open"
+            type="button"
+            aria-label={t('topStrip.openMidi')}
+            data-tip={t('topStrip.openMidi')}
+            onClick={() => props.onOpenFile()}
+          >
+            <span innerHTML={icons.upload()} />
+            <span>{t('home.cta.openMidi')}</span>
+          </button>
+          {/* Appearance/Customize is pinned near the start of the right cluster
             so the strip's right-edge overflow (the grid never shrinks .ts-end —
             see #top-strip in main.css) clips the contextual pills (export,
             MIDI, tracks) before it ever reaches Appearance. */}
-        <span id="ts-customize-slot" />
-        <button
-          ref={(el) => props.registerTracksBtn(el)}
-          class="ts-pill ts-pill--file"
-          classList={{
-            hidden: !(props.mode() === 'play' && props.hasFile() && !props.isLoadingFile()),
-          }}
-          id="ts-tracks"
-          type="button"
-          aria-label={t('topStrip.tracks')}
-          data-tip={t('topStrip.tracks')}
-          onClick={() => props.onTracks()}
-        >
-          <span innerHTML={icons.tracks()} />
-          <span>{t('topStrip.tracks')}</span>
-        </button>
-        <button
-          class="ts-pill ts-pill--file"
-          classList={{
-            hidden: !(props.mode() === 'play' && props.hasFile() && !props.isLoadingFile()),
-          }}
-          id="ts-learn-this"
-          type="button"
-          aria-label={t('topStrip.learnThis.aria')}
-          data-tip={t('topStrip.learnThis.tip')}
-          onClick={() => props.onLearnThis()}
-        >
-          <span innerHTML={icons.practice()} />
-          <span>{t('topStrip.learnThis.label')}</span>
-        </button>
-        <span id="ts-instrument-slot" />
-        <div class="ts-sep" aria-hidden="true" />
-        <button
-          class="ts-pill ts-pill--midi"
-          classList={{ 'ts-pill--on': props.midiStatus() === 'connected' }}
-          id="ts-midi"
-          type="button"
-          aria-label={props.midiMenuLabel()}
-          title={props.midiMenuLabel()}
-          data-tip={t('topStrip.midi')}
-          onClick={() => props.onMidi()}
-        >
-          <span innerHTML={icons.midi()} />
-          <span id="ts-menu-midi-label" class="ts-midi-label">
-            {props.midiPillLabel()}
-          </span>
-        </button>
-        <button
-          class="ts-record-btn"
-          classList={{
-            hidden: !(props.mode() === 'play' && props.hasFile() && !props.isLoadingFile()),
-          }}
-          id="ts-record"
-          type="button"
-          aria-label={t('topStrip.export')}
-          data-tip={t('topStrip.export')}
-          onClick={() => props.onRecord()}
-        >
-          <span innerHTML={icons.export()} />
-          <span>{t('topStrip.export.label')}</span>
-        </button>
+          <span id="ts-customize-slot" />
+          <button
+            ref={(el) => props.registerTracksBtn(el)}
+            class="ts-pill ts-pill--file"
+            classList={{
+              hidden: !(props.mode() === 'play' && props.hasFile() && !props.isLoadingFile()),
+            }}
+            id="ts-tracks"
+            type="button"
+            aria-label={t('topStrip.tracks')}
+            data-tip={t('topStrip.tracks')}
+            onClick={() => props.onTracks()}
+          >
+            <span innerHTML={icons.tracks()} />
+            <span>{t('topStrip.tracks')}</span>
+          </button>
+          <button
+            class="ts-pill ts-pill--file"
+            classList={{
+              hidden: !(props.mode() === 'play' && props.hasFile() && !props.isLoadingFile()),
+            }}
+            id="ts-learn-this"
+            type="button"
+            aria-label={t('topStrip.learnThis.aria')}
+            data-tip={t('topStrip.learnThis.tip')}
+            onClick={() => props.onLearnThis()}
+          >
+            <span innerHTML={icons.practice()} />
+            <span>{t('topStrip.learnThis.label')}</span>
+          </button>
+          <span id="ts-instrument-slot" />
+          <div class="ts-sep" aria-hidden="true" />
+          <button
+            class="ts-pill ts-pill--midi"
+            classList={{ 'ts-pill--on': props.midiStatus() === 'connected' }}
+            id="ts-midi"
+            type="button"
+            aria-label={props.midiMenuLabel()}
+            title={props.midiMenuLabel()}
+            data-tip={t('topStrip.midi')}
+            onClick={() => props.onMidi()}
+          >
+            <span innerHTML={icons.midi()} />
+            <span id="ts-menu-midi-label" class="ts-midi-label">
+              {props.midiPillLabel()}
+            </span>
+          </button>
+          <button
+            class="ts-record-btn"
+            classList={{
+              hidden: !(props.mode() === 'play' && props.hasFile() && !props.isLoadingFile()),
+            }}
+            id="ts-record"
+            type="button"
+            aria-label={t('topStrip.export')}
+            data-tip={t('topStrip.export')}
+            onClick={() => props.onRecord()}
+          >
+            <span innerHTML={icons.export()} />
+            <span>{t('topStrip.export.label')}</span>
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -410,8 +441,8 @@ export function HudView(props: HudProps) {
           />
           <Show when={props.context?.().title}>
             <div class="hud-piece">
-              <span class="hud-piece-title" id="hud-piece-title">
-                {props.context?.().title}
+              <span class="hud-piece-title" id="hud-piece-title" title={props.context?.().title}>
+                {humaniseTitle(props.context?.().title ?? '')}
               </span>
               <span class="hud-piece-bpm">{props.metroBpm()} BPM</span>
             </div>
@@ -879,6 +910,11 @@ export function snapTo(value: number, target: number, tolerance: number): number
 
 // "0" / "+2" / "−3". U+2212 MINUS SIGN, not a hyphen — it matches the metronome
 // stepper's glyph and lines up in the tabular-numerals font.
+/** File names use underscores. The transport title reads as words. */
+export function humaniseTitle(title: string): string {
+  return title.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
 export function formatTranspose(semitones: number): string {
   if (semitones === 0) return '0'
   return semitones > 0 ? `+${semitones}` : `−${-semitones}`

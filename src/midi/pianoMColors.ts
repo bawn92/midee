@@ -18,8 +18,7 @@ export const PIANO_M_CC_BLUE = 22
 export const PIANO_M_CC_BASE = 23
 
 // The theme's first note colour is the right hand, the second is the left.
-// Sunset is orange then yellow, which is what the falling notes use for a
-// two-track piano part.
+// Scenes paint those same slots, so the Piano M follows the falling notes.
 export function themeHandLights(theme: Pick<Theme, 'trackColors'>): {
   left: number
   right: number

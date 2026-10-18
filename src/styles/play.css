@@ -307,7 +307,7 @@ html[data-scene] .song-guide-fingers {
 
 /* Wide play view: the range card sits upper-right. The shortcuts card
    stays in #lower-left, above the keys. */
-@media (min-width: 1100px) {
+@media (min-width: 1000px) {
   /* Site frame B1: a labeled app bar, then the transport pill, then the cards. */
   html[data-scene] #top-strip {
     top: calc(10px + env(safe-area-inset-top));
@@ -341,7 +341,7 @@ html[data-scene] .song-guide-fingers {
     right: calc(24px + env(safe-area-inset-right));
     left: auto;
     bottom: auto;
-    width: min(260px, calc(50vw - 36px));
+    width: min(280px, calc(50vw - 36px));
     margin-bottom: 0;
     z-index: 4;
   }
@@ -362,22 +362,25 @@ html[data-scene] .song-guide-fingers {
     right: auto;
     bottom: auto;
     width: 100%;
-    max-height: min(460px, calc(100svh - 168px - var(--keyboard-h, 180px) - 72px));
+    max-height: min(460px, calc(100svh - 172px - var(--keyboard-h, 180px) - 96px));
     overflow: auto;
     margin-top: 0;
-    border-top: 0;
-    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-    padding: 4px 12px 20px 20px;
+    padding: var(--space-2) var(--space-5) var(--space-5);
   }
 
-  html[data-scene] .kbd-range-bar {
-    width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
+  html[data-scene] #kbd-range.kbd-range--open .kbd-range-bar {
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     border-bottom: 0;
     box-shadow: none;
-    padding: 12px 8px 4px 16px;
+  }
+
+  html[data-scene] #kbd-range:not(.kbd-range--open) .kbd-range-bar {
+    border-radius: var(--radius-pill);
+  }
+
+  html[data-scene] #kbd-range.kbd-range--open .kbd-range-panel {
+    border-top: 0;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   }
 
   html[data-scene] .kbd-range-label {
@@ -385,47 +388,183 @@ html[data-scene] .song-guide-fingers {
   }
 }
 
+html[data-scene] #kbd-range:not(.kbd-range--open) .kbd-range-panel {
+  display: none;
+}
+
+html[data-scene] #kbd-range.kbd-range--open .kbd-range-panel {
+  animation: kbd-range-in var(--dur-base) var(--ease-out);
+}
+
+@keyframes kbd-range-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+html[data-scene] .kbd-range-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--space-4);
+}
+
+html[data-scene] .kbd-range-label {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+}
+
+html[data-scene] .kbd-range-label-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+html[data-scene] .kbd-range-kicker {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-scene] .kbd-range-chevron {
+  display: inline-flex;
+  flex: none;
+  color: var(--text-2);
+  transition: transform var(--dur-base) var(--ease-out);
+}
+
+html[data-scene] #kbd-range.kbd-range--open .kbd-range-chevron {
+  transform: rotate(180deg);
+}
+
+html[data-scene] .kbd-range-summary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-2);
+  font: var(--type-body);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+html[data-scene] .kbd-range-summary .kbd-range-notes,
+html[data-scene] .kbd-range-summary .kbd-range-count {
+  font: inherit;
+  color: inherit;
+}
+
+html[data-scene] .kbd-range-cal-badge {
+  align-self: flex-start;
+  justify-self: start;
+}
+
+html[data-scene] .kbd-range-panel {
+  gap: 0;
+  padding: var(--space-4) var(--space-5) var(--space-5);
+}
+
 html[data-scene] .kbd-range-face {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 0;
   align-items: stretch;
 }
 
 html[data-scene] .kbd-range-ends {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  position: relative;
-  padding-left: 14px;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--space-4);
+  row-gap: var(--space-3);
+  position: static;
+  padding: 0;
 }
 
 html[data-scene] .kbd-range-ends > div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  display: contents;
+}
+
+html[data-scene] .kbd-range-ends .gh-caption {
+  white-space: nowrap;
+}
+
+html[data-scene] .kbd-range-ends .gh-stepper {
+  justify-self: end;
 }
 
 html[data-scene] .kbd-range-rail {
-  position: absolute;
-  left: 4px;
-  top: 16px;
-  bottom: 16px;
-  width: 2px;
-  height: auto;
-  border-radius: var(--radius-pill);
-  background: var(--border-strong);
+  display: none;
 }
 
 html[data-scene] .kbd-range-face .kbd-range-picker-wrap {
   grid-column: 1 / -1;
 }
 
+html[data-scene] .kbd-range-picker-wrap {
+  width: 100%;
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+  gap: var(--space-2);
+}
+
 html[data-scene] .kbd-range-picker {
-  height: 28px;
+  width: 100%;
+  height: 40px;
   border-radius: var(--radius-xs);
   background: var(--surface-sunken);
+}
+
+html[data-scene] .kbd-range-fit-row {
+  margin: var(--space-4) 0 0;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+html[data-scene] .kbd-range-fit-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: none;
+}
+
+html[data-scene] .kbd-range-view {
+  height: 32px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-1);
+  font: var(--type-label);
+}
+
+html[data-scene] #kbd-view-all[aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: transparent;
+}
+
+html[data-scene] .kbd-range-advanced {
+  margin: var(--space-4) 0 0;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
 }
 
 html[data-scene] .kbd-range-key {
@@ -640,7 +779,7 @@ html[data-scene] .kbd-range-calibrate-bar {
   clip: rect(0 0 0 0);
 }
 
-@media (max-width: 1099px) {
+@media (max-width: 999px) {
   html[data-scene] .song-guide,
   html[data-scene] .song-guide--side {
     top: calc(72px + env(safe-area-inset-top));
@@ -842,6 +981,14 @@ html[data-scene] .float-hud.pa-hud {
   border-radius: var(--radius-lg);
   box-shadow: var(--elev-2);
   backdrop-filter: blur(var(--blur-card)) saturate(1.15);
+}
+
+/* Sight-reading keeps its own pill. Park it with the other scene controls,
+   under the app bar, so it does not sit on the range card above the keys. */
+html[data-scene] .float-hud.sr-hud {
+  top: calc(72px + env(safe-area-inset-top));
+  bottom: auto;
+  max-width: min(920px, calc(100vw - 48px));
 }
 
 html[data-scene] .sample-card-title,
@@ -1117,4 +1264,264 @@ html[data-scene] .coachmark__title {
 
 html[data-scene] .toast {
   border-radius: var(--radius-lg);
+}
+
+/* Transport pill and icon actions. The pill sits under the app bar, and the
+   song guide / range card start below it so a long title cannot collide. */
+
+html[data-scene] .ts-end-wrap {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+html[data-scene] .ts-more {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-2);
+  box-shadow: var(--elev-1);
+}
+
+html[data-scene] #top-strip .ts-pill > span + span,
+html[data-scene] #top-strip .ts-record-btn > span + span,
+html[data-scene] .ts-customize-label,
+html[data-scene] #top-strip .ts-midi-label {
+  display: none;
+}
+
+html[data-scene] #top-strip[data-mode="play"] .ts-status-main,
+html[data-scene] #top-strip[data-mode="live"] .ts-status-main,
+html[data-scene] #top-strip[data-mode="play"] .ts-bars,
+html[data-scene] #top-strip[data-mode="live"] .ts-bars {
+  display: none;
+}
+
+html[data-scene] #top-strip[data-mode="play"] #ts-status,
+html[data-scene] #top-strip[data-mode="live"] #ts-status {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+html[data-scene] #hud .hud-bar {
+  flex-wrap: nowrap;
+  width: 100%;
+  min-width: 0;
+}
+
+html[data-scene] #hud .hud-group--transport,
+html[data-scene] #hud .hud-piece {
+  min-width: 0;
+}
+
+html[data-scene] #hud .hud-piece {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+
+html[data-scene] #hud .hud-piece-title {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-scene] #hud .hud-piece-bpm {
+  white-space: nowrap;
+}
+
+html[data-scene] #hud .ctrl-group,
+html[data-scene] #hud .hud-divider,
+html[data-scene] #hud .hud-hands,
+html[data-scene] #hud .hud-metro,
+html[data-scene] #hud #hud-loop {
+  flex: none;
+}
+
+html[data-scene] #hud .scrubber-wrap {
+  left: 16px;
+  right: 16px;
+  bottom: 7px;
+  width: auto;
+}
+
+@media (min-width: 641px) and (max-width: 999px) {
+  /* The transport pill is at the top, so the lower-left column stays under it
+     and just above the keys. */
+  html[data-scene] #lower-left {
+    top: calc(168px + env(safe-area-inset-top));
+    bottom: calc(var(--keyboard-h) + 12px + env(safe-area-inset-bottom));
+    overflow: visible;
+  }
+
+  html[data-scene]
+    #lower-left:not(:has(#key-hint.kh--visible:not(.kh--collapsed)))
+    .kbd-range-mount {
+    margin-bottom: 0;
+  }
+
+  html[data-scene] #key-hint.kh--visible:not(.kh--collapsed) .kh-body {
+    max-height: calc(100svh - 168px - var(--keyboard-h) - 12px - 110px);
+    overflow: auto;
+  }
+
+  /* Opening upward runs through the transport pill. Park the detail card on
+     the right, under the pill, and stop it above a bottom learn HUD. */
+  html[data-scene] #kbd-range.kbd-range--open .kbd-range-panel,
+  html[data-scene] #lower-left:has(.kbd-range--beside) .kbd-range-panel {
+    position: fixed;
+    top: calc(168px + env(safe-area-inset-top));
+    right: calc(16px + env(safe-area-inset-right));
+    left: auto;
+    bottom: auto;
+    width: min(280px, calc(100vw - 320px));
+    max-height: calc(100svh - 168px - var(--keyboard-h, 160px) - 24px);
+    z-index: 18;
+    margin: 0;
+  }
+}
+
+@media (min-width: 641px) {
+  html[data-scene] #hud.float-hud {
+    top: calc(72px + env(safe-area-inset-top));
+    bottom: auto;
+    left: 50%;
+    right: auto;
+    width: min(1080px, calc(100vw - 48px));
+    max-width: min(1080px, calc(100vw - 48px));
+    height: auto;
+    min-height: 72px;
+    padding: 8px 16px 18px;
+    overflow: hidden;
+    box-sizing: border-box;
+    transform: translateX(calc(-50% + var(--hud-dx, 0px)));
+  }
+
+  html[data-scene] .song-guide,
+  html[data-scene] .song-guide--side {
+    top: calc(172px + env(safe-area-inset-top));
+  }
+
+  html[data-scene] .song-guide-card {
+    max-height: min(460px, calc(100svh - 172px - var(--keyboard-h, 180px) - 24px));
+  }
+}
+
+@media (min-width: 1000px) {
+  html[data-scene]
+    #lower-left:not(:has(#key-hint.kh--visible:not(.kh--collapsed)))
+    .kbd-range-mount,
+  html[data-scene] #lower-left .kbd-range-mount,
+  html[data-scene] #lower-left:has(.kbd-range--beside) .kbd-range-mount {
+    top: calc(172px + env(safe-area-inset-top));
+  }
+
+  html[data-scene] #kbd-range.kbd-range--open .kbd-range-panel {
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 1279px) {
+  html[data-scene] .ts-mode-label,
+  html[data-scene] #hud #hud-volume,
+  html[data-scene] #hud .ctrl-group:has(#hud-zoom) {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  html[data-scene] .ts-more {
+    display: inline-flex;
+  }
+
+  html[data-scene] .ts-end {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 30;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-1);
+    width: max-content;
+    min-width: 180px;
+    padding: var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface-solid);
+    box-shadow: var(--elev-3);
+  }
+
+  html[data-scene] .ts-end.is-open {
+    display: flex;
+  }
+
+  html[data-scene] .ts-end.is-open .ts-pill > span + span,
+  html[data-scene] .ts-end.is-open .ts-record-btn > span + span,
+  html[data-scene] .ts-end.is-open .ts-customize-label,
+  html[data-scene] .ts-end.is-open .ts-midi-label {
+    display: inline;
+  }
+}
+
+@media (max-width: 640px) {
+  html[data-scene] #hud .hud-piece,
+  html[data-scene] #hud .hud-hands {
+    display: flex;
+  }
+
+  html[data-scene] #hud .hud-bar {
+    flex-wrap: wrap;
+    row-gap: var(--space-2);
+  }
+
+  html[data-scene] #hud .hud-group--transport {
+    flex: 1 1 180px;
+    min-width: 0;
+  }
+
+  html[data-scene] #hud .hud-piece {
+    flex: 1 1 0;
+    min-width: 72px;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  html[data-scene] #hud .hud-piece-title {
+    width: 100%;
+  }
+
+  html[data-scene] #hud .hud-hand {
+    min-width: 40px;
+    padding: 0 6px;
+  }
+
+  html[data-scene] #hud.float-hud,
+  html[data-scene]
+    #hud.hud--active.float-hud--idle:not(.float-hud--pinned):not(.float-hud--dragging) {
+    padding: 8px 8px 16px;
+  }
+
+  html[data-scene] #hud.float-hud,
+  html[data-scene]
+    #hud.hud--active.float-hud--idle:not(.float-hud--pinned):not(.float-hud--dragging) {
+    top: calc(64px + env(safe-area-inset-top));
+    bottom: auto;
+    left: calc(8px + env(safe-area-inset-left));
+    right: calc(8px + env(safe-area-inset-right));
+    width: auto;
+    max-width: none;
+    transform: none;
+  }
 }

@@ -71,14 +71,7 @@ import {
 import { PianoRollRenderer } from './renderer/PianoRollRenderer'
 import { ALL_PARTICLE_STYLES, PARTICLE_STYLES, type ParticleStyle } from './renderer/particleStyles'
 import { applySceneClass } from './renderer/scenes'
-import {
-  ALL_THEMES,
-  accentCSS,
-  DEFAULT_THEME_ID,
-  THEMES,
-  type Theme,
-  type ThemeId,
-} from './renderer/theme'
+import { accentCSS, readStoredThemeId, THEMES, type Theme, type ThemeId } from './renderer/theme'
 import type { AppMode, AppStore } from './store/state'
 import { watch } from './store/watch'
 import {
@@ -2204,12 +2197,16 @@ export class App {
 // localStorage. Defined here (not in persistence.ts) because they validate
 // against rosters owned by other modules. Stored as stable ids, with a one-shot
 // migration from the old `midee.*Index` integer keys (see `idPersisted`).
-const themeStore = idPersisted<ThemeId>(
-  'midee.theme',
-  DEFAULT_THEME_ID,
-  THEMES.map((t) => t.id),
-  { key: 'midee.themeIndex', ids: ALL_THEMES.map((t) => t.id) },
-)
+const themeStore = {
+  load: readStoredThemeId,
+  save(id: ThemeId): void {
+    try {
+      localStorage.setItem('midee.theme', id)
+    } catch (err) {
+      console.warn('[persistence] setItem failed for midee.theme:', err)
+    }
+  },
+}
 // New visitors default to Upright (1.2 MB of self-hosted samples) so first-load
 // is fast. Returning users keep whatever they had, including Salamander Grand.
 const instrumentStore = idPersisted<InstrumentId>(

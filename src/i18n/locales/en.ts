@@ -100,6 +100,7 @@ export const en = {
   'topStrip.modeLive': 'Play live',
   'topStrip.modeLearn': 'Learn · exercises, ear training, sight reading',
   'topStrip.openMidi': 'Open MIDI file',
+  'topStrip.more': 'More',
   'topStrip.tracks': 'Tracks',
   'topStrip.midi': 'MIDI device',
   'topStrip.pedal': 'Sustain pedal',
@@ -590,6 +591,7 @@ export const en = {
   'kbdRange.tip':
     'The on-screen piano stays 88 keys. This window is what your controller plays: MIDI is transposed so its lowest key matches the window. Wait mode skips notes outside it.',
   'kbdRange.aria': 'Keyboard range {low} to {high}, {count} keys',
+  'kbdRange.keyCount': '{count} keys',
   'kbdRange.semitoneDown': 'Shift range down a semitone',
   'kbdRange.semitoneUp': 'Shift range up a semitone',
   'kbdRange.octaveDown': 'Shift range down an octave',

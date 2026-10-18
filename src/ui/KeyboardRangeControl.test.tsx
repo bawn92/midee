@@ -18,6 +18,7 @@ describe('KeyboardRangeControl', () => {
     control.dispose()
     host.remove()
     localStorage.removeItem(KEYBOARD_RANGE_STORAGE_KEY)
+    localStorage.removeItem('midee.kbdRangeExpanded')
     reloadKeyboardRange()
     setControllerCalibrateArmed(false)
   })

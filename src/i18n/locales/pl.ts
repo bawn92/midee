@@ -90,6 +90,7 @@ const pl: Messages & Record<PolishPluralKey, string> = {
   'topStrip.modeLive': 'Graj na żywo',
   'topStrip.modeLearn': 'Nauka · ćwiczenia, słuch, czytanie nut',
   'topStrip.openMidi': 'Otwórz plik MIDI',
+  'topStrip.more': 'Więcej',
   'topStrip.tracks': 'Ścieżki',
   'topStrip.midi': 'Urządzenie MIDI',
   'topStrip.pedal': 'Pedał sustain',
@@ -547,6 +548,7 @@ const pl: Messages & Record<PolishPluralKey, string> = {
   'kbdRange.focusKeys': 'Dopasuj',
   'kbdRange.tip':
     'Fortepian na ekranie ma zawsze 88 klawiszy. To okno jest tym, co gra kontroler: MIDI jest transponowane tak, by najniższy klawisz pokrywał się z oknem. Tryb czekania pomija nuty poza nim.',
+  'kbdRange.keyCount': '{count} klawiszy',
   'kbdRange.aria': 'Zakres od {low} do {high}, {count} klawiszy',
   'kbdRange.semitoneDown': 'Przesuń zakres o półton w dół',
   'kbdRange.semitoneUp': 'Przesuń zakres o półton w górę',

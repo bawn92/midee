@@ -8513,116 +8513,6 @@ body.appearance-open #top-strip.strip--dim {
   letter-spacing: 0.005em;
 }
 
-/* ── Theme tiles — flat colour dot + name label. ── */
-.customize-theme-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px 6px;
-  /* Belt-and-braces — the popover already clips, but constraining the grid
-     itself prevents an overflowing label from pushing siblings outward. */
-  width: 100%;
-  min-width: 0;
-}
-
-.customize-theme-tile {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  /* Symmetric padding so the dot + label have room inside the border. */
-  padding: 9px 4px 8px;
-  border-radius: 10px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text-dim);
-  cursor: pointer;
-  /* Critical: lets the inner label shrink instead of forcing the tile to
-     grow past its grid track. */
-  min-width: 0;
-  transition:
-    border-color 0.18s ease,
-    background 0.18s ease,
-    color 0.18s ease,
-    transform 0.18s var(--ease-spring);
-}
-
-.customize-theme-tile:hover {
-  background: rgba(255, 255, 255, 0.035);
-  color: var(--text-muted);
-}
-
-.customize-theme-tile--on {
-  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
-  background: color-mix(in srgb, var(--accent) 6%, transparent);
-  color: var(--text);
-}
-
-/* Single flat color dot — minimal, modern. The theme's accent does the
-   identifying work; no gradient, no inner shadow, no chrome. */
-.customize-theme-tile-dot {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  transition: transform 0.18s var(--ease-spring);
-}
-
-.customize-theme-tile--new {
-  border-color: color-mix(in srgb, var(--theme-accent) 19%, transparent);
-  background: color-mix(in srgb, var(--theme-accent) 4%, transparent);
-  color: var(--text-muted);
-}
-
-.customize-theme-tile--new.customize-theme-tile--on {
-  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
-  background: color-mix(in srgb, var(--accent) 9%, transparent);
-  color: var(--text);
-}
-
-.customize-theme-tile--material .customize-theme-tile-dot {
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
-}
-
-.customize-theme-new {
-  position: absolute;
-  top: -6px;
-  right: 5px;
-  padding: 1px 4px;
-  border: 1px solid color-mix(in srgb, var(--theme-accent) 25%, transparent);
-  border-radius: 4px;
-  background: #17181e;
-  color: var(--theme-accent);
-  font-size: 7px;
-  font-weight: 600;
-  line-height: 10px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  pointer-events: none;
-}
-
-.customize-theme-tile:hover .customize-theme-tile-dot {
-  transform: scale(1.06);
-}
-
-.customize-theme-tile--on .customize-theme-tile-dot {
-  transform: scale(1.06);
-}
-
-.customize-theme-tile-label {
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.005em;
-  text-align: center;
-  line-height: 1;
-  width: 100%;
-  /* Truncate gracefully if a longer theme name is ever added — protects
-     the grid from being pushed past the popover boundary. */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 /* ── Particle chips — glyph + label. Selected = accent fill. ── */
 .customize-particle-row {
   display: flex;
@@ -8876,9 +8766,6 @@ body.appearance-open #top-strip.strip--dim {
   }
   .customize-section {
     padding: 12px 14px;
-  }
-  .customize-theme-grid {
-    gap: 10px 5px;
   }
 }
 

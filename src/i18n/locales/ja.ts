@@ -82,6 +82,7 @@ const ja: Messages = {
   'topStrip.modeLive': 'ライブで弾く',
   'topStrip.modeLearn': '学習 · 練習、聴音、初見演奏',
   'topStrip.openMidi': 'MIDI ファイルを開く',
+  'topStrip.more': 'その他',
   'topStrip.tracks': 'トラック',
   'topStrip.midi': 'MIDI デバイス',
   'topStrip.pedal': 'サステインペダル',
@@ -535,6 +536,7 @@ const ja: Messages = {
   'kbdRange.focusKeys': 'フォーカス',
   'kbdRange.tip':
     '画面の鍵盤は常に 88 鍵です。この範囲がコントローラーの演奏音域です。MIDI は最低鍵が範囲の最低音になるよう移調されます。待機モードは範囲外の音をスキップします。',
+  'kbdRange.keyCount': '{count} 鍵',
   'kbdRange.aria': '音域 {low} から {high}、{count} 鍵',
   'kbdRange.semitoneDown': '音域を半音下げる',
   'kbdRange.semitoneUp': '音域を半音上げる',

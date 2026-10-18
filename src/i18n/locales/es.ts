@@ -84,6 +84,7 @@ const es: Messages = {
   'topStrip.modeLive': 'Tocar en vivo',
   'topStrip.modeLearn': 'Aprender · ejercicios, entrenamiento auditivo, lectura a vista',
   'topStrip.openMidi': 'Abrir archivo MIDI',
+  'topStrip.more': 'Más',
   'topStrip.tracks': 'Pistas',
   'topStrip.midi': 'Dispositivo MIDI',
   'topStrip.pedal': 'Pedal de sustain',
@@ -555,6 +556,7 @@ const es: Messages = {
   'kbdRange.focusKeys': 'Enfocar',
   'kbdRange.tip':
     'El piano en pantalla sigue mostrando 88 teclas. Esta ventana es lo que toca tu controlador: el MIDI se transpone para que su tecla más grave coincida con la ventana. El modo espera omite las notas fuera de ella.',
+  'kbdRange.keyCount': '{count} teclas',
   'kbdRange.aria': 'Tesitura de {low} a {high}, {count} teclas',
   'kbdRange.semitoneDown': 'Bajar el rango un semitono',
   'kbdRange.semitoneUp': 'Subir el rango un semitono',

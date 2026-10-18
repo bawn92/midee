@@ -1,30 +1,16 @@
 import { expect, type Page, test } from '@playwright/test'
 
-// Theme selection + persistence in a real browser: customize popover click →
-// App.applyTheme writes `--accent*` onto <html> → `midee.theme` id survives reload.
-//
-// Home-screen gotcha: `#dropzone` (z-index 100) sits above `.ts-popover`
-// (z-index 60), so the home card covers the Dark/Midnight/Neon tiles. Tests
-// leave the home screen via `#home-live` before clicking a tile. Drop
-// `leaveHomeScreen` once the stacking is fixed.
+// Scene selection + persistence. Classic theme ids and the old integer index
+// are rewritten to Golden Hour. Rainy Study is the other shipping scene.
 
 const THEME_KEY = 'midee.theme'
 const LEGACY_KEY = 'midee.themeIndex'
 
-// Mirrors `Theme.accent` in src/renderer/theme.ts. THEMES order is
-// [dark, midnight, neon, sunset, ocean].
 const ACCENT = {
-  dark: '#6366f1',
-  midnight: '#a78bfa',
-  neon: '#00d4aa',
-  sunset: '#f97316',
-  ocean: '#38bdf8',
   'golden-hour': '#b9773a',
+  'rainy-study': '#6e8494',
 } as const
-const NEON_INDEX = 2
-const DEFAULT_ID = 'golden-hour' // App's fallback theme.
 
-/** Computed value of a CSS custom property on <html>. */
 function accentVar(page: Page, name: '--accent' | '--accent-soft' | '--accent-glow') {
   return page.evaluate(
     (prop) => getComputedStyle(document.documentElement).getPropertyValue(prop).trim(),
@@ -36,9 +22,8 @@ function storedThemeId(page: Page): Promise<string | null> {
   return page.evaluate((key) => localStorage.getItem(key), THEME_KEY)
 }
 
-/** Locate a theme tile by its accessible name (`"<Name> theme"`). */
-function themeTile(page: Page, name: string) {
-  return page.getByRole('button', { name: `${name} theme`, exact: true })
+function sceneCard(page: Page, name: string) {
+  return page.getByRole('button', { name: `${name} scene`, exact: true })
 }
 
 async function gotoApp(page: Page): Promise<void> {
@@ -47,11 +32,6 @@ async function gotoApp(page: Page): Promise<void> {
   await page.locator('#ts-customize').waitFor({ state: 'visible', timeout: 30_000 })
 }
 
-/**
- * Leave the home screen so the home card stops covering the customize popover.
- * `#home-live` -> App.enterLiveMode is a plain mode switch: it touches no theme
- * state, so every theme assertion stays valid across it.
- */
 async function leaveHomeScreen(page: Page): Promise<void> {
   const liveTile = page.locator('#home-live')
   await liveTile.waitFor({ state: 'visible', timeout: 30_000 })
@@ -59,154 +39,96 @@ async function leaveHomeScreen(page: Page): Promise<void> {
   await expect(page.locator('#dropzone')).toHaveClass(/dz--hidden/, { timeout: 15_000 })
 }
 
-/** Open the customize popover (idempotent-ish: no-ops if already open). */
 async function openCustomize(page: Page): Promise<void> {
   const menu = page.locator('.ts-customize-menu')
   if (await menu.evaluate((el) => el.classList.contains('ts-popover--open')).catch(() => false))
     return
   const trigger = page.locator('#ts-customize')
-  // Hover first — the top strip dims on idle. The dimmed strip inherits
-  // `pointer-events: none`, so an unforced hover is swallowed by `#pianoroll`
-  // and never wakes the strip. Force it; mousemove still undims the trigger.
   await trigger.hover({ force: true })
   await trigger.click()
   await expect(menu).toHaveClass(/ts-popover--open/, { timeout: 15_000 })
 }
 
-async function selectTheme(page: Page, name: string): Promise<void> {
+async function selectScene(page: Page, name: string): Promise<void> {
   await openCustomize(page)
-  const tile = themeTile(page, name)
-  await tile.waitFor({ state: 'visible', timeout: 15_000 })
-  await tile.hover()
-  await tile.click()
+  const card = sceneCard(page, name)
+  await card.waitFor({ state: 'visible', timeout: 15_000 })
+  await card.click()
 }
 
-test.describe('Theme selection + persistence', () => {
-  test('ships only Opal and Liquid Glass material themes and their particle presets', async ({ page }) => {
+test.describe('Scene selection + persistence', () => {
+  test('ships Golden Hour and Rainy Study, with no classic theme grid', async ({ page }) => {
     await gotoApp(page)
     await leaveHomeScreen(page)
     await openCustomize(page)
-    await expect(page.locator('.customize-theme-tile--material')).toHaveCount(2)
-    await expect(themeTile(page, 'Opal')).toBeVisible()
-    await expect(themeTile(page, 'Liquid Glass')).toBeVisible()
-    for (const name of ['Smoked Glass', 'Aurora Silk', 'Lacquer & Gold', 'Ember Mist']) {
-      await expect(themeTile(page, name)).toHaveCount(0)
-    }
-    for (const name of ['Glass glints', 'Silk fibers', 'Gold leaf', 'Windblown mist']) {
-      await expect(page.getByRole('button', { name: `${name} particles`, exact: true })).toHaveCount(0)
+    await expect(page.locator('.customize-theme-tile')).toHaveCount(0)
+    await expect(sceneCard(page, 'Golden Hour Living Room')).toHaveAttribute('aria-pressed', 'true')
+    await expect(sceneCard(page, 'Rainy Study')).toBeVisible()
+    for (const name of ['Sunset', 'Ocean', 'Neon', 'Opal', 'Liquid Glass']) {
+      await expect(page.getByRole('button', { name: `${name} theme`, exact: true })).toHaveCount(0)
     }
     await expect(page.locator('.customize-particle-chip')).toHaveCount(7)
   })
 
-  test('saved deferred visuals fall back to shipping choices', async ({ page }) => {
+  test('a saved classic theme is rewritten to Golden Hour', async ({ page }) => {
     await page.addInitScript(() => {
-      localStorage.setItem('midee.theme', 'ember-mist')
+      localStorage.setItem('midee.theme', 'sunset')
       localStorage.setItem('midee.particle', 'mist')
     })
     await gotoApp(page)
+    await expect.poll(() => accentVar(page, '--accent'), { timeout: 15_000 }).toBe(ACCENT['golden-hour'])
+    expect(await storedThemeId(page)).toBe('golden-hour')
     await leaveHomeScreen(page)
     await openCustomize(page)
-    await expect(themeTile(page, 'Golden Hour')).toHaveAttribute('aria-pressed', 'true')
-    await expect(page.getByRole('button', { name: 'Embers particles', exact: true })).toHaveClass(/--on/)
+    await expect(sceneCard(page, 'Golden Hour Living Room')).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByRole('button', { name: 'Embers particles', exact: true })).toHaveClass(
+      /--on/,
+    )
   })
 
-  test('legacy material indices still restore Opal and its dust', async ({ page }) => {
+  test('a legacy theme index is rewritten to Golden Hour', async ({ page }) => {
     await page.addInitScript(() => {
-      localStorage.setItem('midee.themeIndex', '8')
-      localStorage.setItem('midee.particleIndex', '8')
+      localStorage.removeItem('midee.theme')
+      localStorage.setItem('midee.themeIndex', '2')
     })
     await gotoApp(page)
+    await expect.poll(() => accentVar(page, '--accent'), { timeout: 15_000 }).toBe(ACCENT['golden-hour'])
+    expect(await storedThemeId(page)).toBe('golden-hour')
     await leaveHomeScreen(page)
     await openCustomize(page)
-    await expect(themeTile(page, 'Opal')).toHaveAttribute('aria-pressed', 'true')
-    await expect(page.getByRole('button', { name: 'Opal dust particles', exact: true })).toHaveClass(/--on/)
-    expect(await storedThemeId(page)).toBe('opal')
-    expect(await page.evaluate(() => localStorage.getItem('midee.particle'))).toBe('pearl')
+    await expect(sceneCard(page, 'Golden Hour Living Room')).toHaveAttribute('aria-pressed', 'true')
   })
 
-  test('selecting a theme applies its accent vars, marks the tile, and persists the id', async ({
-    page,
-  }) => {
+  test('selecting Rainy Study applies its accent and persists the id', async ({ page }) => {
     await gotoApp(page)
     await leaveHomeScreen(page)
+    await selectScene(page, 'Rainy Study')
 
-    await selectTheme(page, 'Neon')
-
-    await expect
-      .poll(() => accentVar(page, '--accent'), {
-        timeout: 15_000,
-        message: '--accent should become the Neon accent',
-      })
-      .toBe(ACCENT.neon)
-    expect(await accentVar(page, '--accent-soft')).toBe(`${ACCENT.neon}2e`)
-    expect(await accentVar(page, '--accent-glow')).toBe(`${ACCENT.neon}66`)
-
-    await expect(themeTile(page, 'Neon')).toHaveClass(/customize-theme-tile--on/)
-
-    await expect
-      .poll(() => storedThemeId(page), {
-        timeout: 15_000,
-        message: `localStorage['${THEME_KEY}'] should hold the theme id`,
-      })
-      .toBe('neon')
+    await expect.poll(() => accentVar(page, '--accent'), { timeout: 15_000 }).toBe(ACCENT['rainy-study'])
+    expect(await accentVar(page, '--accent-soft')).toBe(`${ACCENT['rainy-study']}2e`)
+    expect(await accentVar(page, '--accent-glow')).toBe(`${ACCENT['rainy-study']}66`)
+    await expect(sceneCard(page, 'Rainy Study')).toHaveAttribute('aria-pressed', 'true')
+    expect(await storedThemeId(page)).toBe('rainy-study')
   })
 
-  test('reload restores the chosen theme', async ({ page }) => {
+  test('reload restores Rainy Study', async ({ page }) => {
     await gotoApp(page)
     await leaveHomeScreen(page)
-    await selectTheme(page, 'Ocean')
-    await expect
-      .poll(() => accentVar(page, '--accent'), { timeout: 15_000 })
-      .toBe(ACCENT.ocean)
-    expect(await storedThemeId(page)).toBe('ocean')
+    await selectScene(page, 'Rainy Study')
+    await expect.poll(() => storedThemeId(page), { timeout: 15_000 }).toBe('rainy-study')
 
     await page.reload()
     await page.locator('#ts-customize').waitFor({ state: 'visible', timeout: 30_000 })
-
     await expect
-      .poll(() => accentVar(page, '--accent'), {
-        timeout: 15_000,
-        message: 'Ocean should still be active after a reload',
-      })
-      .toBe(ACCENT.ocean)
+      .poll(() => accentVar(page, '--accent'), { timeout: 15_000 })
+      .toBe(ACCENT['rainy-study'])
 
     await leaveHomeScreen(page)
     await openCustomize(page)
-    await expect(themeTile(page, 'Ocean')).toHaveClass(/customize-theme-tile--on/)
+    await expect(sceneCard(page, 'Rainy Study')).toHaveAttribute('aria-pressed', 'true')
   })
 
-  test('legacy midee.themeIndex is migrated to a theme id on first load', async ({ page }) => {
-    // Returning user with only the legacy integer index; seeded before the bundle runs.
-    await page.addInitScript(
-      ([themeKey, legacyKey, index]) => {
-        localStorage.removeItem(themeKey as string)
-        localStorage.setItem(legacyKey as string, String(index))
-      },
-      [THEME_KEY, LEGACY_KEY, NEON_INDEX] as const,
-    )
-
-    await gotoApp(page)
-
-    await expect
-      .poll(() => accentVar(page, '--accent'), {
-        timeout: 15_000,
-        message: 'legacy index 2 should resolve to the Neon theme',
-      })
-      .toBe(ACCENT.neon)
-
-    await expect
-      .poll(() => storedThemeId(page), {
-        timeout: 15_000,
-        message: `migration should write '${THEME_KEY}' = 'neon'`,
-      })
-      .toBe('neon')
-
-    await leaveHomeScreen(page)
-    await openCustomize(page)
-    await expect(themeTile(page, 'Neon')).toHaveClass(/customize-theme-tile--on/)
-  })
-
-  test('an invalid stored theme id falls back to the default theme', async ({ page }) => {
+  test('an invalid stored theme id falls back to Golden Hour and is rewritten', async ({ page }) => {
     await page.addInitScript(
       ([themeKey, legacyKey]) => {
         localStorage.setItem(themeKey as string, 'nope')
@@ -216,20 +138,13 @@ test.describe('Theme selection + persistence', () => {
     )
 
     await gotoApp(page)
-
     await expect
-      .poll(() => accentVar(page, '--accent'), {
-        timeout: 15_000,
-        message: 'an unknown theme id must fall back to the default (Golden Hour)',
-      })
-      .toBe(ACCENT[DEFAULT_ID])
+      .poll(() => accentVar(page, '--accent'), { timeout: 15_000 })
+      .toBe(ACCENT['golden-hour'])
+    expect(await storedThemeId(page)).toBe('golden-hour')
 
     await leaveHomeScreen(page)
     await openCustomize(page)
-    await expect(themeTile(page, 'Golden Hour')).toHaveClass(/customize-theme-tile--on/)
-    await expect(page.getByRole('button', { name: 'Golden Hour Living Room scene' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
+    await expect(sceneCard(page, 'Golden Hour Living Room')).toHaveAttribute('aria-pressed', 'true')
   })
 })
