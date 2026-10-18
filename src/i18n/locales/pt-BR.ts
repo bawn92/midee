@@ -142,6 +142,7 @@ const ptBR: Messages = {
   'customize.theme': 'Tema',
   'customize.new': 'Novo',
   'customize.particles': 'Partículas',
+  'customize.particles.rainy': 'Extras de chuva',
   'customize.chord': 'Leitura de acordes',
   'customize.chord.sub': 'Nomeia o que está soando · modo ao vivo',
   'customize.noteLabels': 'Nomes das notas',

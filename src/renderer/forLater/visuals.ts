@@ -8,7 +8,7 @@ export const FOR_LATER_THEME_IDS = [
   'lacquer-gold',
   'ember-mist',
 ] as const
-export const FOR_LATER_PARTICLE_IDS = ['glass', 'silk', 'gold', 'mist'] as const
+export const FOR_LATER_PARTICLE_IDS = ['glass', 'silk', 'gold'] as const
 
 export function availableVisuals<T extends { id: string }>(
   catalog: readonly T[],

@@ -146,6 +146,7 @@ const pl: Messages & Record<PolishPluralKey, string> = {
   'customize.theme': 'Motyw',
   'customize.new': 'Nowość',
   'customize.particles': 'Cząstki',
+  'customize.particles.rainy': 'Deszczowe dodatki',
   'customize.chord': 'Odczyt akordów',
   'customize.chord.sub': 'Nazywa to, co brzmi · tryb na żywo',
   'customize.noteLabels': 'Nazwy dźwięków',

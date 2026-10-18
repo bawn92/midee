@@ -145,6 +145,7 @@ const fr: Messages = {
   'customize.theme': 'Thème',
   'customize.new': 'Nouveau',
   'customize.particles': 'Particules',
+  'customize.particles.rainy': 'Extras pluvieux',
   'customize.chord': 'Affichage des accords',
   'customize.chord.sub': 'Nommer les accords joués · mode direct',
   'customize.noteLabels': 'Noms des notes',

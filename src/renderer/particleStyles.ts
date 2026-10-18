@@ -8,6 +8,7 @@ export type ParticleStyle =
   | 'sparkle'
   | 'none'
   | 'glass'
+  | 'rain'
   | MaterialParticleStyle
 
 export interface ParticleStyleInfo {
@@ -27,7 +28,41 @@ export const ALL_PARTICLE_STYLES: readonly ParticleStyleInfo[] = [
   { id: 'gold', name: 'Gold leaf' },
   { id: 'pearl', name: 'Opal dust' },
   { id: 'liquid', name: 'Glass dust' },
-  { id: 'mist', name: 'Windblown mist' },
+  { id: 'mist', name: 'Mist' },
+  { id: 'rain', name: 'Rain' },
 ]
 
 export const PARTICLE_STYLES = availableVisuals(ALL_PARTICLE_STYLES, FOR_LATER_PARTICLE_IDS)
+
+const PICKER_ORDER: readonly ParticleStyle[] = [
+  'none',
+  'sparks',
+  'embers',
+  'bloom',
+  'sparkle',
+  'pearl',
+  'liquid',
+  'rain',
+  'mist',
+]
+
+export function isRainyParticle(id: string): boolean {
+  return id === 'rain' || id === 'mist'
+}
+
+/** Rain and Mist stay stored on Golden Hour and display as Sparkle. */
+export function displayParticle(id: ParticleStyle, themeId: string): ParticleStyle {
+  if (themeId !== 'rainy-study' && isRainyParticle(id)) return 'sparkle'
+  return id
+}
+
+export function pickerStyles(themeId: string): readonly ParticleStyleInfo[] {
+  const rainy = themeId === 'rainy-study'
+  const picked: ParticleStyleInfo[] = []
+  for (const id of PICKER_ORDER) {
+    if (!rainy && isRainyParticle(id)) continue
+    const style = PARTICLE_STYLES.find((item) => item.id === id)
+    if (style) picked.push(style)
+  }
+  return picked
+}

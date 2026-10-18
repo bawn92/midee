@@ -71,7 +71,12 @@ import {
   subscribeKeyboardFocus,
 } from './renderer/keyboardFocus'
 import { PianoRollRenderer } from './renderer/PianoRollRenderer'
-import { ALL_PARTICLE_STYLES, PARTICLE_STYLES, type ParticleStyle } from './renderer/particleStyles'
+import {
+  ALL_PARTICLE_STYLES,
+  displayParticle,
+  PARTICLE_STYLES,
+  type ParticleStyle,
+} from './renderer/particleStyles'
 import { finishRangeAdjust } from './renderer/rangeOverlay'
 import { applySceneClass } from './renderer/scenes'
 import { accentCSS, readStoredThemeId, THEMES, type Theme, type ThemeId } from './renderer/theme'
@@ -918,7 +923,7 @@ export class App {
     // Looper + session captures are live-performance concerns — practice
     // key-presses (Learn) should not pollute a saved session recording.
     if (captures) {
-      this.renderer.burstParticleAt(evt.pitch)
+      this.renderer.burstParticleAt(evt.pitch, evt.velocity)
       this.capture.captureNoteOn(evt.pitch, evt.velocity, evt.clockTime)
     }
 
@@ -1264,7 +1269,21 @@ export class App {
   }
 
   private cycleParticleStyle(): void {
-    this.setParticleByIndex((this.particleIndex + 1) % PARTICLE_STYLES.length, 'cycle')
+    const themeId = THEMES[this.themeIndex]?.id ?? 'golden-hour'
+    const visible = PARTICLE_STYLES.filter(
+      (style) => themeId === 'rainy-study' || (style.id !== 'rain' && style.id !== 'mist'),
+    )
+    const shown = displayParticle(PARTICLE_STYLES[this.particleIndex]!.id, themeId)
+    const at = Math.max(
+      0,
+      visible.findIndex((style) => style.id === shown),
+    )
+    const next = visible[(at + 1) % visible.length]
+    if (!next) return
+    this.setParticleByIndex(
+      PARTICLE_STYLES.findIndex((style) => style.id === next.id),
+      'cycle',
+    )
   }
 
   private setParticleByIndex(idx: number, method: 'cycle' | 'menu'): void {
@@ -1277,7 +1296,8 @@ export class App {
 
   private applyParticleStyle(): void {
     const info = PARTICLE_STYLES[this.particleIndex]!
-    this.renderer.setParticleStyle(info.id)
+    const themeId = THEMES[this.themeIndex]?.id ?? 'golden-hour'
+    this.renderer.setParticleStyle(displayParticle(info.id, themeId))
     this.customizeMenu?.setParticle(this.particleIndex)
   }
 
@@ -2153,6 +2173,7 @@ export class App {
   }
 
   private applyTheme(theme: Theme): void {
+    applySceneClass(theme.id)
     this.renderer.setTheme(theme)
     this.keyLights.setTheme(theme)
     this.customizeMenu?.setTheme(this.themeIndex)
@@ -2161,7 +2182,7 @@ export class App {
     document.documentElement.style.setProperty('--accent', accent)
     document.documentElement.style.setProperty('--accent-soft', `${accent}2e`)
     document.documentElement.style.setProperty('--accent-glow', `${accent}66`)
-    applySceneClass(theme.id)
+    this.applyParticleStyle()
   }
 
   private showLoading(): void {
@@ -2248,7 +2269,7 @@ const instrumentStore = idPersisted<InstrumentId>(
 )
 const particleStore = idPersisted<ParticleStyle>(
   'midee.particle',
-  'embers',
+  'sparkle',
   PARTICLE_STYLES.map((s) => s.id),
   { key: 'midee.particleIndex', ids: ALL_PARTICLE_STYLES.map((s) => s.id) },
 )

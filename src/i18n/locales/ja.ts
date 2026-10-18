@@ -138,6 +138,7 @@ const ja: Messages = {
   'customize.theme': 'テーマ',
   'customize.new': 'NEW',
   'customize.particles': 'パーティクル',
+  'customize.particles.rainy': '雨の日の効果',
   'customize.chord': 'コード表示',
   'customize.chord.sub': '鳴っている音をコード名で表示 · ライブモード',
   'customize.noteLabels': '音名表示',

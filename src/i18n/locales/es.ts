@@ -141,6 +141,7 @@ const es: Messages = {
   'customize.theme': 'Tema',
   'customize.new': 'Nuevo',
   'customize.particles': 'Partículas',
+  'customize.particles.rainy': 'Extras de lluvia',
   'customize.chord': 'Lectura de acordes',
   'customize.chord.sub': 'Nombra lo que está sonando · modo en vivo',
   'customize.noteLabels': 'Nombres de notas',

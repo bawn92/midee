@@ -158,6 +158,7 @@ export const en = {
   'customize.theme': 'Theme',
   'customize.new': 'New',
   'customize.particles': 'Particles',
+  'customize.particles.rainy': 'Rainy extras',
   'customize.chord': 'Chord readout',
   'customize.chord.sub': "Name what's sounding · live mode",
   'customize.noteLabels': 'Note names',

@@ -18,6 +18,8 @@ describe('visual release gate', () => {
       'none',
       'pearl',
       'liquid',
+      'mist',
+      'rain',
     ])
     for (const theme of THEMES) {
       if (theme.recommendedParticles) {

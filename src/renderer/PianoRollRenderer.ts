@@ -1,6 +1,6 @@
 import { Application, Graphics, Sprite, Texture, type Ticker } from 'pixi.js'
 import type { MasterClock } from '../core/clock/MasterClock'
-import { getHandPractice, noteMatchesHand } from '../core/handPractice'
+import { getHandPractice, noteHand, noteMatchesHand } from '../core/handPractice'
 import { getKeyboardRange, placedPitch } from '../core/keyboardRange'
 import type { MidiFile } from '../core/midi/types'
 import type { LiveNoteStore } from '../midi/LiveNoteStore'
@@ -153,7 +153,10 @@ export class PianoRollRenderer {
   // to emit particles this frame and their burst geometry/color. Pooled to keep
   // the hot path allocation-free; cleared at the top of each frame.
   private emitEligible = new Set<number>()
-  private emitGeom = new Map<number, { cx: number; w: number; color: number }>()
+  private emitGeom = new Map<
+    number,
+    { cx: number; w: number; color: number; velocity: number; hand: 'lh' | 'rh' }
+  >()
 
   // Practice-mode hints (pitches that should glow on the keyboard as "play
   // these to advance"). `pending` is what's still required, `accepted` is what
@@ -275,6 +278,7 @@ export class PianoRollRenderer {
     this.drawBackground()
     this.drawNowLine()
     this.keyboardRenderer.build(this.viewport, this.viewport.rollHeight)
+    this.particles.setViewport(this.viewport.config.canvasWidth, this.viewport.config.canvasHeight)
     this.rebuildExternalLayers()
     this.layoutPlantShadows()
   }
@@ -563,6 +567,7 @@ export class PianoRollRenderer {
     this.noteRenderer.updateTheme(theme)
     this.liveNoteRenderer.updateTheme(theme)
     this.keyboardRenderer.updateTheme(theme)
+    this.particles.setScene(theme.id)
     // App theme selection applies the authored particle preset separately;
     // keeping that explicit also supports saved overrides and export settings.
     this.rebuildStaticLayers()
@@ -731,7 +736,13 @@ export class PianoRollRenderer {
           const w = this.viewport.pitchWidth(sounding)
           const cx = this.viewport.pitchToX(sounding) + w / 2
           eligible.add(key)
-          geom.set(key, { cx, w, color: trackColor })
+          geom.set(key, {
+            cx,
+            w,
+            color: trackColor,
+            velocity: note.velocity,
+            hand: noteHand(note.pitch) === 'left' ? 'lh' : 'rh',
+          })
         }
       }
 
@@ -745,15 +756,26 @@ export class PianoRollRenderer {
         currentTime,
         cadence: SUSTAIN_CADENCE,
       })
+      const hits: {
+        x: number
+        y: number
+        keyWidth: number
+        velocity: number
+        hand: 'lh' | 'rh'
+      }[] = []
       for (const { key, kind } of emits) {
+        if (kind !== 'onset') continue
         const g = geom.get(key)
         if (!g) continue
-        // Falling notes have no spark layer. The hit line and the pressed key
-        // carry the impact.
-        void kind
-        void g
-        void nowLineY
+        hits.push({
+          x: g.cx,
+          y: nowLineY,
+          keyWidth: g.w,
+          velocity: g.velocity,
+          hand: g.hand,
+        })
       }
+      if (hits.length > 0) this.particles.queueHits(hits)
 
       this.beatGrid.draw(currentTime, this.midi, this.viewport, this.theme)
       this.noteRenderer.draw(
@@ -883,8 +905,19 @@ export class PianoRollRenderer {
     for (const layer of this.externalLayers) layer.rebuild?.(ctx)
   }
 
-  burstParticleAt(_pitch: number): void {
-    // Sparks are not part of the falling-note design.
+  burstParticleAt(pitch: number, velocity = 1): void {
+    if (!this.viewport.hasKey(pitch)) return
+    const keyWidth = this.viewport.pitchWidth(pitch)
+    this.particles.queueHits([
+      {
+        x: this.viewport.pitchToX(pitch) + keyWidth / 2,
+        y: this.viewport.nowLineY,
+        keyWidth,
+        velocity,
+        hand: noteHand(pitch) === 'left' ? 'lh' : 'rh',
+      },
+    ])
+    this.wake()
   }
 
   setLiveNoteStore(store: LiveNoteStore): void {

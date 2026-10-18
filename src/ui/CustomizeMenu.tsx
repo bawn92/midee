@@ -3,7 +3,13 @@ import { render } from 'solid-js/web'
 import { LOCALES, type LocaleCode, locale, t } from '../i18n'
 import type { KeyLights } from '../midi/KeyLights'
 import type { MidiInputManager } from '../midi/MidiInputManager'
-import type { ParticleStyle, ParticleStyleInfo } from '../renderer/particleStyles'
+import {
+  displayParticle,
+  isRainyParticle,
+  type ParticleStyle,
+  type ParticleStyleInfo,
+  pickerStyles,
+} from '../renderer/particleStyles'
 import { SCENES } from '../renderer/scenes'
 import { accentCSS, type Theme } from '../renderer/theme'
 import { AppearanceStudio } from './AppearanceStudio'
@@ -109,7 +115,42 @@ interface MenuProps {
   registerEl: (el: HTMLElement) => void
 }
 
+function ParticleOption(props: {
+  style: ParticleStyleInfo
+  shown: ParticleStyle
+  onSelect: (id: ParticleStyle) => void
+}) {
+  const on = () => props.shown === props.style.id
+  return (
+    <button
+      class="particle-option"
+      classList={{ 'particle-option--on': on() }}
+      type="button"
+      data-particle={props.style.id}
+      title={props.style.name}
+      aria-label={`${props.style.name} particles`}
+      aria-pressed={on()}
+      onClick={() => props.onSelect(props.style.id)}
+    >
+      <span
+        class="particle-option-icon"
+        data-style={props.style.id}
+        aria-hidden="true"
+        innerHTML={PARTICLE_GLYPHS[props.style.id] ?? PARTICLE_GLYPHS.sparks ?? ''}
+      />
+      <span class="particle-option-name">{props.style.name}</span>
+    </button>
+  )
+}
+
 function MenuView(props: MenuProps) {
+  const themeId = () => props.themes[props.themeIndex()]?.id ?? 'golden-hour'
+  const shownId = () =>
+    displayParticle(props.particles[props.particleIndex()]?.id ?? 'sparkle', themeId())
+  const select = (id: ParticleStyle) => {
+    const index = props.particles.findIndex((style) => style.id === id)
+    if (index >= 0) props.onSelectParticle(index)
+  }
   return (
     <div
       ref={(el) => props.registerEl(el)}
@@ -183,41 +224,30 @@ function MenuView(props: MenuProps) {
           onMetro={props.onMetro}
         />
 
-        <div class="customize-section">
+        <div class="customize-section" data-section="particles">
           <div class="customize-section-head">
             <span class="customize-section-label">{t('customize.particles')}</span>
-            <span class="customize-section-value">
-              {props.particles[props.particleIndex()]?.name}
+            <span class="customize-section-value" data-particle-value={shownId()}>
+              {props.particles.find((style) => style.id === shownId())?.name}
             </span>
           </div>
-          <div class="customize-particle-row">
-            <For each={props.particles}>
-              {(p, i) => (
-                <button
-                  class="customize-particle-chip"
-                  classList={{ 'customize-particle-chip--on': props.particleIndex() === i() }}
-                  type="button"
-                  title={p.name}
-                  aria-label={`${p.name} particles`}
-                  aria-pressed={props.particleIndex() === i()}
-                  onClick={() => props.onSelectParticle(i())}
-                >
-                  <span
-                    class="customize-particle-chip-glyph"
-                    data-style={p.id}
-                    aria-hidden="true"
-                    innerHTML={PARTICLE_GLYPHS[p.id] ?? PARTICLE_GLYPHS['sparks'] ?? ''}
-                  />
-                  <span class="customize-particle-chip-label">{p.name}</span>
-                  <span
-                    class="customize-particle-check"
-                    aria-hidden="true"
-                    innerHTML={icons.check(11)}
-                  />
-                </button>
-              )}
+          <div class="particle-grid" role="radiogroup" aria-label={t('customize.particles')}>
+            <For each={pickerStyles(themeId()).filter((style) => !isRainyParticle(style.id))}>
+              {(style) => <ParticleOption style={style} shown={shownId()} onSelect={select} />}
             </For>
           </div>
+          <Show when={themeId() === 'rainy-study'}>
+            <div class="particle-rainy-label">{t('customize.particles.rainy')}</div>
+            <div
+              class="particle-grid"
+              role="radiogroup"
+              aria-label={t('customize.particles.rainy')}
+            >
+              <For each={pickerStyles(themeId()).filter((style) => isRainyParticle(style.id))}>
+                {(style) => <ParticleOption style={style} shown={shownId()} onSelect={select} />}
+              </For>
+            </div>
+          </Show>
         </div>
 
         <div class="customize-section">
@@ -597,5 +627,10 @@ const PARTICLE_GLYPHS: Record<string, string> = {
   none: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
     <circle cx="12" cy="12" r="8" opacity="0.5"/>
     <line x1="6" y1="18" x2="18" y2="6" opacity="0.7"/>
+  </svg>`,
+  rain: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+    <path d="M7 4v5M12 2v7M17 4v5"/>
+    <path d="M5 16c1.2 2.4 3.2 3.6 7 3.6s5.8-1.2 7-3.6" opacity="0.7"/>
+    <path d="M8 20.5c.6 1 1.6 1.5 4 1.5s3.4-.5 4-1.5" opacity="0.45"/>
   </svg>`,
 }

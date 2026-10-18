@@ -104,14 +104,8 @@ export const MATERIAL_CHOREOGRAPHY: Record<
   },
 }
 
-export function isMaterialParticleStyle(style: string): style is MaterialParticleStyle {
-  return (
-    style === 'silk' ||
-    style === 'gold' ||
-    style === 'pearl' ||
-    style === 'liquid' ||
-    style === 'mist'
-  )
+export function isMaterialParticleStyle(style: string): style is 'silk' | 'gold' {
+  return style === 'silk' || style === 'gold'
 }
 
 export interface MaterialParticle {

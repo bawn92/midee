@@ -84,6 +84,16 @@
   --note-rh-edge: #c98a32;
   --note-lh: #d9908f;
   --note-lh-edge: #b8706f;
+  --particle-hot: #fff3d6;
+  --particle-glint: #ffd9a0;
+  --particle-rain: #e9f1f6;
+  --particle-mist: #fff8ee;
+  --particle-glass-rim: #7a4e2c;
+  --particle-opal-1: #f6c2da;
+  --particle-opal-2: #d9c9f5;
+  --particle-opal-3: #c4e3f7;
+  --particle-opal-4: #c6eedd;
+  --particle-opal-5: #fbd8be;
   --success: #6e8f5a;
   --success-soft: #dce6cf;
   --warning: #c7853a;

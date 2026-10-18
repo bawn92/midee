@@ -136,6 +136,7 @@ const zhCN: Messages = {
   'customize.theme': '主题',
   'customize.new': '新',
   'customize.particles': '粒子效果',
+  'customize.particles.rainy': '雨天效果',
   'customize.chord': '和弦显示',
   'customize.chord.sub': '显示当前发声的和弦 · 实时模式',
   'customize.noteLabels': '音名标注',
