@@ -15,5 +15,8 @@
     "jsx": "preserve",
     "jsxImportSource": "solid-js"
   },
-  "include": ["src"]
+  "include": ["src"],
+  // Fixture helpers import node:fs. A clean install does not include the
+  // optional @types/node peer, and `npm run build` typechecks this program.
+  "exclude": ["src/test"]
 }
