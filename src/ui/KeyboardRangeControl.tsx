@@ -32,15 +32,23 @@ import {
   subscribeKeyboardFocus,
 } from '../renderer/keyboardFocus'
 import {
+  holdRangeAdjust,
+  pulseRangeAdjust,
+  rangeAdjusting,
+  rangeGlassOpen,
   rangeOverlay,
+  rangeSettleRemaining,
+  releaseRangeAdjust,
   setRangePhase,
   subscribeRangeOverlay,
+  wantsDim,
+  wantsLanes,
+  wantsOutline,
   wantsStrip,
 } from '../renderer/rangeOverlay'
 import type { AppStore } from '../store/state'
 import { icons } from './icons'
 import { Stepper, Toggle } from './kit/kit'
-import { RangeStylePicker } from './RangeStylePicker'
 
 const RANGE_OPEN_KEY = 'midee.kbdRangeExpanded'
 
@@ -88,6 +96,13 @@ function windowStyle(start: number, size: number): { left: string; width: string
 function applySnappedSize(size: number): void {
   const next = resizeKeyboardRangeSnapped(getKeyboardRange(), size)
   setKeyboardRange({ start: next.start, size: next.size })
+  pulseRangeAdjust()
+}
+
+function openRangeAppearance(): void {
+  window.dispatchEvent(
+    new CustomEvent('midee-open-appearance', { detail: { section: 'range-style' } }),
+  )
 }
 
 function sceneNow(): boolean {
@@ -104,6 +119,7 @@ function KeyboardRangeView(props: { store: AppStore }) {
   const [focus, setFocus] = createSignal(keyboardFocusEnabled())
   const [armed, setArmed] = createSignal(isControllerCalibrateArmed())
   const [prefs, setPrefs] = createSignal(getKeyboardRange())
+  const [overlay, setOverlay] = createSignal(rangeOverlay())
   let root!: HTMLDivElement
   let pickerEl!: HTMLDivElement
   let drag: RangeDrag | null = null
@@ -112,6 +128,7 @@ function KeyboardRangeView(props: { store: AppStore }) {
     const off = subscribeKeyboardRange(setPrefs)
     const offArm = subscribeControllerCalibrate(setArmed)
     const offFocus = subscribeKeyboardFocus(setFocus)
+    const offOverlay = subscribeRangeOverlay(() => setOverlay(rangeOverlay()))
     const onDoc = (e: PointerEvent): void => {
       if (!open()) return
       // The pinned card stays where the player left it, like the song guide.
@@ -160,6 +177,7 @@ function KeyboardRangeView(props: { store: AppStore }) {
       off()
       offArm()
       offFocus()
+      offOverlay()
       ro?.disconnect()
       mo.disconnect()
       window.removeEventListener('resize', fitPanel)
@@ -245,7 +263,25 @@ function KeyboardRangeView(props: { store: AppStore }) {
       return
     }
     e.preventDefault()
+    pulseRangeAdjust()
   }
+
+  function onPanelPointerDown(): void {
+    holdRangeAdjust()
+    const up = () => {
+      releaseRangeAdjust()
+      window.removeEventListener('pointerup', up)
+      window.removeEventListener('pointercancel', up)
+    }
+    window.addEventListener('pointerup', up)
+    window.addEventListener('pointercancel', up)
+  }
+
+  createEffect(() => {
+    if (!armed()) return
+    holdRangeAdjust()
+    onCleanup(() => releaseRangeAdjust())
+  })
 
   const range = () => prefs()
   const lowName = () => pitchToNoteName(range().start)
@@ -288,7 +324,10 @@ function KeyboardRangeView(props: { store: AppStore }) {
           aria-label={t('kbdRange.octaveDown')}
           data-tip={t('kbdRange.octaveDown')}
           disabled={!canShift(range().start, range().size, -12)}
-          onClick={() => shiftKeyboardRangeBy(-12)}
+          onClick={() => {
+            shiftKeyboardRangeBy(-12)
+            pulseRangeAdjust()
+          }}
         >
           −8va
         </button>
@@ -299,7 +338,10 @@ function KeyboardRangeView(props: { store: AppStore }) {
           aria-label={t('kbdRange.semitoneDown')}
           data-tip={t('kbdRange.semitoneDown')}
           disabled={!canShift(range().start, range().size, -1)}
-          onClick={() => shiftKeyboardRangeBy(-1)}
+          onClick={() => {
+            shiftKeyboardRangeBy(-1)
+            pulseRangeAdjust()
+          }}
         >
           −
         </button>
@@ -336,7 +378,10 @@ function KeyboardRangeView(props: { store: AppStore }) {
           aria-label={t('kbdRange.semitoneUp')}
           data-tip={t('kbdRange.semitoneUp')}
           disabled={!canShift(range().start, range().size, 1)}
-          onClick={() => shiftKeyboardRangeBy(1)}
+          onClick={() => {
+            shiftKeyboardRangeBy(1)
+            pulseRangeAdjust()
+          }}
         >
           +
         </button>
@@ -347,7 +392,10 @@ function KeyboardRangeView(props: { store: AppStore }) {
           aria-label={t('kbdRange.octaveUp')}
           data-tip={t('kbdRange.octaveUp')}
           disabled={!canShift(range().start, range().size, 12)}
-          onClick={() => shiftKeyboardRangeBy(12)}
+          onClick={() => {
+            shiftKeyboardRangeBy(12)
+            pulseRangeAdjust()
+          }}
         >
           +8va
         </button>
@@ -381,6 +429,7 @@ function KeyboardRangeView(props: { store: AppStore }) {
         class="kbd-range-panel"
         role="dialog"
         aria-label={t('kbdRange.title')}
+        onPointerDown={onPanelPointerDown}
       >
         <div class="kbd-range-face">
           <div class="kbd-range-ends">
@@ -392,8 +441,14 @@ function KeyboardRangeView(props: { store: AppStore }) {
                 incLabel={t('kbdRange.semitoneUp')}
                 decDisabled={!canShift(range().start, range().size, -1)}
                 incDisabled={!canShift(range().start, range().size, 1)}
-                onDec={() => shiftKeyboardRangeBy(-1)}
-                onInc={() => shiftKeyboardRangeBy(1)}
+                onDec={() => {
+                  shiftKeyboardRangeBy(-1)
+                  pulseRangeAdjust()
+                }}
+                onInc={() => {
+                  shiftKeyboardRangeBy(1)
+                  pulseRangeAdjust()
+                }}
               />
             </div>
             <span class="kbd-range-rail" aria-hidden="true" />
@@ -408,10 +463,12 @@ function KeyboardRangeView(props: { store: AppStore }) {
                 onDec={() => {
                   const next = resizeRangeFromEdge(range(), 'end', rangeEnd(range()) - 1)
                   setKeyboardRange({ start: next.start, size: next.size })
+                  pulseRangeAdjust()
                 }}
                 onInc={() => {
                   const next = resizeRangeFromEdge(range(), 'end', rangeEnd(range()) + 1)
                   setKeyboardRange({ start: next.start, size: next.size })
+                  pulseRangeAdjust()
                 }}
               />
             </div>
@@ -449,10 +506,6 @@ function KeyboardRangeView(props: { store: AppStore }) {
               </div>
             </div>
           </div>
-          <div class="kbd-range-style">
-            <span class="gh-caption">{t('customize.range')}</span>
-            <RangeStylePicker compact />
-          </div>
           <div class="gh-field kbd-range-fit-row">
             <span class="gh-label">{t('kbdRange.fit')}</span>
             <span class="kbd-range-fit-actions">
@@ -469,10 +522,31 @@ function KeyboardRangeView(props: { store: AppStore }) {
                 id="kbd-range-fit"
                 label={t('kbdRange.fit')}
                 pressed={range().fitToRange}
-                onChange={(next) => setKeyboardRange({ fitToRange: next })}
+                onChange={(next) => {
+                  setKeyboardRange({ fitToRange: next })
+                  pulseRangeAdjust()
+                }}
               />
             </span>
           </div>
+          <button type="button" class="kbd-range-style-row" onClick={openRangeAppearance}>
+            <span class="kbd-range-style-copy">
+              <span class="kbd-range-style-name">{t('customize.range')}</span>
+              <span class="kbd-range-style-sub">
+                {t('customize.range.summary', {
+                  style: t(`customize.range.${overlay().style}`),
+                  blur: overlay().blurWhileAdjusting
+                    ? t('customize.range.blurOn')
+                    : t('customize.range.blurOff'),
+                })}
+              </span>
+            </span>
+            <span
+              class="kbd-range-style-chevron"
+              aria-hidden="true"
+              innerHTML={icons.chevronDown()}
+            />
+          </button>
         </div>
 
         <details class="kbd-range-advanced" open={scene() ? undefined : true}>
@@ -600,26 +674,33 @@ function KeyboardRangeBandView(props: { store: AppStore; layout: KeyboardRangeBa
   const [box, setBox] = createSignal<KeyBandRect | null>(null)
   const [dragging, setDragging] = createSignal(false)
   const [glass, setGlass] = createSignal(false)
+  const [adjusting, setAdjusting] = createSignal(false)
+  const [motion, setMotion] = createSignal<'phase' | 'style'>('phase')
   let drag: RangeDrag | null = null
   let settleTimer = 0
+  let styleKey = ''
+  let bandHeld = false
+
+  function syncAdjust(): void {
+    window.clearTimeout(settleTimer)
+    const open = rangeGlassOpen()
+    setGlass(open)
+    setAdjusting(rangeAdjusting())
+    const wait = rangeSettleRemaining()
+    if (wait > 0) settleTimer = window.setTimeout(syncAdjust, wait + 20)
+  }
 
   createEffect(() => {
-    const playing = props.store.state.status === 'playing'
-    const dragOn = dragging()
-    const blur = overlay().blurWhileAdjusting
-    window.clearTimeout(settleTimer)
-    if (playing || !blur) {
-      setGlass(false)
-      return
-    }
-    if (dragOn) {
-      setGlass(true)
-      return
-    }
-    settleTimer = window.setTimeout(() => setGlass(false), 1500)
+    const nextKey = `${overlay().style}|${overlay().addonStrip}|${overlay().addonLanes}`
+    if (styleKey && styleKey !== nextKey && !rangeGlassOpen()) setMotion('style')
+    styleKey = nextKey
+    syncAdjust()
   })
 
-  createEffect(() => setRangePhase(glass() ? 'glass' : 'play'))
+  createEffect(() => {
+    if (glass()) setMotion('phase')
+    setRangePhase(glass() ? 'glass' : 'play')
+  })
 
   function measure(): void {
     const range = getKeyboardRange()
@@ -652,6 +733,10 @@ function KeyboardRangeBandView(props: { store: AppStore; layout: KeyboardRangeBa
     if (e && drag && e.pointerId !== drag.pointerId) return
     drag = null
     setDragging(false)
+    if (bandHeld) {
+      bandHeld = false
+      releaseRangeAdjust()
+    }
     window.removeEventListener('pointermove', onMove)
     window.removeEventListener('pointerup', endDrag)
     window.removeEventListener('pointercancel', endDrag)
@@ -661,6 +746,10 @@ function KeyboardRangeBandView(props: { store: AppStore; layout: KeyboardRangeBa
     if (e.pointerType === 'mouse' && e.button !== 0) return
     e.preventDefault()
     e.stopPropagation()
+    if (!bandHeld) {
+      bandHeld = true
+      holdRangeAdjust()
+    }
     const current = getKeyboardRange()
     const pitch = props.layout.pitchAt(e.clientX)
     const target = e.target
@@ -687,6 +776,7 @@ function KeyboardRangeBandView(props: { store: AppStore; layout: KeyboardRangeBa
       return
     }
     e.preventDefault()
+    pulseRangeAdjust()
   }
 
   onMount(() => {
@@ -694,7 +784,10 @@ function KeyboardRangeBandView(props: { store: AppStore; layout: KeyboardRangeBa
       setPrefs(getKeyboardRange())
       measure()
     })
-    const offOverlay = subscribeRangeOverlay(() => setOverlay(rangeOverlay()))
+    const offOverlay = subscribeRangeOverlay(() => {
+      setOverlay(rangeOverlay())
+      syncAdjust()
+    })
     // Focus changes the key widths without changing the controller window,
     // so the glass has to be measured again after the roll updates.
     const offFocus = subscribeKeyboardFocus(() => {
@@ -737,9 +830,15 @@ function KeyboardRangeBandView(props: { store: AppStore; layout: KeyboardRangeBa
         'kbd-range-band--dragging': dragging(),
         'kbd-range-band--glass': glass(),
       }}
-      data-range-style={overlay().style}
-      data-range-outline={overlay().style === 'outline' ? 'on' : 'off'}
-      data-range-strip={wantsStrip(overlay()) ? 'on' : 'off'}
+      data-phase={glass() ? 'glass' : 'play'}
+      data-motion={motion()}
+      data-style={overlay().style}
+      data-dim={wantsDim(overlay()) ? 'on' : 'off'}
+      data-outline={wantsOutline(overlay()) ? 'on' : 'off'}
+      data-strip={wantsStrip(overlay()) ? 'on' : 'off'}
+      data-lanes={wantsLanes(overlay()) ? 'on' : 'off'}
+      data-handles={adjusting() ? 'on' : 'off'}
+      data-adjust-outline={adjusting() && !overlay().blurWhileAdjusting ? 'on' : 'off'}
       style={
         placed()
           ? {
@@ -752,7 +851,17 @@ function KeyboardRangeBandView(props: { store: AppStore; layout: KeyboardRangeBa
       }
     >
       <div class="kbd-range-band-glass" />
-      <div class="kbd-range-strip" />
+      <div class="kbd-range-brackets" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+        <i />
+      </div>
+      <div class="kbd-range-outline" aria-hidden="true" />
+      <div class="kbd-range-strip" aria-hidden="true">
+        <i class="kbd-range-cap kbd-range-cap--start" />
+        <i class="kbd-range-cap kbd-range-cap--end" />
+      </div>
       <div class="kbd-range-band-tip">{formatKeyboardRange(prefs())}</div>
       <div
         class="kbd-range-band-move"

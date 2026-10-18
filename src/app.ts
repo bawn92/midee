@@ -69,6 +69,7 @@ import {
   subscribeKeyboardFocus,
 } from './renderer/keyboardFocus'
 import { PianoRollRenderer } from './renderer/PianoRollRenderer'
+import { finishRangeAdjust } from './renderer/rangeOverlay'
 import { ALL_PARTICLE_STYLES, PARTICLE_STYLES, type ParticleStyle } from './renderer/particleStyles'
 import { applySceneClass } from './renderer/scenes'
 import { accentCSS, readStoredThemeId, THEMES, type Theme, type ThemeId } from './renderer/theme'
@@ -908,6 +909,7 @@ export class App {
     // Capture uses the bus's note-off path only — no duplicate captureNoteOff
     // here (routeNoteOn already fans off to subscribers).
     this.performanceBus.routeNoteOn(evt)
+    finishRangeAdjust()
 
     // Looper + session captures are live-performance concerns — practice
     // key-presses (Learn) should not pollute a saved session recording.

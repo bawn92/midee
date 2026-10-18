@@ -8,6 +8,7 @@
 // dropouts under main-thread pressure.
 
 import { getContext, start as toneStart } from 'tone'
+import { finishRangeAdjust } from '../../renderer/rangeOverlay'
 
 type ClockListener = (time: number) => void
 
@@ -81,6 +82,7 @@ export class MasterClock {
   }
 
   play(): void {
+    finishRangeAdjust()
     if (this._playing) return
     // AudioContext may be suspended (browser autoplay policy)
     this.prime()

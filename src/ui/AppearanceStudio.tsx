@@ -107,7 +107,6 @@ export function AppearanceStudio(props: {
       <p class="gh-overline">{t('customize.style')}</p>
       <KeyboardStylePicker />
 
-      <p class="gh-overline">{t('customize.range')}</p>
       <RangeStylePicker />
 
       <p class="gh-overline">{t('customize.keyboard')}</p>

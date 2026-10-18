@@ -6,7 +6,7 @@ import { readCssColor } from './cssColor'
 import { KBD, keyFrame, whiteKeyCount } from './keyboardMetrics'
 import { type KeyboardPalette, keyboardHighlightAlpha, keyboardPalette } from './keyboardStyle'
 import { keyRect } from './keyGeometry'
-import { rangeOverlay, rangePlayAlpha, wantsDim } from './rangeOverlay'
+import { rangeLayerAlpha, rangeOverlay } from './rangeOverlay'
 import { keyboardMaterial } from './scenes'
 import { liveNoteColor, type Theme } from './theme'
 import type { Viewport } from './viewport'
@@ -172,7 +172,12 @@ export class KeyboardRenderer {
   private practiceAccepted: ReadonlySet<number> | null = null
 
   // Playable-window highlight. Defaults to the whole piano, which draws nothing.
+  // Saturation sits under the dim wash; pressed keys outside the range are
+  // lifted back above both so the hand tint stays readable.
+  private rangeSatLayer: Graphics
   private rangeLayer: Graphics
+  private pressLiftLayer: Graphics
+  private pressedPitches = new Map<number, number>()
   private caseLayer: Graphics
   private keyLabels: Text[] = []
   private playStart = MIDI_MIN
@@ -205,20 +210,28 @@ export class KeyboardRenderer {
     this.whitePracticeHintLayer.label = 'keyboard-practice-hint-white'
     this.blackPracticeHintLayer = new Graphics()
     this.blackPracticeHintLayer.label = 'keyboard-practice-hint-black'
+    this.rangeSatLayer = new Graphics()
+    this.rangeSatLayer.label = 'keyboard-range-sat'
+    this.rangeSatLayer.blendMode = 'saturation'
     this.rangeLayer = new Graphics()
     this.rangeLayer.label = 'keyboard-range'
+    this.pressLiftLayer = new Graphics()
+    this.pressLiftLayer.label = 'keyboard-range-press'
     this.caseLayer = new Graphics()
     this.caseLayer.label = 'keyboard-case'
     // Order matters: white hints/active must sit above the white sprite but
     // below the black sprite. Black hints/active sit above the black sprite.
     // The range wash sits above every key so the playable window reads on
-    // both white and black keys. Sprites are inserted by build().
+    // both white and black keys. The press lift is last, so a key outside
+    // the range keeps its hand tint above the dim. Sprites are inserted by build().
     this.container.addChild(this.whitePracticeHintLayer)
     this.container.addChild(this.whiteActiveLayer)
     this.container.addChild(this.blackPracticeHintLayer)
     this.container.addChild(this.blackActiveLayer)
     this.container.addChild(this.caseLayer)
+    this.container.addChild(this.rangeSatLayer)
     this.container.addChild(this.rangeLayer)
+    this.container.addChild(this.pressLiftLayer)
   }
 
   // Build or rebuild the static keyboard textures.
@@ -400,7 +413,9 @@ export class KeyboardRenderer {
     this.caseLayer.y = yOffset
     this.drawCase(canvasWidth, keyboardHeight, walnut)
     this.drawKeyLabels(positions, yOffset, keyboardHeight, walnut)
+    this.rangeSatLayer.y = yOffset
     this.rangeLayer.y = yOffset
+    this.pressLiftLayer.y = yOffset
     this.rangeSignature = ''
     // Force a redraw of the hint layer on the next setPracticeHints call —
     // the geometry depends on the freshly-built viewport.
@@ -416,6 +431,8 @@ export class KeyboardRenderer {
     if (!this.activeLayerDirty && sig === this.lastSignature) return
     this.activeLayerDirty = false
     this.lastSignature = sig
+    this.pressedPitches.clear()
+    for (const [pitch, color] of activeByPitch) this.pressedPitches.set(pitch, color)
     this.whiteActiveLayer.clear()
     this.blackActiveLayer.clear()
 
@@ -606,18 +623,21 @@ export class KeyboardRenderer {
   drawRange(viewport: Viewport): void {
     const { canvasWidth, keyboardHeight, pitchMin, pitchMax } = viewport.config
     const overlay = rangeOverlay()
-    const playAlpha = rangePlayAlpha()
+    const playAlpha = rangeLayerAlpha('dim')
     const sig =
       `${this.playStart}-${this.playEnd}|${canvasWidth}x${keyboardHeight}|` +
       `${pitchMin ?? MIDI_MIN}-${pitchMax ?? MIDI_MAX}|${this.theme.id}|` +
-      `${overlay.style}|${Math.round(playAlpha * 20)}`
+      `${overlay.style}|${overlay.addonStrip}|${overlay.addonLanes}|` +
+      `${Math.round(playAlpha * 30)}|${this.lastSignature}`
     if (sig === this.rangeSignature) return
     this.rangeSignature = sig
+    this.rangeSatLayer.clear()
     this.rangeLayer.clear()
-    if (!wantsDim(overlay) || playAlpha < 0.02) return
+    this.paintPressLift(viewport, playAlpha)
 
     const lo = pitchMin ?? MIDI_MIN
     const hi = pitchMax ?? MIDI_MAX
+    if (playAlpha < 0.02) return
     if (this.playStart <= lo && this.playEnd >= hi) return
 
     const positions = viewport.getAllKeyPositions()
@@ -632,14 +652,37 @@ export class KeyboardRenderer {
       whiteKeyCount(pitchMin ?? MIDI_MIN, pitchMax ?? MIDI_MAX),
       keyboardHeight,
     )
-    const token = readCssColor('--key-out-of-range', { color: 0x5e3b24, alpha: 0.1 })
-    const dimAlpha = token.alpha * playAlpha
+    const dim = readCssColor('--range-dim', { color: 0x2a1a0f, alpha: 0.4 })
     const y = walnut ? frame.keysY : 0
     const h = walnut ? frame.keysH : keyboardHeight
+    const wash = (x: number, w: number) => {
+      this.rangeSatLayer.rect(x, y, w, h).fill({ color: 0x808080, alpha: 0.4 * playAlpha })
+      this.rangeLayer.rect(x, y, w, h).fill({ color: dim.color, alpha: dim.alpha * playAlpha })
+    }
+    if (x0 > 0) wash(0, x0)
+    if (x1 < canvasWidth) wash(x1, canvasWidth - x1)
+  }
 
-    if (x0 > 0) this.rangeLayer.rect(0, y, x0, h).fill({ color: token.color, alpha: dimAlpha })
-    if (x1 < canvasWidth) {
-      this.rangeLayer.rect(x1, y, canvasWidth - x1, h).fill({ color: token.color, alpha: dimAlpha })
+  // Hand tint for keys outside the window, drawn above the dim wash.
+  private paintPressLift(viewport: Viewport, dimAlpha: number): void {
+    this.pressLiftLayer.clear()
+    if (dimAlpha < 0.02 || this.pressedPitches.size === 0) return
+    const { canvasWidth, keyboardHeight, pitchMin, pitchMax } = viewport.config
+    const positions = viewport.getAllKeyPositions()
+    const frame = keyFrame(
+      canvasWidth,
+      whiteKeyCount(pitchMin ?? MIDI_MIN, pitchMax ?? MIDI_MAX),
+      keyboardHeight,
+    )
+    for (const [pitch, color] of this.pressedPitches) {
+      if (pitch >= this.playStart && pitch <= this.playEnd) continue
+      const pos = positions.get(pitch)
+      if (!pos) continue
+      const { x, y, w, h } = keyRect(pitch, pos, keyboardHeight)
+      const black = isBlackKey(pitch)
+      const topH = black ? (KBD.blackTop / KBD.blackH) * h : (KBD.whiteTopH / KBD.keysH) * h
+      this.pressLiftLayer.roundRect(x, y, w, Math.max(1, topH), black ? 2 * frame.h : 0)
+      this.pressLiftLayer.fill({ color: color || 0xffffff, alpha: 0.55 })
     }
   }
 

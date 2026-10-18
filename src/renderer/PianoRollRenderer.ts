@@ -2,7 +2,7 @@ import { Application, Graphics, Sprite, Texture, type Ticker } from 'pixi.js'
 import type { MasterClock } from '../core/clock/MasterClock'
 import { getHandPractice, noteMatchesHand } from '../core/handPractice'
 import { getKeyboardRange, placedPitch } from '../core/keyboardRange'
-import { isBlackKey, type MidiFile } from '../core/midi/types'
+import type { MidiFile } from '../core/midi/types'
 import type { LiveNoteStore } from '../midi/LiveNoteStore'
 import { guideForMidi } from '../songGuide'
 import { BeatGrid } from './BeatGrid'
@@ -18,13 +18,7 @@ import { makeMaterialAtmosphere } from './materialAtmosphere'
 import { NoteRenderer } from './NoteRenderer'
 import { type ParticleStyle, ParticleSystem } from './ParticleSystem'
 import { layersAnimating, type RenderContext, type RenderLayer } from './RenderLayer'
-import {
-  rangeOverlay,
-  rangePhaseAnimating,
-  rangePlayAlpha,
-  subscribeRangeOverlay,
-  wantsLanes,
-} from './rangeOverlay'
+import { rangeLayerAlpha, rangePhaseAnimating, subscribeRangeOverlay } from './rangeOverlay'
 import { sceneForTheme } from './scenes'
 import { paintSceneBackdrop } from './scenes/backdrop'
 import { goldenHourTheme } from './scenes/goldenHour'
@@ -964,16 +958,17 @@ export class PianoRollRenderer {
     if (!this.exportMode) this.presentFrame()
   }
 
-  // In-range columns on the roll. White keys use --roll-lane, C keys use
-  // --roll-lane-c, so Golden Hour and Rainy Study each keep their own ink.
+  // Tinted highway above the playable window. 24 stepped bands of
+  // --range-lane, 0 → 36% from the top of the roll down to the keys,
+  // with --range-edge rails and a foot. Opacity lives on this layer.
   private drawRangeLanes(): void {
     const g = this.rangeLaneGraphics
     if (!g) return
-    const overlay = rangeOverlay()
-    const alphaMul = rangePlayAlpha()
+    const alphaMul = rangeLayerAlpha('lanes')
     g.clear()
-    if (!wantsLanes(overlay) || alphaMul < 0.02) return
-    const { pitchMin, pitchMax, canvasWidth } = this.viewport.config
+    g.alpha = 1
+    if (alphaMul < 0.02) return
+    const { pitchMin, pitchMax } = this.viewport.config
     const lo = pitchMin ?? 21
     const hi = pitchMax ?? 108
     if (this.playStart <= lo && this.playEnd >= hi) return
@@ -982,21 +977,27 @@ export class PianoRollRenderer {
     const endPos = positions.get(this.playEnd)
     if (!startPos || !endPos) return
     const x0 = startPos.x
-    const x1 = endPos.x + endPos.width
+    const width = endPos.x + endPos.width - x0
+    if (width < 2) return
     const rollHeight = this.viewport.rollHeight
-    for (const [pitch, pos] of positions) {
-      if (isBlackKey(pitch)) continue
-      const mid = pos.x + pos.width / 2
-      if (mid < x0 || mid > x1) continue
-      if (pos.x > canvasWidth) continue
-      const laneC = pitch % 12 === 0
-      const lane = readCssColor(laneC ? '--roll-lane-c' : '--roll-lane', {
-        color: 0x7a4e2c,
-        alpha: laneC ? 0.08 : 0.04,
-      })
-      g.rect(pos.x, 0, pos.width, rollHeight)
-      g.fill({ color: lane.color, alpha: Math.min(1, lane.alpha * 3 * alphaMul) })
+    const lane = readCssColor('--range-lane', { color: 0xe6a94f, alpha: 1 })
+    const edge = readCssColor('--range-edge', { color: 0xa65c28, alpha: 1 })
+    const bands = 24
+    const bandH = rollHeight / bands
+    for (let i = 0; i < bands; i++) {
+      const y = i * bandH
+      const towardKeys = (i + 1) / bands
+      g.rect(x0, y, width, bandH + 0.5)
+      g.fill({ color: lane.color, alpha: towardKeys * 0.36 })
+      const rail = (1 - i / bands) * 0.8
+      g.rect(x0, y, 1.5, bandH + 0.5)
+      g.fill({ color: edge.color, alpha: rail })
+      g.rect(x0 + width - 1.5, y, 1.5, bandH + 0.5)
+      g.fill({ color: edge.color, alpha: rail })
     }
+    g.rect(x0, Math.max(0, rollHeight - 3), width, 3)
+    g.fill({ color: edge.color, alpha: 0.8 })
+    g.alpha = alphaMul
   }
 
   // Repaint note positions after fit-to-range or the practice hand changes.

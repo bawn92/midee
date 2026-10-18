@@ -322,6 +322,10 @@ export class CustomizeMenu {
       this.close(true)
     }
   }
+  private onOpenAppearance = (): void => {
+    this.openRangeStyle()
+  }
+
   private onResize = (): void => {
     if (!this.isOpen) return
     if (this.menu.classList.contains('popover--sheet') || isNarrowViewport()) {
@@ -439,6 +443,7 @@ export class CustomizeMenu {
       ),
       menuWrapper,
     )
+    window.addEventListener('midee-open-appearance', this.onOpenAppearance)
   }
 
   // ── Public state setters (App pushes the active selection in) ──────────
@@ -534,7 +539,16 @@ export class CustomizeMenu {
     return this.chordOnFn()
   }
 
+  openRangeStyle(): void {
+    const section = this.menu.querySelector<HTMLElement>('[data-section="range-style"]')
+    if (!this.isOpen) this.open()
+    requestAnimationFrame(() => {
+      section?.scrollIntoView({ block: 'nearest' })
+    })
+  }
+
   dispose(): void {
+    window.removeEventListener('midee-open-appearance', this.onOpenAppearance)
     this.close()
     this.disposeTrigger?.()
     this.disposeMenu?.()

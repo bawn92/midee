@@ -44,4 +44,8 @@
   --range-glass: rgba(213, 224, 228, 0.45);
   --range-glass-drag: rgba(213, 224, 228, 0.62);
   --range-border: rgba(110, 132, 148, 0.75);
+  --range-dim: rgba(15, 22, 32, 0.42);
+  --range-edge: #d9a066;
+  --range-strip: #9fd6e6;
+  --range-lane: #ddf0fa;
 }

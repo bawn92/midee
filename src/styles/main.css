@@ -5391,73 +5391,193 @@ body.canvas-hidden #kbd-range {
   display: none !important;
 }
 
-.kbd-range-band-glass {
+.kbd-range-band-glass,
+.kbd-range-brackets,
+.kbd-range-outline,
+.kbd-range-strip,
+.kbd-range-band-tip {
   position: absolute;
+  pointer-events: none;
+}
+
+.kbd-range-band-glass {
   inset: 0;
   border-radius: 12px;
-  pointer-events: none;
+  opacity: 0;
   background: transparent;
   box-shadow: none;
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
   transition:
-    background var(--dur-base),
-    box-shadow var(--dur-base),
-    backdrop-filter var(--dur-base);
+    opacity 300ms cubic-bezier(0.2, 0, 0, 1),
+    background 300ms cubic-bezier(0.2, 0, 0, 1),
+    box-shadow 300ms cubic-bezier(0.2, 0, 0, 1),
+    backdrop-filter 300ms cubic-bezier(0.2, 0, 0, 1),
+    -webkit-backdrop-filter 300ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-#kbd-range-band.kbd-range-band--glass .kbd-range-band-glass {
-  background: var(--range-glass);
+#kbd-range-band[data-phase="glass"] .kbd-range-band-glass {
+  opacity: 1;
+  background: var(--range-glass-drag);
   box-shadow: inset 0 0 0 1.5px var(--range-border);
-  backdrop-filter: blur(1px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition-duration: 150ms;
 }
 
-#kbd-range-band[data-range-outline="on"]:not(.kbd-range-band--glass) .kbd-range-band-glass {
-  box-shadow: inset 0 0 0 1.5px var(--range-border);
+.kbd-range-brackets,
+.kbd-range-outline,
+.kbd-range-strip,
+.kbd-range-band-tip {
+  opacity: 0;
+  transition: opacity 300ms cubic-bezier(0.2, 0, 0, 1) 60ms;
+}
+
+#kbd-range-band[data-phase="glass"] .kbd-range-brackets,
+#kbd-range-band[data-phase="glass"] .kbd-range-outline,
+#kbd-range-band[data-phase="glass"] .kbd-range-strip,
+#kbd-range-band[data-phase="glass"] .kbd-range-band-tip {
+  transition-duration: 150ms;
+  transition-delay: 0ms;
+}
+
+#kbd-range-band[data-motion="style"] .kbd-range-brackets,
+#kbd-range-band[data-motion="style"] .kbd-range-outline,
+#kbd-range-band[data-motion="style"] .kbd-range-strip,
+#kbd-range-band[data-motion="style"] .kbd-range-band-tip {
+  transition-duration: 200ms;
+  transition-delay: 0ms;
+}
+
+.kbd-range-brackets {
+  inset: 8px 0 0;
+}
+
+.kbd-range-brackets i {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--range-edge);
+}
+
+.kbd-range-brackets i:nth-child(1) {
+  top: 0;
+  left: 0;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.kbd-range-brackets i:nth-child(2) {
+  top: 0;
+  right: 0;
+  border-left: 0;
+  border-bottom: 0;
+}
+
+.kbd-range-brackets i:nth-child(3) {
+  bottom: 0;
+  left: 0;
+  border-right: 0;
+  border-top: 0;
+}
+
+.kbd-range-brackets i:nth-child(4) {
+  right: 0;
+  bottom: 0;
+  border-left: 0;
+  border-top: 0;
+}
+
+#kbd-range-band[data-phase="play"][data-dim="on"] .kbd-range-brackets {
+  opacity: 1;
+}
+
+.kbd-range-outline {
+  top: 8px;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border: 2px solid var(--range-edge);
+  border-radius: 8px;
+  box-shadow: 0 -10px 22px -8px color-mix(in srgb, var(--range-strip) 55%, transparent);
+}
+
+#kbd-range-band[data-phase="play"][data-outline="on"] .kbd-range-outline,
+#kbd-range-band[data-adjust-outline="on"] .kbd-range-outline {
+  opacity: 1;
 }
 
 .kbd-range-strip {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  top: 10px;
-  height: 4px;
-  border-radius: 999px;
-  background: var(--range-border);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--dur-base);
+  top: 1px;
+  right: 0;
+  left: 0;
+  height: 8px;
+  background: var(--range-strip);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--range-strip) 80%, transparent);
 }
 
-#kbd-range-band[data-range-strip="on"]:not(.kbd-range-band--glass) .kbd-range-strip {
+.kbd-range-cap {
+  position: absolute;
+  top: -6px;
+  width: 4px;
+  height: 20px;
+  background: var(--range-edge);
+}
+
+.kbd-range-cap--start {
+  left: 0;
+}
+
+.kbd-range-cap--end {
+  right: 0;
+}
+
+#kbd-range-band[data-phase="play"][data-strip="on"] .kbd-range-strip {
   opacity: 1;
 }
 
 .kbd-range-band-tip {
-  display: none;
-  position: absolute;
   left: 50%;
-  top: -50px;
+  top: 16px;
   translate: -50% 0;
-  padding: 6px 10px;
+  padding: 4px 8px;
   border-radius: 6px;
-  background: rgba(74, 47, 30, 0.92);
-  color: #fff8ee;
+  background: var(--surface-solid);
+  color: var(--text-1);
   font-family: "Nunito Sans", system-ui, sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  line-height: 18px;
+  line-height: 16px;
   white-space: nowrap;
-  pointer-events: none;
+  box-shadow: var(--elev-1);
 }
 
-#kbd-range-band.kbd-range-band--dragging .kbd-range-band-tip {
-  display: block;
+#kbd-range-band[data-phase="glass"] .kbd-range-band-tip {
+  top: 50%;
+  translate: -50% -50%;
+  opacity: 1;
 }
 
-#kbd-range-band.kbd-range-band--dragging.kbd-range-band--glass .kbd-range-band-glass {
-  background: var(--range-glass-drag);
-  box-shadow:
-    inset 0 0 0 1.5px var(--accent),
-    var(--elev-3);
+#kbd-range-band[data-phase="play"][data-style="dim"] .kbd-range-band-tip,
+#kbd-range-band[data-phase="play"][data-style="lanes"] .kbd-range-band-tip {
+  opacity: 1;
+}
+
+#kbd-range-band[data-phase="play"][data-style="lanes"] .kbd-range-band-tip {
+  top: -28px;
+}
+
+#kbd-range-band[data-phase="play"][data-style="outline"] .kbd-range-band-tip {
+  top: -2px;
+  opacity: 1;
+}
+
+#kbd-range-band[data-phase="play"][data-style="strip"] .kbd-range-band-tip {
+  left: auto;
+  right: 8px;
+  top: -18px;
+  translate: 0 0;
+  opacity: 1;
 }
 
 .kbd-range-band-move {
@@ -5476,18 +5596,21 @@ body.canvas-hidden #kbd-range {
   cursor: grab;
   border: none;
   border-radius: 999px;
-  background: #fbf3e8;
-  box-shadow:
-    0 1px 2px rgba(94, 59, 36, 0.08),
-    0 2px 8px rgba(94, 59, 36, 0.06);
-  color: #7a5a44;
+  background: var(--surface-solid);
+  box-shadow: var(--elev-1);
+  color: var(--text-2);
+  opacity: 0;
+  scale: 0.6;
+  transition:
+    opacity 300ms cubic-bezier(0.2, 0, 0, 1),
+    scale 300ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 .kbd-range-band-move i {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: #7a5a44;
+  background: var(--text-2);
   pointer-events: none;
 }
 
@@ -5497,7 +5620,7 @@ body.canvas-hidden #kbd-range {
 }
 
 .kbd-range-band-move:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
 }
 
@@ -5510,6 +5633,11 @@ body.canvas-hidden #kbd-range {
   pointer-events: auto;
   cursor: ew-resize;
   touch-action: none;
+  opacity: 0;
+  scale: 0.6;
+  transition:
+    opacity 300ms cubic-bezier(0.2, 0, 0, 1),
+    scale 300ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 .kbd-range-band-edge--start {
@@ -5525,21 +5653,50 @@ body.canvas-hidden #kbd-range {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #fbf3e8;
-  box-shadow: inset 0 0 0 2px #b9773a;
+  background: var(--surface-solid);
+  box-shadow: inset 0 0 0 2px var(--range-edge);
 }
 
-#kbd-range-band:hover .kbd-range-handle {
-  transform: scale(1.1);
+#kbd-range-band[data-phase="glass"] .kbd-range-band-move,
+#kbd-range-band[data-phase="glass"] .kbd-range-band-edge,
+#kbd-range-band[data-handles="on"] .kbd-range-band-move,
+#kbd-range-band[data-handles="on"] .kbd-range-band-edge,
+#kbd-range-band:hover .kbd-range-band-move,
+#kbd-range-band:hover .kbd-range-band-edge,
+#kbd-range-band:focus-within .kbd-range-band-move,
+#kbd-range-band:focus-within .kbd-range-band-edge {
+  opacity: 1;
+  scale: 1;
 }
 
-#kbd-range-band:hover .kbd-range-band-glass {
-  box-shadow: inset 0 0 0 1.5px #b9773a;
+#kbd-range-band[data-phase="glass"] .kbd-range-band-move,
+#kbd-range-band[data-phase="glass"] .kbd-range-band-edge {
+  transition-duration: 150ms;
 }
 
-.kbd-range-band-move:focus-visible,
-#kbd-range-band:focus-within .kbd-range-band-glass {
-  box-shadow: inset 0 0 0 2px #8a5a2b;
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  #kbd-range-band[data-phase="glass"] .kbd-range-band-glass {
+    background: color-mix(in srgb, var(--surface-solid) 80%, transparent);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kbd-range-band-glass,
+  .kbd-range-brackets,
+  .kbd-range-outline,
+  .kbd-range-strip,
+  .kbd-range-band-tip,
+  .kbd-range-band-move,
+  .kbd-range-band-edge {
+    transition-duration: 120ms !important;
+    transition-delay: 0ms !important;
+  }
+
+  .kbd-range-band-glass {
+    transition-property: opacity, background, box-shadow;
+  }
 }
 
 body.canvas-hidden #kbd-range-band {
