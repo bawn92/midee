@@ -56,7 +56,7 @@ test('Piano M lights the physical key for the sounding note', async ({ page }) =
   })
 
   await page.setViewportSize({ width: 1280, height: 800 })
-  await page.goto('/')
+  await page.goto('/start')
   await page.locator('#midi-input').setInputFiles({
     name: 'c3.mid',
     mimeType: 'audio/midi',

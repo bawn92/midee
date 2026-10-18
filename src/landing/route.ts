@@ -1,9 +1,7 @@
-// Landing routes. `/` is the hero until the visitor has started; after that
-// it is Home, decided before paint so the hero never flashes. `/welcome`
-// always shows the hero. The flag lives under the existing `midee.*`
-// prefix. It is set when a CTA is pressed, a note is played, or a file is
-// opened — not on page view. `midee.theme` is written on the first read, so
-// it cannot stand in for this flag.
+// Landing routes. `/` always shows the hero, including for a returning
+// visitor. `/welcome` is the same hero. `/start` is Home. `midee.started`
+// is still written when a CTA is pressed, a note is played, or a file is
+// opened, and it no longer changes the route.
 
 export const STARTED_KEY = 'midee.started'
 
@@ -50,32 +48,22 @@ export function markStarted(): void {
   }
 }
 
-export function parseRoute(pathname: string, search: string, started: boolean): LandingRoute {
+export function parseRoute(pathname: string, search: string, _started: boolean): LandingRoute {
   const path = normalizePath(pathname)
-  if (path === '/welcome') return { kind: 'hero' }
-  if (path === '/' && !started) return { kind: 'hero' }
+  if (path === '/' || path === '/welcome') return { kind: 'hero' }
   return { kind: 'home', connectMidi: new URLSearchParams(search).get('connect') === 'midi' }
 }
 
-export function returningVisitorPath(search: string, hash: string): string {
-  return `/start${search}${hash}`
-}
-
-// The inline script in index.html mirrors this. Keep the two in step: a
-// returning visitor on `/` is replaced with `/start` before first paint.
+// The inline script in index.html mirrors this. `/` stays the hero, so
+// nothing is replaced before paint.
 export function bootRoute(
   pathname: string,
   search: string,
-  hash: string,
+  _hash: string,
   started: boolean,
 ): {
   route: LandingRoute
   replace: string | null
 } {
-  const path = normalizePath(pathname)
-  if (path === '/' && started) {
-    const replace = returningVisitorPath(search, hash)
-    return { route: parseRoute('/start', search, true), replace }
-  }
   return { route: parseRoute(pathname, search, started), replace: null }
 }

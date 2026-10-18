@@ -4,20 +4,12 @@
 <head>
   <meta charset="UTF-8" />
   <!-- Decide the landing route before paint. Mirrors src/landing/route.ts:
-       returning visitors (midee.started) skip `/` for `/start`; `/welcome` stays the hero. -->
+       `/` and `/welcome` are always the hero. Home lives at `/start`. -->
   <script>
     ;(function () {
       try {
         var path = location.pathname.replace(/\/+$/, '') || '/'
-        var started = false
-        try {
-          started = localStorage.getItem('midee.started') === '1'
-        } catch (e) {}
-        if (path === '/' && started) {
-          history.replaceState(null, '', '/start' + location.search + location.hash)
-          path = '/start'
-        }
-        var hero = path === '/welcome' || (path === '/' && !started)
+        var hero = path === '/' || path === '/welcome'
         document.documentElement.dataset.route = hero ? 'hero' : 'app'
       } catch (e) {
         document.documentElement.dataset.route = 'app'

@@ -18,7 +18,7 @@ test.describe('WebCodecs headless capability spike', () => {
     // VideoEncoder/AudioEncoder are gated behind a SECURE CONTEXT in Chromium.
     // `about:blank` is NOT secure, so the constructors are undefined there. We must
     // probe from the served origin (http://localhost is treated as secure).
-    await page.goto('/')
+    await page.goto('/start')
     expect(await page.evaluate(() => window.isSecureContext)).toBe(true)
 
     const result = await page.evaluate(async () => {

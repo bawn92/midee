@@ -16,7 +16,7 @@ async function openAppearance(page: Page): Promise<void> {
 }
 
 test('plant shadows persist and stay off outside Golden Hour', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/start')
   await expect(page.locator('html')).toHaveAttribute('data-plant-shadows', 'fern', {
     timeout: 30_000,
   })

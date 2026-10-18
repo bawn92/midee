@@ -7,7 +7,7 @@ import { expect, type Page, test } from '@playwright/test'
 const WIDTHS = [1024, 1280, 1440, 390] as const
 
 async function openPiece(page: Page): Promise<void> {
-  await page.goto('/')
+  await page.goto('/start')
   await page.locator('[data-card-id="untitled-g-sharp-minor"]').click()
   await expect(page.locator('#hud-play')).toBeVisible({ timeout: 30_000 })
 }

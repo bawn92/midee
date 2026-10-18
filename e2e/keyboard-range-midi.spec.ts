@@ -112,7 +112,7 @@ test('uncalibrated Piano M lowest key lands on the window, and calibration repla
   })
 
   await page.setViewportSize({ width: 1280, height: 800 })
-  await page.goto('/')
+  await page.goto('/start')
   await page.locator('#home-live').click()
   await expect(page.locator('#kbd-range-cal-badge')).toHaveText('Not calibrated')
   await expect(page.locator('.kbd-range-notes')).toHaveText('C4–B5')

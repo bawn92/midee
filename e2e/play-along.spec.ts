@@ -18,7 +18,7 @@ import { expect, type Page, test } from '@playwright/test'
 const FIXTURE_MID = fileURLToPath(new URL('../fixtures/multi-track.mid', import.meta.url))
 
 async function enterPlayAlong(page: Page): Promise<void> {
-  await page.goto('/')
+  await page.goto('/start')
   await page.setInputFiles('#midi-input', FIXTURE_MID)
   const learn = page.locator('#ts-learn-this')
   await expect(learn).toBeVisible({ timeout: 15_000 })

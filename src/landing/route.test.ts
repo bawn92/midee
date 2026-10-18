@@ -6,9 +6,10 @@ describe('landing routes', () => {
     localStorage.clear()
   })
 
-  it('shows the hero on / until the visitor has started', () => {
+  it('always shows the hero on /, including after the visitor has started', () => {
     expect(parseRoute('/', '', false)).toEqual({ kind: 'hero' })
-    expect(parseRoute('/', '', true)).toEqual({ kind: 'home', connectMidi: false })
+    expect(parseRoute('/', '?lang=en', true)).toEqual({ kind: 'hero' })
+    expect(parseRoute('/', '', true)).toEqual({ kind: 'hero' })
   })
 
   it('always shows the hero on /welcome', () => {
@@ -31,12 +32,19 @@ describe('landing routes', () => {
     expect(readStarted()).toBe(true)
   })
 
-  it('sends a returning / to /start before paint, keeping the query', () => {
+  it('keeps / and /welcome on the hero before paint', () => {
     expect(bootRoute('/', '?lang=en', '', true)).toEqual({
-      route: { kind: 'home', connectMidi: false },
-      replace: '/start?lang=en',
+      route: { kind: 'hero' },
+      replace: null,
     })
     expect(bootRoute('/', '', '', false).replace).toBeNull()
-    expect(bootRoute('/welcome', '', '', true).replace).toBeNull()
+    expect(bootRoute('/welcome', '', '', true)).toEqual({
+      route: { kind: 'hero' },
+      replace: null,
+    })
+    expect(bootRoute('/start', '?connect=midi', '', true)).toEqual({
+      route: { kind: 'home', connectMidi: true },
+      replace: null,
+    })
   })
 })

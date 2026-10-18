@@ -60,7 +60,7 @@ async function togglePlayback(page: Page): Promise<void> {
 
 test('scenes render MIDI and restore the chosen scene', async ({ page }, testInfo) => {
   const errors = watchRenderingErrors(page)
-  await page.goto('/')
+  await page.goto('/start')
   await page.locator('#midi-input').setInputFiles(MIDI)
   await expect(page.locator('#hud-play')).toBeVisible({ timeout: 30_000 })
   await page.waitForTimeout(400)
@@ -96,7 +96,7 @@ test('scenes render MIDI and restore the chosen scene', async ({ page }, testInf
 
 test('Rainy Study survives a held chord across a mobile resize', async ({ page }, testInfo) => {
   const errors = watchRenderingErrors(page)
-  await page.goto('/')
+  await page.goto('/start')
   await page.locator('#home-live').click()
   await selectScene(page, 'Rainy Study', 'rainy-study')
   await closeAppearance(page)

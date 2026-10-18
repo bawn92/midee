@@ -27,7 +27,7 @@ function sceneCard(page: Page, name: string) {
 }
 
 async function gotoApp(page: Page): Promise<void> {
-  await page.goto('/')
+  await page.goto('/start')
   expect(await page.evaluate(() => window.isSecureContext)).toBe(true)
   await page.locator('#ts-customize').waitFor({ state: 'visible', timeout: 30_000 })
 }

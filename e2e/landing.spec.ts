@@ -18,9 +18,27 @@ test.describe('landing hero', () => {
     await expect(page).toHaveTitle('Play notes, see them bloom')
 
     await page.goto('/')
-    await expect(page).toHaveURL(/\/start$/)
-    await expect(page.locator('#landing')).toHaveCount(0)
+    await expect(page).toHaveURL(/\/$/)
+    await expect(page.locator('#landing')).toBeVisible()
+    await expect(page.locator('#home-open')).toBeHidden()
     expect(await page.evaluate(() => localStorage.getItem('midee.started'))).toBe('1')
+  })
+
+  test('the header mark opens the hero and the home icon stays on Home', async ({ page }) => {
+    await page.goto('/start')
+    await expect(page.locator('#home-open')).toBeVisible()
+    await expect(page.locator('#ts-brand')).toHaveAttribute('href', '/')
+
+    await page.locator('#home-live').click()
+    await expect(page.locator('#ts-brand')).toHaveAttribute('href', '/')
+    await page.locator('#ts-home').click()
+    await expect(page).toHaveURL(/\/start$/)
+    await expect(page.locator('#home-open')).toBeVisible()
+
+    await page.locator('#ts-brand').click()
+    await expect(page).toHaveURL(/\/$/)
+    await expect(page.locator('#landing')).toBeVisible()
+    await expect(page.locator('#home-open')).toBeHidden()
   })
 
   test('/welcome keeps the hero after the visitor has started', async ({ page }) => {

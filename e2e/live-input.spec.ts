@@ -44,7 +44,7 @@ async function focusBodyForKeys(page: Page): Promise<void> {
 }
 
 async function openAppInLiveMode(page: Page): Promise<void> {
-  await page.goto('/')
+  await page.goto('/start')
   // Live input needs the real app + a secure context (served origin is secure;
   // about:blank is not — same finding as the export/spike specs).
   expect(await page.evaluate(() => window.isSecureContext)).toBe(true)
@@ -121,7 +121,7 @@ test.describe('Live input (computer keyboard)', () => {
   // line then (and this becomes a real regression guard).
   test('BUG-2: first live note from HOME mode releases cleanly', async ({ page }) => {
     test.fail() // EXPECTED-FAIL — remove when BUG-2 is fixed.
-    await page.goto('/')
+    await page.goto('/start')
     expect(await page.evaluate(() => window.isSecureContext)).toBe(true)
     // Wait for the home surface, then type WITHOUT entering live mode first — the
     // first key auto-enters live mode (the buggy transition path).

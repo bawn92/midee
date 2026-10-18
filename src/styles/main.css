@@ -1044,7 +1044,7 @@ body.coachmark-open #top-strip.strip--dim {
   gap: 0;
 }
 
-/* Wordmark — click to home */
+/* Wordmark links to the landing page. The home icon stays on Home. */
 .ts-home {
   display: inline-flex;
   align-items: center;
@@ -1059,10 +1059,15 @@ body.coachmark-open #top-strip.strip--dim {
   font-size: 13.5px;
   font-weight: 600;
   letter-spacing: -0.015em;
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    color 0.15s;
+}
+
+.ts-brand-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
 }
 
 .ts-home:hover {
@@ -1075,7 +1080,7 @@ body.coachmark-open #top-strip.strip--dim {
   transition: transform 0.25s var(--ease-spring);
 }
 
-.ts-home:hover .ts-home-mark {
+.ts-brand-link:hover .ts-home-mark {
   transform: rotate(-4deg) scale(1.05);
 }
 

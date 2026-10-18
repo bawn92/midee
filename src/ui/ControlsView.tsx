@@ -194,15 +194,21 @@ export function TopStripView(props: TopStripProps) {
       data-has-file={props.hasFile() ? 'true' : 'false'}
       data-midi-status={props.midiStatus()}
     >
-      <button
-        class="ts-home"
-        id="ts-home"
-        type="button"
-        aria-label={t('home.aria', { name: APP_NAME })}
-        data-tip={t('topStrip.home')}
-        onClick={() => props.onHome()}
-        innerHTML={`${icons.wordmark()}<span class="ts-home-name">${APP_NAME}</span><span class="ts-home-icon">${icons.home(18)}</span>`}
-      />
+      <div class="ts-home">
+        <a class="ts-brand-link" id="ts-brand" href="/" aria-label={APP_NAME}>
+          <span innerHTML={icons.wordmark()} />
+          <span class="ts-home-name">{APP_NAME}</span>
+        </a>
+        <button
+          class="ts-home-icon"
+          id="ts-home"
+          type="button"
+          aria-label={t('home.aria', { name: APP_NAME })}
+          data-tip={t('topStrip.home')}
+          onClick={() => props.onHome()}
+          innerHTML={icons.home(18)}
+        />
+      </div>
 
       <div
         class="ts-mode-switch"

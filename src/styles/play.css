@@ -57,6 +57,7 @@ html[data-scene] .ts-end {
 }
 
 html[data-scene] #top-strip button,
+html[data-scene] #top-strip .ts-brand-link,
 html[data-scene] #top-strip .ts-mode-switch,
 html[data-scene] #ts-customize-slot,
 html[data-scene] #top-strip .ts-end {
@@ -2222,11 +2223,25 @@ html[data-scene] .ts-home-icon {
   box-shadow: var(--elev-1);
 }
 
+html[data-scene] .ts-brand-link {
+  gap: var(--space-3);
+  color: inherit;
+  text-decoration: none;
+}
+
+html[data-scene] button.ts-home-icon {
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+html[data-scene] .ts-home-icon:hover,
 html[data-scene] .ts-home:hover .ts-home-icon {
   background: var(--surface-hover);
 }
 
-html[data-scene] .ts-home:hover .ts-home-mark {
+html[data-scene] .ts-home:hover .ts-home-mark,
+html[data-scene] .ts-brand-link:hover .ts-home-mark {
   transform: none;
 }
 

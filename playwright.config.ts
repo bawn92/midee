@@ -34,7 +34,8 @@ export default defineConfig({
     headless: true,
     trace: 'retain-on-failure',
     video: 'off',
-    // Existing specs land on Home. The hero is opt-in (see e2e/landing.spec.ts).
+    // Existing specs open Home at /start. `/` is always the hero
+    // (see e2e/landing.spec.ts), whether or not midee.started is set.
     storageState: {
       cookies: [],
       origins: [

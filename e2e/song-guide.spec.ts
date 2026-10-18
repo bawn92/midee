@@ -6,9 +6,9 @@ import { expect, test } from '@playwright/test'
 test.use({ viewport: { width: 1280, height: 900 } })
 
 test('song guide follows the untitled piece and can loop a section', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/start')
   await page.evaluate(() => localStorage.clear())
-  await page.goto('/')
+  await page.goto('/start')
 
   const card = page.locator('[data-card-id="untitled-g-sharp-minor"]')
   await expect(card).toBeVisible()

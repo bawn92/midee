@@ -123,7 +123,7 @@ test.describe('keyboard range does not cover the shortcuts card', () => {
   ]) {
     test(`Live ${size.width}x${size.height}`, async ({ page }) => {
       await page.setViewportSize(size)
-      await page.goto('/')
+      await page.goto('/start')
       await page.locator('#home-live').click()
       await expect(page.locator('#key-hint.kh--visible .kh-body')).toBeVisible()
       await expect(page.locator('.kbd-range-bar')).toBeVisible()
@@ -140,7 +140,7 @@ test.describe('keyboard range does not cover the shortcuts card', () => {
 
   test('Play keeps the range clear of the HUD and of a shortcuts card', async ({ page }) => {
     await page.setViewportSize({ width: 1100, height: 700 })
-    await page.goto('/')
+    await page.goto('/start')
     await page.locator('#midi-input').setInputFiles(FIXTURE_MID)
     await expect(page.locator('#hud-play')).toBeVisible({ timeout: 30_000 })
     await expect(page.locator('.kbd-range-bar')).toBeVisible()
@@ -160,7 +160,7 @@ test.describe('keyboard range does not cover the shortcuts card', () => {
 
   test('Learn sight-reading keeps the range clear of the exercise HUD', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 })
-    await page.goto('/')
+    await page.goto('/start')
     await page.locator('#home-learn').click()
     await page.locator('.ex-card[data-category="sight-reading"]').click()
     await expect(page.locator('.float-hud.sr-hud')).toBeVisible({ timeout: 30_000 })

@@ -16,7 +16,7 @@ test('Golden Hour play view shows the living-room scene with a song loaded', asy
       }),
     )
   })
-  await page.goto('/')
+  await page.goto('/start')
   await page.locator('[data-card-id="untitled-g-sharp-minor"]').click()
 
   const guide = page.locator('[data-song-guide]')
