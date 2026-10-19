@@ -1,4 +1,23 @@
 import './styles/main.css'
+import './styles/tokens.css'
+import './styles/scenes/golden-hour.css'
+import './styles/scenes/rainy-study.css'
+import './styles/kit.css'
+import './styles/play.css'
+import './styles/landing.css'
+import './styles/app-mark.css'
+import './styles/viewTransition.css'
+import './styles/particles.css'
+import './styles/rangeCard.css'
+import './styles/transportPill.css'
+import './styles/floatingCards.css'
+import '@fontsource/nunito-sans/latin-500.css'
+import '@fontsource/nunito-sans/latin-600.css'
+import '@fontsource/nunito-sans/latin-700.css'
+import '@fontsource/nunito-sans/latin-800.css'
+import '@fontsource-variable/fraunces/full.css'
+import './styles/overlay.css'
+import './ui/paint'
 // Self-hosted fonts via @fontsource. Each CSS import emits a `@font-face`
 // rule into the main stylesheet bundle and ships its woff2 file to
 // `dist/assets/` as a long-cacheable hashed asset. Compared to
@@ -19,10 +38,8 @@ import { render } from 'solid-js/web'
 import { AppRoot } from './AppRoot'
 import { justReloadedForStaleChunk, reloadForStaleChunk } from './core/staleChunk'
 import { createApp } from './createApp'
-import { env } from './env'
 import { currentLocaleNativeName, initI18n, shouldShowLocaleHint, t } from './i18n'
 import { AppCtx } from './store/AppCtx'
-import { loadPostHog, registerAnalyticsContext } from './telemetry'
 import { installSkipLink } from './ui/SkipLink'
 import { showToast } from './ui/Toast'
 import { whenIdle } from './whenIdle'
@@ -33,24 +50,7 @@ window.addEventListener('vite:preloadError', (event) => {
   if (reloadForStaleChunk(event.payload)) event.preventDefault()
 })
 
-// Both analytics SDKs are loaded on idle so they don't sit in the initial
-// bundle. PostHog alone is ~70 KB gz with autocapture / session_recording /
-// feature_flags; @vercel/analytics is small but still a deferrable import.
-// Buffered events fire once the SDK lands — see telemetry.ts → `loadPostHog`.
-const posthogKey = env.VITE_POSTHOG_KEY
-if (posthogKey) {
-  // Snapshot context props at boot time even though the SDK isn't loaded
-  // yet — they get queued and replayed in order on first init.
-  registerAnalyticsContext()
-}
 whenIdle(() => {
-  if (posthogKey) {
-    void loadPostHog(posthogKey, {
-      api_host: env.VITE_POSTHOG_HOST ?? 'https://us.i.posthog.com',
-      defaults: '2026-01-30',
-      person_profiles: 'always',
-    })
-  }
   void import('@vercel/analytics').then(({ inject }) => inject())
 })
 

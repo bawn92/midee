@@ -1,5 +1,5 @@
 import { isBlackKey, MIDI_MAX, MIDI_MIN, type MidiNote } from '../core/midi/types'
-import { BLACK_KEY_HEIGHT_RATIO } from './keyGeometry'
+import { KBD, keyFrame, whiteKeyCount } from './keyboardMetrics'
 
 // The strike line sits directly on the keyboard edge so notes "land" where the
 // keys begin instead of floating relative to the HUD.
@@ -104,7 +104,11 @@ export class Viewport {
     const keyboardTop = canvasHeight - keyboardHeight
     if (y < keyboardTop || y > canvasHeight) return null
 
-    const blackZoneBottom = keyboardTop + keyboardHeight * BLACK_KEY_HEIGHT_RATIO
+    const frame = keyFrame(this.cfg.canvasWidth, this.whiteCount(), keyboardHeight)
+    const bedTop = keyboardTop + frame.keysY
+    const bedBottom = bedTop + frame.keysH
+    if (y < bedTop || y > bedBottom) return null
+    const blackZoneBottom = bedTop + frame.blackH
     if (y <= blackZoneBottom) {
       for (const [pitch, pos] of this.keyPositions) {
         if (!isBlackKey(pitch)) continue
@@ -125,29 +129,40 @@ export class Viewport {
     const pMin = Math.max(MIDI_MIN, this.cfg.pitchMin ?? MIDI_MIN)
     const pMax = Math.min(MIDI_MAX, this.cfg.pitchMax ?? MIDI_MAX)
 
-    let wCount = 0
-    for (let p = pMin; p <= pMax; p++) {
-      if (!isBlackKey(p)) wCount++
-    }
+    const wCount = whiteKeyCount(pMin, pMax)
     if (wCount === 0) return
 
-    const whiteW = this.cfg.canvasWidth / wCount
-    const blackW = whiteW * 0.58
-    const blackOffset = whiteW - blackW / 2
+    const frame = keyFrame(this.cfg.canvasWidth, wCount, this.cfg.keyboardHeight)
+    const whiteW = frame.pitch
+    const blackW = (KBD.blackW / KBD.pitch) * whiteW
+    const blackOffset = (KBD.blackOff / KBD.pitch) * whiteW
 
     let wIndex = 0
     for (let p = pMin; p <= pMax; p++) {
       if (isBlackKey(p)) continue
-      this.keyPositions.set(p, { x: wIndex * whiteW, width: whiteW })
+      this.keyPositions.set(p, { x: frame.cheek + wIndex * whiteW, width: whiteW })
       wIndex++
     }
 
     for (let p = pMin; p <= pMax; p++) {
       if (!isBlackKey(p)) continue
       const left = this.keyPositions.get(p - 1)
-      if (!left) continue
-      this.keyPositions.set(p, { x: left.x + blackOffset, width: blackW })
+      if (left) {
+        this.keyPositions.set(p, { x: left.x + blackOffset, width: blackW })
+        continue
+      }
+      // The window starts on this black key, so the white key to its left is
+      // off-screen. Place it the same 17.5px (scaled) past that missing key.
+      const right = this.keyPositions.get(p + 1)
+      const x = right ? right.x - whiteW + blackOffset : frame.cheek
+      this.keyPositions.set(p, { x: Math.max(0, x), width: blackW })
     }
+  }
+
+  private whiteCount(): number {
+    const pMin = Math.max(MIDI_MIN, this.cfg.pitchMin ?? MIDI_MIN)
+    const pMax = Math.min(MIDI_MAX, this.cfg.pitchMax ?? MIDI_MAX)
+    return whiteKeyCount(pMin, pMax)
   }
 }
 

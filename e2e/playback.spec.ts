@@ -43,7 +43,7 @@ async function playhead(scrubber: Locator): Promise<number> {
 }
 
 async function loadFixture(page: Page): Promise<void> {
-  await page.goto('/')
+  await page.goto('/start')
 
   // Secure-context guard — same origin requirement the export specs rely on; also a
   // sanity check that we're on the served preview, not about:blank.

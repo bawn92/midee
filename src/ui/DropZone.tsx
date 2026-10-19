@@ -1,9 +1,11 @@
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { render } from 'solid-js/web'
+import { APP_NAME } from '../brand'
 import { t } from '../i18n'
 import type { MidiDeviceStatus } from '../midi/MidiInputManager'
 import { icons } from './icons'
 import { type GridContents, SamplesGrid } from './SamplesGrid'
+import { settleSongIntoPlay } from './viewTransition'
 
 export type LoadSource = 'drag' | 'picker'
 type DropHandler = (file: File, source: LoadSource) => void
@@ -25,7 +27,7 @@ function getHomeMidiStatus(status: MidiDeviceStatus, deviceName: string): string
   if (status === 'connected') return deviceName || t('home.midi.ready')
   if (status === 'blocked') return t('home.midi.blocked')
   if (status === 'unavailable') return t('home.midi.unavailable')
-  return t('home.midi.disconnected')
+  return t('home.midi.lookingFor')
 }
 
 function hasFiles(e: DragEvent): boolean {
@@ -134,7 +136,7 @@ function DropZoneView(props: DropZoneProps) {
       }}
     >
       <div class="home-card">
-        <span class="home-kicker">{t('home.kicker')}</span>
+        <span class="home-kicker">{t('home.kicker', { name: APP_NAME })}</span>
         {/* biome-ignore lint/a11y/useHeadingContent: `home.title.html` is
             a translation key whose value is raw HTML (for per-locale inline
             markup); biome can't introspect innerHTML. Content is always
@@ -173,12 +175,24 @@ function DropZoneView(props: DropZoneProps) {
                 type="button"
                 onClick={() => cb()()}
               >
-                <span innerHTML={icons.practice(13)} />
-                <span>{t('home.cta.learn.title')}</span>
+                <span class="home-learn-icon" innerHTML={icons.practice(18)} />
+                <span class="home-learn-copy">
+                  <span class="home-learn-title">{t('home.cta.learn.title')}</span>
+                  <span class="home-learn-sub">{t('home.cta.learn.sub')}</span>
+                </span>
                 <span class="home-learn-badge">{t('home.cta.learn.badge')}</span>
               </button>
             )}
           </Show>
+        </div>
+
+        <div
+          class="home-midi-status"
+          id="home-midi-status"
+          data-midi-status={props.midiStatus().status}
+        >
+          <span class="home-midi-glyph" aria-hidden="true" innerHTML={icons.midi(14)} />
+          <span>{getHomeMidiStatus(props.midiStatus().status, props.midiStatus().deviceName)}</span>
         </div>
 
         <div class="home-samples">
@@ -186,43 +200,7 @@ function DropZoneView(props: DropZoneProps) {
           <div class="home-samples-mount" ref={samplesHost} />
         </div>
 
-        <div class="home-footnotes">
-          <div
-            class="home-midi-status"
-            id="home-midi-status"
-            data-midi-status={props.midiStatus().status}
-          >
-            {getHomeMidiStatus(props.midiStatus().status, props.midiStatus().deviceName)}
-          </div>
-          <div class="home-drop-hint" innerHTML={t('home.dropHint.html')} />
-        </div>
-        <nav class="home-meta-links" aria-label={t('home.metaLinks.aria')}>
-          <a
-            href="/blog/"
-            class="home-meta-link"
-            aria-label={t('home.metaLink.blog')}
-            data-tip={t('home.metaLink.blog')}
-            innerHTML={icons.blog()}
-          />
-          <a
-            href="https://github.com/aayushdutt/midee"
-            class="home-meta-link"
-            aria-label={t('home.metaLink.github')}
-            data-tip={t('home.metaLink.github')}
-            target="_blank"
-            rel="noopener noreferrer"
-            innerHTML={icons.github()}
-          />
-          <a
-            href="https://discord.gg/UaH5qWSNdy"
-            class="home-meta-link"
-            aria-label={t('home.metaLink.discord')}
-            data-tip={t('home.metaLink.discord')}
-            target="_blank"
-            rel="noopener noreferrer"
-            innerHTML={icons.discord()}
-          />
-        </nav>
+        <div class="home-drop-hint" innerHTML={t('home.dropHint.html')} />
         <input
           type="file"
           id="midi-input"
@@ -247,6 +225,7 @@ export class DropZone {
   private statusSetter!: (v: { status: MidiDeviceStatus; deviceName: string }) => void
   private filePicker: (() => void) | null = null
   private refreshGrid: (() => void) | null = null
+  private shown = true
 
   constructor(
     container: HTMLElement,
@@ -298,12 +277,25 @@ export class DropZone {
   }
 
   show(): void {
+    this.shown = true
     this.hiddenSetter(false)
     // Coming back Home after opening a file: that file is now a recent.
     this.refreshGrid?.()
   }
 
   hide(): void {
+    const fromHome = this.shown
+    this.shown = false
+    if (!fromHome) {
+      this.hiddenSetter(true)
+      return
+    }
+    const mode = document.getElementById('top-strip')?.dataset.mode
+    const card = document.querySelector('.sample-card.is-vt-source')
+    if (mode === 'play' || card) {
+      settleSongIntoPlay(() => this.hiddenSetter(true))
+      return
+    }
     this.hiddenSetter(true)
   }
 

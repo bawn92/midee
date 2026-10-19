@@ -17,6 +17,8 @@ describe('barsToSeconds', () => {
   it('respects custom beats-per-bar for odd time signatures', () => {
     // 4 bars @ 120 BPM, 3/4 = 6 seconds.
     expect(barsToSeconds(4, 120, 3)).toBe(6)
+    // 4 bars @ 100 BPM, 3/4 = 7.2 seconds.
+    expect(barsToSeconds(4, 100, 3)).toBeCloseTo(7.2, 5)
   })
 })
 
@@ -40,6 +42,9 @@ describe('makeRegionFromBars', () => {
   it('builds a [playhead-span, playhead] region for a bar count', () => {
     // 4 bars @ 120 = 8 s. Playhead at 20 s → [12, 20].
     expect(makeRegionFromBars(20, 4, 120, 60)).toEqual({ start: 12, end: 20 })
+    const waltz = makeRegionFromBars(20, 4, 100, 60, 3)
+    expect(waltz!.start).toBeCloseTo(12.8, 5)
+    expect(waltz!.end).toBe(20)
   })
 
   it('shortens the region near the start instead of shifting forward', () => {

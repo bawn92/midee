@@ -1,0 +1,153 @@
+/* Shared Golden Hour tokens. Scenes override only colour and ambient
+   values. Type, spacing, radii, motion, and component geometry stay here. */
+
+:root {
+  --font-display: "Fraunces Variable", Georgia, "Times New Roman", serif;
+  --font-ui: "Nunito Sans", system-ui, sans-serif;
+  --font-serif: var(--font-display);
+  --font-sans: var(--font-ui);
+  /* Screens set Fraunces Regular at SOFT 0, WONK 1. Weight stays on the
+     type shorthand so Display can be 500 while titles stay 400. */
+  --font-display-axes: "SOFT" 0, "WONK" 1, "opsz" 48;
+
+  --type-display: 500 32px / 40px var(--font-display);
+  --type-title: 400 22px / 28px var(--font-display);
+  --type-heading: 700 16px / 22px var(--font-ui);
+  --type-body: 500 15px / 22px var(--font-ui);
+  --type-label: 600 13px / 18px var(--font-ui);
+  --type-caption: 600 12px / 16px var(--font-ui);
+  --type-number-lg: 600 28px / 32px var(--font-ui);
+  --type-number: 600 15px / 22px var(--font-ui);
+  --type-finger: 800 11px / 11px var(--font-ui);
+  --type-transport: 400 17px / 22px var(--font-display);
+  --type-transport-title: var(--type-transport);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --card-padding: 20px;
+  --gutter: 24px;
+  --gutter-phone: 16px;
+
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+
+  --elev-0: none;
+  --elev-1: 0 1px 2px rgba(94, 59, 36, 0.08), 0 2px 8px rgba(94, 59, 36, 0.06);
+  --elev-2: 0 4px 12px rgba(94, 59, 36, 0.1), 0 12px 32px rgba(94, 59, 36, 0.08);
+  --elev-3: 0 12px 28px rgba(94, 59, 36, 0.14), 0 28px 64px rgba(94, 59, 36, 0.12);
+  --inset-1: inset 0 1px 2px rgba(94, 59, 36, 0.1);
+  --note-shadow: 0 2px 6px rgba(94, 59, 36, 0.12);
+
+  --blur-card: 18px;
+  --blur-overlay: 8px;
+
+  --dur-fast: 140ms;
+  --dur-base: 240ms;
+  --dur-slow: 420ms;
+  --dur-scene: 1200ms;
+  --ease-out: cubic-bezier(0.22, 0.8, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.45, 0, 0.25, 1);
+  --ease-settle: cubic-bezier(0.2, 0.9, 0.25, 1.05);
+
+  /* Golden Hour is the default palette. Scene files replace these. */
+  --bg-top: #f8e3c8;
+  --bg-bottom: #f2c9a0;
+  --bg-vignette: rgba(120, 70, 30, 0.1);
+  --scene-shadow-img: none;
+  --surface: rgba(255, 248, 238, 0.62);
+  --surface-solid: #fbf3e8;
+  --surface-sunken: rgba(122, 78, 44, 0.06);
+  --surface-hover: rgba(255, 248, 238, 0.78);
+  --border: rgba(122, 78, 44, 0.14);
+  --border-strong: rgba(122, 78, 44, 0.28);
+  --text-1: #4a2f1e;
+  --text-2: #7a5a44;
+  --text-3: #a4876f;
+  --text-on-accent: #fff8ee;
+  --accent: #b9773a;
+  --accent-hover: #a86a30;
+  --accent-press: #94592a;
+  --accent-soft: #ebc99a;
+  --note-rh: #e6a94f;
+  --note-rh-edge: #c98a32;
+  --note-lh: #d9908f;
+  --note-lh-edge: #b8706f;
+  --particle-hot: #fff3d6;
+  --particle-glint: #ffd9a0;
+  --particle-rain: #e9f1f6;
+  --particle-mist: #fff8ee;
+  --particle-glass-rim: #7a4e2c;
+  --particle-opal-1: #f6c2da;
+  --particle-opal-2: #d9c9f5;
+  --particle-opal-3: #c4e3f7;
+  --particle-opal-4: #c6eedd;
+  --particle-opal-5: #fbd8be;
+  --success: #6e8f5a;
+  --success-soft: #dce6cf;
+  --warning: #c7853a;
+  --warning-soft: #f6dfc0;
+  --danger: #b4574b;
+  --danger-soft: #f3d3cc;
+  --focus-ring: #8a5a2b;
+  --wood-light: #9a6640;
+  --wood-dark: #5e3b24;
+  --key-ivory: #f6ebda;
+  --key-ivory-side: #dccbb2;
+  --key-ebony: #3e2a1f;
+  --key-ebony-side: #2e1f17;
+  --felt: #8e3b32;
+  --scrim: rgba(74, 47, 30, 0.24);
+  --surface-sunken-hover: rgba(122, 78, 44, 0.1);
+  --surface-active: rgba(122, 78, 44, 0.12);
+  --key-gap: rgba(94, 59, 36, 0.25);
+  --key-out-of-range: rgba(94, 59, 36, 0.1);
+  --roll-lane-c: rgba(122, 78, 44, 0.08);
+  --roll-lane: rgba(122, 78, 44, 0.04);
+  --roll-fade: #f6d6b4;
+  --range-glass: rgba(235, 201, 154, 0.32);
+  --range-glass-drag: rgba(235, 201, 154, 0.4);
+  --range-border: rgba(185, 119, 58, 0.7);
+  --range-dim: rgba(42, 26, 15, 0.4);
+  --range-edge: #a65c28;
+  --range-strip: #f2b565;
+  --range-lane: #e6a94f;
+  --segment-lh-thumb: rgba(217, 144, 143, 0.35);
+  --segment-rh-thumb: rgba(230, 169, 79, 0.4);
+  --icon-toggled-bg: rgba(235, 201, 154, 0.5);
+  --key-pressed-rh: rgba(230, 169, 79, 0.55);
+  --key-pressed-lh: rgba(217, 144, 143, 0.55);
+  --key-wrong: rgba(180, 87, 75, 0.45);
+  --tooltip-bg: rgba(74, 47, 30, 0.92);
+  --hit-line: rgba(185, 119, 58, 0.7);
+  --wood-highlight: rgba(255, 230, 200, 0.25);
+
+  color-scheme: light;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 80ms;
+    --dur-base: 80ms;
+    --dur-slow: 80ms;
+    --dur-scene: 80ms;
+  }
+}
+
+html[data-calm="off"] {
+  --dur-fast: 0ms;
+  --dur-base: 0ms;
+  --dur-slow: 80ms;
+  --dur-scene: 80ms;
+}

@@ -1,0 +1,666 @@
+/* Landing hero. The scene gradient and plant shadow stay; this layer only
+   adds the invitation. Motion is transform and opacity. */
+
+html[data-route="hero"] #ui-overlay > :not(#solid-root),
+html[data-route="hero"] #pianoroll,
+html[data-route="hero"] #kbd-resizer {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.landing {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: minmax(300px, 528px) minmax(220px, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  column-gap: clamp(24px, 3vw, 96px);
+  align-items: center;
+  padding: 40px clamp(28px, 5vw, 120px) 36px;
+  pointer-events: none;
+  color: var(--text-1);
+}
+
+.landing-brand,
+.landing-copy,
+.landing-ctas button {
+  pointer-events: auto;
+}
+
+.landing-brand {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  align-self: start;
+}
+
+.landing-mark {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+}
+
+.landing-mark svg {
+  width: 30px;
+  height: 30px;
+}
+
+.landing-word {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+  font-variation-settings:
+    "SOFT" 0,
+    "WONK" 1,
+    "opsz" 24,
+    "wght" 500;
+}
+
+.landing-copy {
+  grid-column: 1;
+  grid-row: 2;
+  align-self: center;
+  max-width: 528px;
+  padding-bottom: 4vh;
+}
+
+.landing-kicker {
+  margin: 0;
+  font: 600 13px / 1.2 var(--font-ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.landing-kicker-rule {
+  display: block;
+  width: 28px;
+  height: 2px;
+  margin-top: 12px;
+  border-radius: 1px;
+  background: var(--accent);
+}
+
+.landing-headline {
+  margin: 22px 0 0;
+  font-family: var(--font-display);
+  font-weight: 520;
+  font-size: 88px;
+  line-height: 1.136;
+  letter-spacing: -0.03em;
+  color: var(--text-1);
+  /* Display optical size keeps both lines inside the 528px column. */
+  font-variation-settings:
+    "SOFT" 0,
+    "WONK" 0,
+    "opsz" 144,
+    "wght" 520;
+}
+
+.landing-description {
+  max-width: 430px;
+  margin: 28px 0 0;
+  font: 500 20px / 1.5 var(--font-ui);
+  color: var(--text-2);
+}
+
+.landing-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 44px;
+}
+
+.landing-start,
+.landing-plug {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  border: 0;
+  cursor: pointer;
+  font: 700 16px / 1 var(--font-ui);
+}
+
+.landing-start {
+  padding: 0 22px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  box-shadow: 0 10px 24px rgba(185, 119, 58, 0.28);
+}
+
+.landing-start:hover {
+  background: var(--accent-hover);
+}
+
+.landing-start:active {
+  transform: scale(0.98);
+}
+
+.landing-start-icon,
+.landing-plug-icon {
+  display: inline-flex;
+}
+
+.landing-plug {
+  padding: 0 8px;
+  background: transparent;
+  color: var(--accent);
+}
+
+.landing-plug:hover {
+  color: var(--accent-hover);
+}
+
+.hero-art {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  justify-self: end;
+  width: 100%;
+  max-width: 540px;
+  pointer-events: none;
+}
+
+.hero-highway {
+  position: relative;
+  height: clamp(240px, 34vw, 496px);
+  overflow: hidden;
+  background-image:
+    linear-gradient(to right, rgba(74, 47, 30, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(74, 47, 30, 0.06) 1px, transparent 1px);
+  background-size: calc(100% / 14) 82px;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 12%, #000 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 12%, #000 100%);
+}
+
+.hero-highway[data-lanes="10"] {
+  height: 150px;
+  background-size: calc(100% / 10) 52px;
+}
+
+.hero-notes {
+  position: absolute;
+  inset: 0;
+}
+
+.hero-note {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 6px;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.hero-note[data-hand="rh"] {
+  background: var(--note-rh, #e6a94f);
+  box-shadow: inset 0 0 0 1px var(--note-rh-edge, #c98a32);
+}
+
+.hero-note[data-hand="lh"] {
+  background: var(--note-lh, #d9908f);
+  box-shadow: inset 0 0 0 1px var(--note-lh-edge, #b8706f);
+}
+
+.hero-glow {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: -8px;
+  height: 64px;
+  background: radial-gradient(ellipse at center, rgba(255, 224, 160, 0.7), transparent 70%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.hero-kb {
+  position: relative;
+  height: clamp(112px, 12vw, 170px);
+  margin-top: -2px;
+  border-radius: 16px;
+  background: var(--wood-dark, #5e3b24);
+  box-shadow:
+    0 18px 36px rgba(94, 59, 36, 0.28),
+    0 2px 0 rgba(255, 236, 214, 0.18) inset;
+  overflow: hidden;
+}
+
+.hero-kb-sheen {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 46%;
+  background: linear-gradient(to bottom, rgba(154, 102, 64, 0.45), transparent);
+  pointer-events: none;
+}
+
+.hero-felt {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 14px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--felt, #8e3b32);
+}
+
+.hero-whites {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 18px;
+  bottom: 22px;
+  display: flex;
+  gap: 3px;
+}
+
+.hero-white {
+  position: relative;
+  flex: 1;
+  border-radius: 0 0 4px 4px;
+  background: linear-gradient(
+    #fffaf3,
+    var(--key-ivory, #f6ebda) 28%,
+    var(--key-ivory-side, #dccbb2)
+  );
+  box-shadow: inset 0 -8px 8px rgba(94, 59, 36, 0.08);
+}
+
+.hero-white-light {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  background: var(--note-rh, #e6a94f);
+}
+
+.hero-white-light[data-hand="lh"] {
+  background: var(--note-lh, #d9908f);
+}
+
+.hero-blacks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hero-black {
+  position: absolute;
+  top: 0;
+  height: 60%;
+  border-radius: 0 0 3px 3px;
+  background: linear-gradient(var(--key-ebony, #3e2a1f), var(--key-ebony-side, #2e1f17));
+}
+
+.landing-kicker,
+.landing-headline,
+.landing-description,
+.landing-ctas {
+  animation: landing-rise 500ms ease-out both;
+}
+
+.landing-headline {
+  animation-delay: 80ms;
+}
+
+.landing-description {
+  animation-delay: 160ms;
+}
+
+.landing-ctas {
+  animation-delay: 240ms;
+}
+
+@keyframes landing-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+html.landing-leave .landing-brand,
+html.landing-leave .landing-copy {
+  animation: landing-lift 450ms cubic-bezier(0.2, 0, 0, 1) forwards;
+}
+
+html.landing-leave .hero-art {
+  animation: landing-sink 1000ms cubic-bezier(0.2, 0, 0, 1) forwards;
+}
+
+@keyframes landing-lift {
+  to {
+    opacity: 0;
+    transform: translateY(-24px);
+  }
+}
+
+@keyframes landing-sink {
+  45% {
+    opacity: 0.35;
+    transform: translateY(70px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(70px);
+  }
+}
+
+html.landing-cross .landing {
+  animation: landing-fade 350ms ease forwards;
+}
+
+html.landing-enter #dropzone,
+html.landing-enter #top-strip {
+  animation: landing-home 550ms ease-in-out both;
+}
+
+html.landing-enter .home-title {
+  animation-delay: 40ms;
+}
+
+html.landing-enter .home-sub {
+  animation-delay: 80ms;
+}
+
+html.landing-enter .home-actions {
+  animation-delay: 120ms;
+}
+
+@keyframes landing-home {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes landing-fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.midi-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.midi-pop {
+  position: fixed;
+  z-index: 61;
+  width: min(340px, calc(100vw - 24px));
+  padding: 18px 18px 16px;
+  border-radius: 16px;
+  background: var(--surface-solid, #fbf3e8);
+  color: var(--text-1);
+  box-shadow:
+    0 18px 50px rgba(74, 47, 30, 0.18),
+    0 0 0 1px rgba(122, 78, 44, 0.12);
+  transform-origin: top right;
+  animation: midi-pop-in 200ms ease-out both;
+}
+
+.midi-pop--defer {
+  animation-delay: 50ms;
+}
+
+.midi-pop h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font: 700 16px / 1.35 var(--font-ui);
+}
+
+.midi-pop-kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  font: 700 15px / 1.35 var(--font-ui);
+}
+
+.midi-pop-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(185, 119, 58, 0.18);
+}
+
+.midi-pop-dot--on {
+  background: var(--success, #6e8f5a);
+  box-shadow: 0 0 0 4px rgba(110, 143, 90, 0.2);
+}
+
+.midi-pop-steps {
+  margin: 14px 0 16px;
+  padding: 0;
+  list-style: none;
+  counter-reset: midi-step;
+}
+
+.midi-pop-steps li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 0 0 8px;
+  font: 500 14px / 1.4 var(--font-ui);
+  color: var(--text-2);
+  counter-increment: midi-step;
+}
+
+.midi-pop-steps li::before {
+  content: counter(midi-step);
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 99px;
+  background: var(--accent-soft);
+  color: var(--text-1);
+  font: 700 12px / 1 var(--font-ui);
+}
+
+.midi-pop-note {
+  margin: 10px 0 16px;
+  font: 500 14px / 1.45 var(--font-ui);
+  color: var(--text-2);
+}
+
+.midi-pop-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font: 700 15px / 1 var(--font-ui);
+  cursor: pointer;
+}
+
+.midi-pop-primary:disabled {
+  opacity: 0.7;
+}
+
+.midi-pop-file {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: 600 14px / 1 var(--font-ui);
+  cursor: pointer;
+}
+
+@keyframes midi-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 759px) {
+  .landing {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: calc(28px + env(safe-area-inset-top)) 24px 20px;
+    overflow: auto;
+  }
+
+  .landing-word {
+    font-size: 18px;
+  }
+
+  .landing-mark,
+  .landing-mark svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .landing-copy {
+    max-width: none;
+    padding-bottom: 0;
+  }
+
+  .landing-kicker {
+    margin-top: 28px;
+    font-size: 12px;
+  }
+
+  .landing-headline {
+    margin-top: 16px;
+    font-size: 48px;
+    line-height: 1.04;
+  }
+
+  .landing-description {
+    margin-top: 16px;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  .landing-ctas {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-top: 22px;
+  }
+
+  .landing-start,
+  .landing-plug {
+    width: 100%;
+  }
+
+  .hero-art {
+    width: 100%;
+    max-width: none;
+    margin-top: auto;
+    padding-top: 28px;
+  }
+
+  .hero-kb {
+    height: 104px;
+    border-radius: 12px;
+  }
+
+  .hero-whites {
+    left: 12px;
+    right: 12px;
+    top: 14px;
+    bottom: 12px;
+  }
+
+  .hero-felt {
+    left: 12px;
+    right: 12px;
+    top: 10px;
+  }
+
+  .midi-scrim {
+    background: rgba(74, 47, 30, 0.28);
+  }
+
+  .midi-pop {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    border-radius: 20px 20px 0 0;
+    padding: 22px 20px calc(18px + env(safe-area-inset-bottom));
+    transform-origin: bottom center;
+    animation-name: midi-sheet-in;
+  }
+}
+
+@keyframes midi-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-kicker,
+  .landing-headline,
+  .landing-description,
+  .landing-ctas {
+    animation: landing-fade 150ms linear both;
+    transform: none;
+  }
+
+  html.landing-leave .landing-brand,
+  html.landing-leave .landing-copy,
+  html.landing-leave .hero-art,
+  html.landing-cross .landing,
+  html.landing-enter #dropzone,
+  html.landing-enter #top-strip {
+    animation: landing-fade 150ms linear forwards;
+    transform: none;
+  }
+
+  .midi-pop,
+  .midi-pop--defer {
+    animation: landing-fade 150ms linear both;
+    animation-delay: 0s;
+  }
+}

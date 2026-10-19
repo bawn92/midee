@@ -1,0 +1,2542 @@
+/* Play view built on the design-system tokens. Applies while a scene is
+   selected. Classic themes leave data-scene unset and keep their own chrome. */
+
+html[data-scene] {
+  font-family: var(--font-ui);
+  color: var(--text-1);
+  color-scheme: light;
+  --bg: var(--bg-bottom);
+  --text: var(--text-1);
+  --text-muted: var(--text-2);
+  --text-dim: var(--text-3);
+  --surface-hi: var(--surface-solid);
+  --border-hi: var(--border-strong);
+}
+
+html[data-scene] body,
+html[data-scene] #app {
+  background: linear-gradient(212deg, var(--bg-top) 16.7%, var(--bg-bottom) 83.3%);
+}
+
+#scene-shadow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  /* The SVG is already 12% of the leaf shape. Multiply lets it sit on the wall.
+     The play view paints its own animated shadows under the notes, so this
+     static mark stays on the landing hero only. */
+  background: var(--scene-shadow-img) top right / 520px 530px no-repeat;
+  mix-blend-mode: multiply;
+  opacity: 1;
+}
+
+html[data-route="app"] #scene-shadow {
+  display: none;
+}
+
+html[data-scene] #ui-overlay {
+  z-index: 2;
+}
+
+html[data-scene] #top-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  height: 52px;
+  top: calc(10px + env(safe-area-inset-top));
+  pointer-events: none;
+  z-index: 6;
+}
+
+html[data-scene] .ts-end {
+  margin-left: auto;
+}
+
+html[data-scene] #top-strip button,
+html[data-scene] #top-strip .ts-brand-link,
+html[data-scene] #top-strip .ts-mode-switch,
+html[data-scene] #ts-customize-slot,
+html[data-scene] #top-strip .ts-end {
+  pointer-events: auto;
+}
+
+html[data-scene] .ts-mode-switch {
+  background: var(--surface);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--elev-1);
+  backdrop-filter: blur(var(--blur-card)) saturate(1.15);
+}
+
+html[data-scene] .ts-mode-thumb {
+  background: var(--accent-soft);
+  box-shadow: var(--elev-1);
+}
+
+html[data-scene] .ts-mode-seg.is-active,
+html[data-scene] .ts-mode-seg.is-active:hover {
+  color: var(--text-1);
+}
+
+html[data-scene] .ts-pill,
+html[data-scene] .ts-home,
+html[data-scene] #ts-customize {
+  background: var(--surface);
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--elev-1);
+}
+
+html[data-scene] #hud.float-hud {
+  left: 50%;
+  right: auto;
+  height: 64px;
+  max-width: min(820px, calc(100vw - 80px));
+  padding: 8px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-1);
+  border: 1px solid var(--border);
+  box-shadow: var(--elev-2);
+  backdrop-filter: blur(var(--blur-card)) saturate(1.15);
+  z-index: 5;
+}
+
+html[data-scene] #hud.float-hud--idle {
+  opacity: 0.7;
+  transition: opacity var(--dur-slow) var(--ease-in-out);
+}
+
+html[data-scene] #hud .btn-play {
+  width: 48px;
+  height: 48px;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  box-shadow: none;
+}
+
+html[data-scene] #hud .btn-play:hover {
+  background: var(--accent-hover);
+}
+
+html[data-scene] #hud .hud-piece-title {
+  font: var(--type-transport);
+  font-variation-settings: var(--font-display-axes);
+  color: var(--text-1);
+}
+
+html[data-scene] #hud .hud-piece-bpm,
+html[data-scene] #hud .hud-metro-bpm {
+  font: var(--type-caption);
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-scene] #hud #hud-drag,
+html[data-scene] #hud .float-hud__handle,
+html[data-scene] #hud .hud-session-btn {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+html[data-scene] #hud .btn-skip,
+html[data-scene] #hud .ctrl-icon--btn,
+html[data-scene] #hud .speed-chip,
+html[data-scene] #hud .hud-transpose-step {
+  color: var(--text-2);
+  background: transparent;
+  border-radius: var(--radius-md);
+}
+
+html[data-scene] #hud .mini-slider {
+  accent-color: var(--accent);
+}
+
+html[data-scene] #hud.hud--play:not(.hud--live) .hud-metro,
+html[data-scene] #hud.hud--play:not(.hud--live) #hud-loop {
+  display: flex;
+}
+
+html[data-scene] #hud .hud-metro-toggle,
+html[data-scene] #hud #hud-loop {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-2);
+  border: 0;
+}
+
+html[data-scene] #hud .hud-metro--on .hud-metro-toggle,
+html[data-scene] #hud #hud-loop[data-loop-state="playing"],
+html[data-scene] #hud #hud-loop[data-loop-state="overdubbing"] {
+  color: var(--accent);
+  background: var(--icon-toggled-bg);
+}
+
+html[data-scene] #hud .hud-hand-track {
+  height: 36px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  box-shadow: var(--inset-1);
+  padding: 3px;
+}
+
+html[data-scene] #hud .hud-hand {
+  min-width: 52px;
+  border-radius: var(--radius-pill);
+  color: var(--text-2);
+  font: var(--type-label);
+  background: transparent;
+}
+
+html[data-scene] #hud .hud-hand.is-active {
+  background: var(--accent-soft);
+  color: var(--text-1);
+  box-shadow: var(--elev-1);
+}
+
+html[data-scene] #hud .hud-hands[data-hand="left"] .hud-hand.is-active {
+  background: var(--segment-lh-thumb);
+}
+
+html[data-scene] #hud .hud-hands[data-hand="right"] .hud-hand.is-active {
+  background: var(--segment-rh-thumb);
+}
+
+/* Progress sits inside the pill, under the controls: elapsed, honey fill, total.
+   The old 4px line hung off the bottom edge and overflow:hidden ate the track. */
+html[data-scene] #hud .scrubber-wrap {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 8px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 16px;
+  min-width: 0;
+}
+
+html[data-scene] #hud .scrubber-wrap .time-display {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  flex: none;
+  color: var(--text-2);
+  font:
+    600 12px / 16px "Nunito Sans",
+    system-ui,
+    sans-serif;
+}
+
+html[data-scene] #hud .scrubber {
+  --scrub-rest: color-mix(in srgb, var(--note-rh) 34%, var(--surface-solid));
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 48px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  /* Paint the 6px groove on the input itself. Chrome drops the track
+     pseudo's background on this control, which left only a clipped thumb. */
+  background-color: transparent;
+  background-image:
+    linear-gradient(var(--note-rh), var(--note-rh)),
+    linear-gradient(var(--scrub-rest), var(--scrub-rest));
+  background-size:
+    var(--pct, 0%) 6px,
+    100% 6px;
+  background-position:
+    left center,
+    left center;
+  background-repeat: no-repeat;
+  border-radius: 999px;
+  box-shadow: none;
+  accent-color: transparent;
+  cursor: pointer;
+}
+
+html[data-scene] #hud .scrubber::-webkit-slider-runnable-track {
+  -webkit-appearance: none;
+  height: 6px;
+  margin: 5px 0;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--note-rh) 0,
+    var(--note-rh) var(--pct, 0%),
+    var(--scrub-rest) var(--pct, 0%),
+    var(--scrub-rest) 100%
+  );
+  box-shadow: inset 0 1px 1px rgba(94, 59, 36, 0.16);
+}
+
+html[data-scene] #hud .scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -4px;
+  border: 2px solid var(--note-rh);
+  border-radius: 50%;
+  background: var(--surface-solid);
+  box-shadow: 0 1px 3px rgba(94, 59, 36, 0.28);
+}
+
+html[data-scene] #hud .scrubber::-moz-range-track {
+  height: 6px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--scrub-rest, var(--accent-soft));
+}
+
+html[data-scene] #hud .scrubber::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--note-rh);
+}
+
+html[data-scene] #hud .scrubber::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--note-rh);
+  border-radius: 50%;
+  background: var(--surface-solid);
+}
+
+html[data-scene] .song-guide {
+  top: calc(104px + env(safe-area-inset-top));
+  left: calc(24px + env(safe-area-inset-left));
+  width: min(280px, calc(50vw - 36px));
+  color: var(--text-1);
+  transform: none;
+}
+
+html[data-scene] .song-guide--side {
+  top: calc(104px + env(safe-area-inset-top));
+  left: calc(24px + env(safe-area-inset-left));
+  width: min(280px, calc(50vw - 36px));
+}
+
+html[data-scene] .song-guide-card,
+html[data-scene] .song-guide-tab,
+html[data-scene] .kbd-range-panel,
+html[data-scene] .kbd-range-bar {
+  background: var(--surface);
+  backdrop-filter: blur(var(--blur-card)) saturate(1.15);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-2);
+  color: var(--text-1);
+}
+
+html[data-scene] .song-guide-card {
+  padding: 12px 12px 20px 20px;
+  max-height: min(520px, calc(100svh - 104px - var(--keyboard-h, 180px) - 24px));
+  overflow: auto;
+}
+
+html[data-scene] .song-guide-kicker,
+html[data-scene] .kbd-range-kicker {
+  font: var(--type-title);
+  font-variation-settings: var(--font-display-axes);
+  color: var(--text-1);
+}
+
+html[data-scene] .song-guide-name,
+html[data-scene] .song-guide-chord-name {
+  font: var(--type-body);
+  color: var(--text-2);
+}
+
+html[data-scene] .song-guide-chip {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  color: var(--text-1);
+  font: var(--type-label);
+}
+
+html[data-scene] .song-guide-chip--on {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--text-on-accent);
+}
+
+html[data-scene] .song-guide-close,
+html[data-scene] .song-guide-ranges button,
+html[data-scene] .song-guide-tempo button,
+html[data-scene] .song-guide-clean button,
+html[data-scene] .kbd-range-preset {
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-1);
+  font: var(--type-label);
+}
+
+html[data-scene] .song-guide-tempo--on,
+html[data-scene] .kbd-range-preset[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+html[data-scene] .song-guide-fingers {
+  color: var(--text-2);
+  font: var(--type-label);
+}
+
+/* Wide play view: the range card sits upper-right. The shortcuts card
+   stays in #lower-left, above the keys. */
+@media (min-width: 1000px) {
+  /* Site frame B1: a labeled app bar, then the transport pill, then the cards. */
+  html[data-scene] #top-strip {
+    top: calc(10px + env(safe-area-inset-top));
+    height: 52px;
+  }
+
+  html[data-scene] #hud.float-hud {
+    top: calc(80px + env(safe-area-inset-top));
+    bottom: auto;
+    transform: translateX(calc(-50% + var(--hud-dx, 0px)));
+    width: min(742px, calc(100vw - 80px));
+    max-width: min(742px, calc(100vw - 80px));
+  }
+
+  html[data-scene] .song-guide,
+  html[data-scene] .song-guide--side {
+    top: calc(168px + env(safe-area-inset-top));
+  }
+
+  html[data-scene] .song-guide-card {
+    max-height: min(460px, calc(100svh - 168px - var(--keyboard-h, 180px) - 24px));
+  }
+
+  html[data-scene]
+    #lower-left:not(:has(#key-hint.kh--visible:not(.kh--collapsed)))
+    .kbd-range-mount,
+  html[data-scene] #lower-left .kbd-range-mount,
+  html[data-scene] #lower-left:has(.kbd-range--beside) .kbd-range-mount {
+    position: fixed;
+    top: calc(168px + env(safe-area-inset-top));
+    right: calc(24px + env(safe-area-inset-right));
+    left: auto;
+    bottom: auto;
+    width: min(360px, calc(50vw - 36px));
+    margin-bottom: 0;
+    z-index: 4;
+  }
+
+  html[data-scene] #lower-left #kbd-range,
+  html[data-scene] #lower-left:has(.kbd-range--beside) #kbd-range {
+    position: relative;
+    width: 100%;
+    gap: 0;
+    align-items: stretch;
+  }
+
+  html[data-scene] .kbd-range-panel,
+  html[data-scene] #lower-left:has(.kbd-range--beside) .kbd-range-panel {
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    max-height: min(460px, calc(100svh - 172px - var(--keyboard-h, 180px) - 96px));
+    overflow: auto;
+    margin-top: 0;
+    padding: var(--space-2) var(--space-5) var(--space-5);
+  }
+
+  html[data-scene] #kbd-range.kbd-range--open .kbd-range-bar {
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-bottom: 0;
+    box-shadow: none;
+  }
+
+  html[data-scene] #kbd-range:not(.kbd-range--open) .kbd-range-bar {
+    border-radius: var(--radius-pill);
+  }
+
+  html[data-scene] #kbd-range.kbd-range--open .kbd-range-panel {
+    border-top: 0;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  }
+
+  html[data-scene] .kbd-range-label {
+    min-width: 0;
+  }
+}
+
+html[data-scene] #kbd-range:not(.kbd-range--open) .kbd-range-panel {
+  display: none;
+}
+
+html[data-scene] #kbd-range.kbd-range--open .kbd-range-panel {
+  animation: kbd-range-in var(--dur-base) var(--ease-out);
+}
+
+@keyframes kbd-range-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+html[data-scene] .kbd-range-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--space-4);
+}
+
+html[data-scene] .kbd-range-label {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+}
+
+html[data-scene] .kbd-range-label-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+html[data-scene] .kbd-range-kicker {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-scene] .kbd-range-chevron {
+  display: inline-flex;
+  flex: none;
+  color: var(--text-2);
+  transition: transform var(--dur-base) var(--ease-out);
+}
+
+html[data-scene] #kbd-range.kbd-range--open .kbd-range-chevron {
+  transform: rotate(180deg);
+}
+
+html[data-scene] .kbd-range-summary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-2);
+  font: var(--type-body);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+html[data-scene] .kbd-range-summary .kbd-range-notes,
+html[data-scene] .kbd-range-summary .kbd-range-count {
+  font: inherit;
+  color: inherit;
+}
+
+html[data-scene] .kbd-range-cal-badge {
+  align-self: flex-start;
+  justify-self: start;
+}
+
+html[data-scene] .kbd-range-panel {
+  gap: 0;
+  padding: var(--space-4) var(--space-5) var(--space-5);
+}
+
+html[data-scene] .kbd-range-face {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  align-items: stretch;
+}
+
+html[data-scene] .kbd-range-ends {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--space-4);
+  row-gap: var(--space-3);
+  position: static;
+  padding: 0;
+}
+
+html[data-scene] .kbd-range-ends > div {
+  display: contents;
+}
+
+html[data-scene] .kbd-range-ends .gh-caption {
+  white-space: nowrap;
+}
+
+html[data-scene] .kbd-range-ends .gh-stepper {
+  justify-self: end;
+}
+
+html[data-scene] .kbd-range-rail {
+  display: none;
+}
+
+html[data-scene] .kbd-range-face .kbd-range-picker-wrap {
+  grid-column: 1 / -1;
+}
+
+html[data-scene] .kbd-range-picker-wrap {
+  width: 100%;
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+  gap: var(--space-2);
+}
+
+html[data-scene] .kbd-range-picker {
+  width: 100%;
+  height: 40px;
+  border-radius: var(--radius-xs);
+  background: var(--surface-sunken);
+}
+
+html[data-scene] .kbd-range-fit-row {
+  margin: var(--space-4) 0 0;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+html[data-scene] .kbd-range-fit-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: none;
+}
+
+html[data-scene] .kbd-range-view {
+  height: 32px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-1);
+  font: var(--type-label);
+}
+
+html[data-scene] #kbd-view-all[aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: transparent;
+}
+
+html[data-scene] .kbd-range-advanced {
+  margin: var(--space-4) 0 0;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+html[data-scene] .kbd-range-key {
+  background: var(--key-ivory);
+}
+
+html[data-scene] .kbd-range-key--black {
+  background: var(--key-ebony);
+  height: 62%;
+}
+
+html[data-scene] .kbd-range-window {
+  background: color-mix(in srgb, var(--accent-soft) 70%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  border-radius: 8px;
+}
+
+html[data-scene] .kbd-range-face-note {
+  font: var(--type-number-lg);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-1);
+}
+
+html[data-scene] .kbd-range-cal-badge {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+html[data-scene] #kbd-range-band {
+  background: transparent;
+  border: 0;
+}
+
+html[data-scene] .kbd-range-band-move {
+  background: var(--surface-solid);
+  box-shadow: var(--elev-1);
+  border-radius: var(--radius-pill);
+  color: var(--text-2);
+}
+
+html[data-scene] .ts-popover,
+html[data-scene] .modal,
+html[data-scene] #export-modal,
+html[data-scene] .panel {
+  background: var(--surface-solid);
+  color: var(--text-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--elev-3);
+}
+
+html[data-scene] .ts-customize-menu {
+  width: min(420px, calc(100vw - 32px));
+  max-height: min(868px, calc(100svh - 32px));
+  overflow: hidden;
+  padding: 0;
+}
+
+@media (min-width: 641px) {
+  html[data-scene] .ts-customize-menu.ts-popover--open {
+    top: calc(16px + env(safe-area-inset-top)) !important;
+    right: calc(16px + env(safe-area-inset-right)) !important;
+    left: auto !important;
+    bottom: auto !important;
+    width: min(420px, calc(100vw - 32px));
+    height: min(868px, calc(100svh - 32px));
+    max-height: min(868px, calc(100svh - 32px));
+    padding: 24px;
+    border-radius: var(--radius-xl);
+    gap: 12px;
+  }
+}
+
+html[data-scene] .gh-appearance-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--scrim);
+  backdrop-filter: blur(var(--blur-overlay));
+  -webkit-backdrop-filter: blur(var(--blur-overlay));
+  cursor: pointer;
+}
+
+.gh-appearance-scrim {
+  display: none;
+}
+
+html[data-scene] .gh-appearance-mark {
+  display: inline-flex;
+  color: var(--accent);
+  flex: none;
+}
+
+.gh-appearance-mark {
+  display: none;
+}
+
+html[data-scene] .panel-header,
+html[data-scene] .customize-section-label,
+html[data-scene] .panel-label {
+  font: var(--type-title);
+  font-variation-settings: var(--font-display-axes);
+  color: var(--text-1);
+}
+
+html[data-scene] .customize-section-label {
+  font: var(--type-caption);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+html[data-scene] .customize-scene-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+html[data-scene] .customize-scene-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text-1);
+  font: var(--type-label);
+  text-align: left;
+}
+
+html[data-scene] .customize-scene-swatch {
+  width: 100%;
+  height: 96px;
+  border-radius: var(--radius-md);
+  box-shadow: none;
+}
+
+html[data-scene] .customize-scene-name {
+  padding: 0 4px 4px;
+}
+
+html[data-scene] .customize-scene-card--on {
+  border: 2px solid var(--accent);
+  padding: 5px;
+}
+
+html[data-scene] .customize-section:has(.customize-scene-row) .customize-section-value {
+  display: none;
+}
+
+html[data-scene] .ts-customize-menu .panel-header {
+  gap: 12px;
+  padding: 0;
+  border-bottom: 0;
+}
+
+html[data-scene] .ts-customize-menu .panel-label {
+  flex: 1;
+}
+
+html[data-scene] .ts-customize-menu .panel-close-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+}
+
+html[data-scene] .gh-studio {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+html[data-scene] .gh-studio .gh-overline {
+  margin: 6px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+html[data-scene] .gh-studio .gh-field {
+  min-height: 32px;
+  margin: 0;
+}
+
+html[data-scene] .kbd-style-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+html[data-scene] .kbd-style-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-2);
+  font: var(--type-label);
+  text-align: start;
+  cursor: pointer;
+}
+
+html[data-scene] .kbd-style-card--on {
+  border-color: var(--accent);
+  color: var(--text-1);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+html[data-scene] .kbd-style-swatch {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 36px;
+  padding: 10px 6px 4px;
+  border-radius: 6px 6px 2px 2px;
+  overflow: hidden;
+}
+
+html[data-scene] .kbd-style-swatch i {
+  flex: 1;
+  height: 100%;
+  border-radius: 1px 1px 2px 2px;
+}
+
+html[data-scene] .kbd-style-swatch i:nth-child(2) {
+  height: 58%;
+  align-self: flex-start;
+}
+
+html[data-scene] .kbd-style-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-scene] .note-shape-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+html[data-scene] .note-shape-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+html[data-scene] .note-shape-head .gh-overline {
+  margin: 0;
+  border-top: 0;
+  padding-top: 0;
+}
+
+html[data-scene] .note-shape-current {
+  color: var(--accent);
+  font: var(--type-label);
+}
+
+html[data-scene] .note-shape-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+html[data-scene] .note-shape-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-2);
+  font: var(--type-label);
+  text-align: center;
+  cursor: pointer;
+}
+
+html[data-scene] .note-shape-card--on {
+  border-color: var(--accent);
+  color: var(--text-1);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+html[data-scene] .note-shape-swatch {
+  position: relative;
+  height: 36px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--surface-sunken);
+}
+
+html[data-scene] .note-shape-swatch i {
+  position: absolute;
+  display: block;
+  bottom: 5px;
+}
+
+html[data-scene] .note-shape-swatch[data-shape="classic"] i:nth-child(1),
+html[data-scene] .note-shape-swatch[data-shape="glass"] i:nth-child(1),
+html[data-scene] .note-shape-swatch[data-shape="felt"] i:nth-child(1),
+html[data-scene] .note-shape-swatch[data-shape="beam"] i:nth-child(1),
+html[data-scene] .note-shape-swatch[data-shape="outline"] i:nth-child(1),
+html[data-scene] .note-shape-swatch[data-shape="petal"] i:nth-child(1) {
+  left: 16%;
+  width: 26%;
+  top: 7px;
+  background: var(--note-rh);
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px var(--note-rh-edge);
+}
+
+html[data-scene] .note-shape-swatch[data-shape="classic"] i:nth-child(2),
+html[data-scene] .note-shape-swatch[data-shape="glass"] i:nth-child(2),
+html[data-scene] .note-shape-swatch[data-shape="felt"] i:nth-child(2),
+html[data-scene] .note-shape-swatch[data-shape="beam"] i:nth-child(2),
+html[data-scene] .note-shape-swatch[data-shape="outline"] i:nth-child(2),
+html[data-scene] .note-shape-swatch[data-shape="petal"] i:nth-child(2) {
+  left: 54%;
+  width: 26%;
+  top: 14px;
+  background: var(--note-lh);
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px var(--note-lh-edge);
+}
+
+html[data-scene] .note-shape-swatch[data-shape="glass"] i {
+  opacity: 0.72;
+  border-radius: 999px;
+  box-shadow:
+    inset 0 0 0 1px var(--note-rh-edge),
+    inset 0 6px 0 color-mix(in srgb, white 35%, transparent);
+}
+
+html[data-scene] .note-shape-swatch[data-shape="felt"] i {
+  border-radius: 3px;
+  box-shadow: inset 0 3px 0 var(--note-rh-edge);
+}
+
+html[data-scene] .note-shape-swatch[data-shape="felt"] i:nth-child(2) {
+  box-shadow: inset 0 3px 0 var(--note-lh-edge);
+}
+
+html[data-scene] .note-shape-swatch[data-shape="beam"] i {
+  left: 22%;
+  width: 8%;
+  border-radius: 999px;
+  box-shadow: none;
+}
+
+html[data-scene] .note-shape-swatch[data-shape="beam"] i:nth-child(2) {
+  left: 62%;
+  width: 8%;
+}
+
+html[data-scene] .note-shape-swatch[data-shape="outline"] i {
+  background: transparent;
+}
+
+html[data-scene] .note-shape-swatch[data-shape="petal"] i {
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+}
+
+html[data-scene] .note-shape-swatch[data-shape="petal"] i:nth-child(2) {
+  border-radius: 50% 50% 40% 40%;
+}
+
+html[data-scene] .note-shape-name {
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-scene] .note-shape-check {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  width: 14px;
+  height: 14px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+html[data-scene] .note-shape-desc {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+html[data-scene] .note-shape-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+}
+
+html[data-scene] .note-shape-toggle-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+html[data-scene] .note-shape-toggle-name {
+  color: var(--text-1);
+  font: var(--type-label);
+}
+
+html[data-scene] .note-shape-toggle-sub {
+  color: var(--text-3);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+html[data-scene] .plant-shadow-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+html[data-scene] .plant-shadow-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+html[data-scene] .plant-shadow-chip {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-2);
+  font: var(--type-label);
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+html[data-scene] .plant-shadow-chip--on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text-1);
+}
+
+html[data-scene] .plant-shadow-chip:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+html[data-scene] .plant-shadow-note {
+  margin: 0;
+  color: var(--text-3);
+  font: var(--type-caption);
+}
+
+html[data-scene] .range-style-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+html[data-scene] .range-style-head {
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+html[data-scene] .range-style-head,
+html[data-scene] .kbd-range-style-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+html[data-scene] .range-style-head .gh-overline {
+  margin: 0;
+  border-top: 0;
+  padding-top: 0;
+}
+
+html[data-scene] .range-style-current {
+  color: var(--accent);
+  font: var(--type-label);
+}
+
+html[data-scene] .range-style-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+html[data-scene] .range-style-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-2);
+  font: var(--type-label);
+  text-align: center;
+  cursor: pointer;
+}
+
+html[data-scene] .range-style-card--on {
+  border-color: var(--accent);
+  color: var(--text-1);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+html[data-scene] .range-style-swatch {
+  position: relative;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 6px;
+  background:
+    linear-gradient(to top, var(--wood-dark) 16px, transparent 16px), var(--surface-sunken);
+}
+
+html[data-scene] .range-style-swatch-lane,
+html[data-scene] .range-style-swatch-dim,
+html[data-scene] .range-style-swatch-frame,
+html[data-scene] .range-style-swatch-strip {
+  position: absolute;
+  display: none;
+}
+
+html[data-scene] .range-style-swatch[data-style="dim"] .range-style-swatch-dim,
+html[data-scene] .range-style-swatch[data-style="outline"] .range-style-swatch-frame,
+html[data-scene] .range-style-swatch[data-style="strip"] .range-style-swatch-strip,
+html[data-scene] .range-style-swatch[data-style="lanes"] .range-style-swatch-lane {
+  display: block;
+}
+
+html[data-scene] .range-style-swatch-dim {
+  top: 0;
+  bottom: 0;
+  width: 28%;
+  background: var(--range-dim);
+}
+
+html[data-scene] .range-style-swatch-dim--start {
+  left: 0;
+}
+
+html[data-scene] .range-style-swatch-dim--end {
+  right: 0;
+}
+
+html[data-scene] .range-style-swatch-frame {
+  top: 8px;
+  right: 22%;
+  bottom: 4px;
+  left: 22%;
+  border: 2px solid var(--range-edge);
+  border-radius: 4px;
+}
+
+html[data-scene] .range-style-swatch-strip {
+  top: 18px;
+  right: 18%;
+  left: 18%;
+  height: 4px;
+  background: var(--range-strip);
+  box-shadow: 0 0 6px var(--range-strip);
+}
+
+html[data-scene] .range-style-swatch-lane {
+  top: 0;
+  bottom: 16px;
+  left: 30%;
+  width: 40%;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--range-lane) 36%, transparent),
+    transparent
+  );
+}
+
+html[data-scene] .range-style-name {
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-scene] .range-style-check {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  width: 14px;
+  height: 14px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+html[data-scene] .range-addon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+}
+
+html[data-scene] .range-addon--included {
+  opacity: 0.45;
+}
+
+html[data-scene] .range-addon-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+html[data-scene] .range-addon-name {
+  color: var(--text-1);
+  font: var(--type-label);
+}
+
+html[data-scene] .range-addon-sub {
+  color: var(--text-3);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+html[data-scene] .kbd-range-style-row {
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px 4px;
+  border: 0;
+  border-top: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-1);
+  text-align: start;
+  cursor: pointer;
+}
+
+html[data-scene] .kbd-range-style-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+html[data-scene] .kbd-range-style-name {
+  font: var(--type-label);
+}
+
+html[data-scene] .kbd-range-style-sub {
+  color: var(--text-3);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+html[data-scene] .kbd-range-style-chevron {
+  display: inline-flex;
+  flex: none;
+  color: var(--text-3);
+  rotate: -90deg;
+}
+
+html[data-scene] .kbd-range-window .kbd-range-handle::after {
+  display: none;
+}
+
+html[data-scene] [data-tip]::after {
+  background: color-mix(in srgb, var(--text-1) 92%, transparent);
+  color: var(--text-on-accent);
+  border-radius: var(--radius-xs);
+  font: var(--type-label);
+}
+
+html[data-scene] .kbd-range-bar .kbd-range-step,
+html[data-scene] .kbd-range-calibrate-bar {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+@media (max-width: 999px) {
+  html[data-scene] .song-guide,
+  html[data-scene] .song-guide--side {
+    top: calc(72px + env(safe-area-inset-top));
+    width: min(240px, calc(50vw - 24px));
+  }
+
+  html[data-scene] #kbd-range:not(.kbd-range--open) .kbd-range-panel {
+    display: none;
+  }
+
+  html[data-scene] .kbd-range-panel {
+    max-height: min(280px, calc(100svh - var(--keyboard-h, 160px) - 200px));
+  }
+}
+
+/* Phone play (P1–P3). Kept under 640px so the Live shortcut column at 700px
+   still uses the desktop stack. */
+@media (max-width: 640px) {
+  html[data-scene] #top-strip {
+    height: 48px;
+    padding-inline: 4px;
+  }
+
+  html[data-scene] .ts-mode-label,
+  html[data-scene] .ts-home-name,
+  html[data-scene] #top-strip .ts-pill > span + span,
+  html[data-scene] .ts-customize-label,
+  html[data-scene] .ts-record-btn span + span {
+    display: none;
+  }
+
+  html[data-scene] #hud.float-hud,
+  html[data-scene] #hud.hud--active.float-hud--idle {
+    top: calc(64px + env(safe-area-inset-top));
+    bottom: auto;
+    left: calc(8px + env(safe-area-inset-left));
+    right: calc(8px + env(safe-area-inset-right));
+    transform: none;
+    width: auto;
+    max-width: none;
+    height: auto;
+    min-height: 56px;
+    padding: 6px 8px;
+  }
+
+  html[data-scene] #hud .hud-piece,
+  html[data-scene] #hud .hud-transpose,
+  html[data-scene] #hud .ctrl-group:not(.hud-hands) {
+    display: none;
+  }
+
+  html[data-scene] .song-guide,
+  html[data-scene] .song-guide--side {
+    display: none;
+    position: fixed;
+    top: auto;
+    left: 12px;
+    right: 12px;
+    bottom: calc(var(--keyboard-h, 140px) + 72px + env(safe-area-inset-bottom));
+    width: auto;
+    max-height: 42svh;
+    z-index: 18;
+  }
+
+  html[data-scene][data-phone-sheet="guide"] .song-guide,
+  html[data-scene][data-phone-sheet="guide"] .song-guide--side {
+    display: block;
+  }
+
+  html[data-scene] #lower-left .kbd-range-mount {
+    display: none;
+    position: fixed;
+    top: auto;
+    left: 12px;
+    right: 12px;
+    bottom: calc(var(--keyboard-h, 140px) + 72px + env(safe-area-inset-bottom));
+    width: auto;
+    margin: 0;
+    max-height: 46svh;
+    overflow: auto;
+    z-index: 18;
+  }
+
+  html[data-scene][data-phone-sheet="range"] #lower-left .kbd-range-mount {
+    display: block;
+  }
+
+  html[data-scene][data-phone-sheet="range"] #kbd-range .kbd-range-panel {
+    display: block;
+    position: relative;
+    top: auto;
+    left: auto;
+    bottom: auto;
+    width: 100%;
+    max-height: none;
+  }
+
+  html[data-scene] .gh-phone-dock {
+    display: flex;
+  }
+
+  html[data-scene] .home-card {
+    width: 100%;
+    padding: var(--space-4) 0 var(--space-6);
+  }
+
+  html[data-scene] .popover--sheet {
+    border-radius: 28px 28px 0 0 !important;
+    background: var(--surface-solid) !important;
+    color: var(--text-1) !important;
+  }
+}
+
+html[data-scene] #ts-status {
+  flex: 1;
+  min-width: 0;
+}
+
+html[data-scene] .ts-status-title,
+html[data-scene] .ts-status-kicker {
+  color: var(--text-2);
+}
+
+html[data-scene] .ts-status-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-scene] .ts-home-name {
+  font: var(--type-heading);
+  color: var(--text-1);
+}
+
+html[data-scene] .home-card {
+  background: transparent;
+  color: var(--text-1);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+html[data-scene] .home-kicker,
+html[data-scene] .home-samples-label {
+  background: transparent;
+  border: 0;
+  color: var(--text-2);
+  letter-spacing: 0.04em;
+}
+
+html[data-scene] .home-kicker::before {
+  background: var(--accent);
+  box-shadow: none;
+}
+
+html[data-scene] .home-primary-btn,
+html[data-scene] .modal-btn--accent,
+html[data-scene] .session-summary__btn--primary,
+html[data-scene] .post-session-option--primary {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  border: 0;
+  border-radius: var(--radius-md);
+  box-shadow: var(--elev-1);
+}
+
+html[data-scene] .home-primary-btn:hover {
+  background: var(--accent-hover);
+}
+
+html[data-scene] .home-secondary-btn,
+html[data-scene] .sample-card,
+html[data-scene] .ex-card,
+html[data-scene] .streak-row,
+html[data-scene] .kh-body,
+html[data-scene] .toast,
+html[data-scene] .session-summary,
+html[data-scene] .post-session-card,
+html[data-scene] .track-row,
+html[data-scene] .coachmark,
+html[data-scene] .float-hud.sr-hud,
+html[data-scene] .float-hud.pa-hud {
+  background: var(--surface);
+  color: var(--text-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-2);
+  backdrop-filter: blur(var(--blur-card)) saturate(1.15);
+}
+
+/* Sight-reading keeps its own pill. Park it with the other scene controls,
+   under the app bar, so it does not sit on the range card above the keys. */
+html[data-scene] .float-hud.sr-hud {
+  top: calc(72px + env(safe-area-inset-top));
+  bottom: auto;
+  max-width: min(920px, calc(100vw - 48px));
+}
+
+html[data-scene] .sample-card-title,
+html[data-scene] .ex-card__title,
+html[data-scene] .session-summary__value {
+  color: var(--text-1);
+  font: var(--type-heading);
+}
+
+html[data-scene] .sample-card-sub,
+html[data-scene] .ex-card__sub,
+html[data-scene] .kh-label,
+html[data-scene] .session-summary__label {
+  color: var(--text-2);
+}
+
+html[data-scene] .learn-hub__glow {
+  opacity: 0.35;
+}
+
+html[data-scene] .ex-card--coming {
+  opacity: 0.55;
+}
+
+html[data-scene] .gh-phone-dock {
+  display: none;
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--keyboard-h, 140px) + 16px + env(safe-area-inset-bottom));
+  z-index: 19;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  box-shadow: var(--elev-2);
+  pointer-events: auto;
+}
+
+html[data-scene] .gh-phone-dock__tab {
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-2);
+  font: var(--type-label);
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+html[data-scene] .gh-phone-dock__tab[aria-selected="true"] {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+html[data-scene] .modal-backdrop,
+html[data-scene] .dz-overlay {
+  background: rgba(74, 47, 30, 0.28);
+}
+
+@media (max-width: 640px) {
+  html[data-scene]:has(.song-guide) .gh-phone-dock,
+  html[data-scene]:has(#kbd-range:not(.kbd-range--hidden)) .gh-phone-dock {
+    display: flex;
+  }
+}
+
+/* Site frames: the leftover classic chrome (modals, key lights, live
+   keycaps, learn wash, file errors) uses the same warm surfaces. */
+
+html[data-scene] .learn-hub__glow {
+  opacity: 1;
+  background:
+    radial-gradient(
+      800px 420px at 72% -8%,
+      color-mix(in srgb, var(--accent) 28%, transparent),
+      transparent 62%
+    ),
+    radial-gradient(
+      640px 420px at 8% 0%,
+      color-mix(in srgb, var(--accent-soft) 55%, transparent),
+      transparent 64%
+    );
+}
+
+html[data-scene] .learn-hub,
+html[data-scene] .hero-card,
+html[data-scene] .hero-card__title {
+  color: var(--text-1);
+}
+
+html[data-scene] .hero-card {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 14%, var(--surface-solid)),
+    var(--surface-solid) 62%
+  );
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-2);
+}
+
+html[data-scene] .hero-card__kicker,
+html[data-scene] .hero-card__blurb,
+html[data-scene] .learn-hub__grid-label,
+html[data-scene] .ex-card__blurb {
+  color: var(--text-2);
+}
+
+html[data-scene] .key-lights-field select,
+html[data-scene] .customize-locale-chip {
+  color-scheme: light;
+  background: var(--surface-sunken);
+  color: var(--text-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+html[data-scene] .key-lights-settings p,
+html[data-scene] .key-lights-field,
+html[data-scene] .key-lights-help summary {
+  color: var(--text-2);
+}
+
+html[data-scene] #export-modal.open,
+html[data-scene] #midi-picker-modal.open,
+html[data-scene] #post-session-modal.open {
+  background: rgba(74, 47, 30, 0.38);
+  backdrop-filter: blur(var(--blur-overlay));
+  -webkit-backdrop-filter: blur(var(--blur-overlay));
+}
+
+html[data-scene] .export-card,
+html[data-scene] .midi-picker-card {
+  background: var(--surface-solid);
+  color: var(--text-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--elev-3);
+}
+
+html[data-scene] .export-card-title,
+html[data-scene] .midi-picker-title,
+html[data-scene] .export-row-label,
+html[data-scene] .midi-picker-drop-title {
+  color: var(--text-1);
+}
+
+html[data-scene] .export-tabs,
+html[data-scene] .fps-group,
+html[data-scene] .midi-picker-drop {
+  background: var(--surface-sunken);
+  border-color: var(--border);
+}
+
+html[data-scene] .export-tab,
+html[data-scene] .fps-btn,
+html[data-scene] .export-toggle,
+html[data-scene] .export-caption,
+html[data-scene] .midi-picker-sub,
+html[data-scene] .export-row-note {
+  color: var(--text-2);
+}
+
+html[data-scene] .export-tab--on {
+  background: var(--surface);
+  color: var(--text-1);
+}
+
+html[data-scene] .fps-btn.fps-btn--on {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  box-shadow: none;
+}
+
+html[data-scene] .export-toggle-knob {
+  background: var(--border-strong);
+}
+
+html[data-scene] .export-toggle-knob::after {
+  background: var(--surface-solid);
+  opacity: 1;
+}
+
+html[data-scene] .kh-keys kbd,
+html[data-scene] .kh-combo kbd {
+  color: var(--text-1);
+  background: linear-gradient(180deg, var(--surface-solid), var(--surface-sunken));
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  box-shadow: none;
+}
+
+html[data-scene] #key-hint:hover .kh-keys kbd,
+html[data-scene] #key-hint:hover .kh-combo kbd,
+html[data-scene] .kh-keys .kh-cap-btn:hover kbd {
+  border-color: var(--border-strong);
+  background: var(--surface);
+}
+
+html[data-scene] #dropzone::before {
+  content: none;
+}
+
+html[data-scene] #dropzone.drag-over .home-card {
+  border-color: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+html[data-scene] .mode-error {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(74, 47, 30, 0.38);
+}
+
+html[data-scene] .mode-error-inner {
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 28px;
+  background: var(--surface-solid);
+  color: var(--text-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--elev-3);
+}
+
+html[data-scene] .mode-error-title {
+  font: var(--type-title);
+  font-variation-settings: var(--font-display-axes);
+}
+
+html[data-scene] .mode-error-message {
+  margin: 0;
+  color: var(--text-2);
+  font: var(--type-body);
+}
+
+html[data-scene] .mode-error-retry {
+  align-self: flex-start;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font: var(--type-label);
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+html[data-scene] .coachmark {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-2);
+}
+
+html[data-scene] .coachmark__title {
+  color: var(--accent);
+  font: var(--type-label);
+}
+
+html[data-scene] .toast {
+  border-radius: var(--radius-lg);
+}
+
+/* Transport pill and icon actions. The pill sits under the app bar, and the
+   song guide / range card start below it so a long title cannot collide. */
+
+html[data-scene] .ts-end-wrap {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+html[data-scene] .ts-more {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-2);
+  box-shadow: var(--elev-1);
+}
+
+html[data-scene] #top-strip .ts-pill > span + span,
+html[data-scene] #top-strip .ts-record-btn > span + span,
+html[data-scene] .ts-customize-label,
+html[data-scene] #top-strip .ts-midi-label {
+  display: none;
+}
+
+html[data-scene] #top-strip[data-mode="play"] .ts-status-main,
+html[data-scene] #top-strip[data-mode="live"] .ts-status-main,
+html[data-scene] #top-strip[data-mode="play"] .ts-bars,
+html[data-scene] #top-strip[data-mode="live"] .ts-bars {
+  display: none;
+}
+
+html[data-scene] #top-strip[data-mode="play"] #ts-status,
+html[data-scene] #top-strip[data-mode="live"] #ts-status {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+html[data-scene] #hud .hud-bar {
+  flex-wrap: nowrap;
+  width: 100%;
+  min-width: 0;
+}
+
+html[data-scene] #hud .hud-group--transport,
+html[data-scene] #hud .hud-piece {
+  min-width: 0;
+}
+
+html[data-scene] #hud .hud-piece {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+
+html[data-scene] #hud .hud-piece-title {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-scene] #hud .hud-piece-bpm {
+  white-space: nowrap;
+}
+
+html[data-scene] #hud .ctrl-group,
+html[data-scene] #hud .hud-divider,
+html[data-scene] #hud .hud-hands,
+html[data-scene] #hud .hud-metro,
+html[data-scene] #hud #hud-loop {
+  flex: none;
+}
+
+html[data-scene] #hud .scrubber-wrap {
+  left: 16px;
+  right: 16px;
+  bottom: 8px;
+  width: auto;
+}
+
+@media (min-width: 641px) and (max-width: 999px) {
+  /* The transport pill is at the top, so the lower-left column stays under it
+     and just above the keys. */
+  html[data-scene] #lower-left {
+    top: calc(168px + env(safe-area-inset-top));
+    bottom: calc(var(--keyboard-h) + 12px + env(safe-area-inset-bottom));
+    overflow: visible;
+  }
+
+  html[data-scene]
+    #lower-left:not(:has(#key-hint.kh--visible:not(.kh--collapsed)))
+    .kbd-range-mount {
+    margin-bottom: 0;
+  }
+
+  html[data-scene] #key-hint.kh--visible:not(.kh--collapsed) .kh-body {
+    max-height: calc(100svh - 168px - var(--keyboard-h) - 12px - 110px);
+    overflow: auto;
+  }
+
+  /* Opening upward runs through the transport pill. Park the detail card on
+     the right, under the pill, and stop it above a bottom learn HUD. */
+  html[data-scene] #kbd-range.kbd-range--open .kbd-range-panel,
+  html[data-scene] #lower-left:has(.kbd-range--beside) .kbd-range-panel {
+    position: fixed;
+    top: calc(168px + env(safe-area-inset-top));
+    right: calc(16px + env(safe-area-inset-right));
+    left: auto;
+    bottom: auto;
+    width: min(280px, calc(100vw - 320px));
+    max-height: calc(100svh - 168px - var(--keyboard-h, 160px) - 24px);
+    z-index: 18;
+    margin: 0;
+  }
+}
+
+@media (min-width: 641px) {
+  html[data-scene] #hud.float-hud {
+    top: calc(72px + env(safe-area-inset-top));
+    bottom: auto;
+    left: 50%;
+    right: auto;
+    width: min(1080px, calc(100vw - 48px));
+    max-width: min(1080px, calc(100vw - 48px));
+    height: auto;
+    min-height: 84px;
+    padding: 8px 16px 30px;
+    overflow: hidden;
+    box-sizing: border-box;
+    transform: translateX(calc(-50% + var(--hud-dx, 0px)));
+  }
+
+  html[data-scene] .song-guide,
+  html[data-scene] .song-guide--side {
+    top: calc(172px + env(safe-area-inset-top));
+  }
+
+  html[data-scene] .song-guide-card {
+    max-height: min(460px, calc(100svh - 172px - var(--keyboard-h, 180px) - 24px));
+  }
+}
+
+@media (min-width: 1000px) {
+  html[data-scene]
+    #lower-left:not(:has(#key-hint.kh--visible:not(.kh--collapsed)))
+    .kbd-range-mount,
+  html[data-scene] #lower-left .kbd-range-mount,
+  html[data-scene] #lower-left:has(.kbd-range--beside) .kbd-range-mount {
+    top: calc(172px + env(safe-area-inset-top));
+  }
+
+  html[data-scene] #kbd-range.kbd-range--open .kbd-range-panel {
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 1279px) {
+  html[data-scene] .ts-mode-label,
+  html[data-scene] #hud #hud-volume,
+  html[data-scene] #hud .ctrl-group:has(#hud-zoom) {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  html[data-scene] .ts-more {
+    display: inline-flex;
+  }
+
+  html[data-scene] .ts-end {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 30;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-1);
+    width: max-content;
+    min-width: 180px;
+    padding: var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface-solid);
+    box-shadow: var(--elev-3);
+  }
+
+  html[data-scene] .ts-end.is-open {
+    display: flex;
+  }
+
+  html[data-scene] .ts-end.is-open .ts-pill > span + span,
+  html[data-scene] .ts-end.is-open .ts-record-btn > span + span,
+  html[data-scene] .ts-end.is-open .ts-customize-label,
+  html[data-scene] .ts-end.is-open .ts-midi-label {
+    display: inline;
+  }
+}
+
+@media (max-width: 640px) {
+  html[data-scene] #hud .hud-piece,
+  html[data-scene] #hud .hud-hands {
+    display: flex;
+  }
+
+  html[data-scene] #hud .hud-bar {
+    flex-wrap: wrap;
+    row-gap: var(--space-2);
+  }
+
+  html[data-scene] #hud .hud-group--transport {
+    flex: 1 1 180px;
+    min-width: 0;
+  }
+
+  html[data-scene] #hud .hud-piece {
+    flex: 1 1 0;
+    min-width: 72px;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  html[data-scene] #hud .hud-piece-title {
+    width: 100%;
+  }
+
+  html[data-scene] #hud .hud-hand {
+    min-width: 40px;
+    padding: 0 6px;
+  }
+
+  html[data-scene] #hud.float-hud,
+  html[data-scene]
+    #hud.hud--active.float-hud--idle:not(.float-hud--pinned):not(.float-hud--dragging) {
+    padding: 8px 8px 30px;
+  }
+
+  html[data-scene] #hud .scrubber-wrap {
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    height: 20px;
+    flex: 1 1 100%;
+    order: 10;
+    margin-top: 2px;
+  }
+
+  html[data-scene] #hud.float-hud,
+  html[data-scene]
+    #hud.hud--active.float-hud--idle:not(.float-hud--pinned):not(.float-hud--dragging) {
+    top: calc(64px + env(safe-area-inset-top));
+    bottom: auto;
+    left: calc(8px + env(safe-area-inset-left));
+    right: calc(8px + env(safe-area-inset-right));
+    width: auto;
+    max-width: none;
+    transform: none;
+  }
+}
+
+/* Home is the landing page (A1), not a card over the piano. The wall and
+   plant shadow stay visible; the keys do not. */
+html[data-scene] #dropzone {
+  top: calc(72px + env(safe-area-inset-top));
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 3;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: var(--space-2) var(--gutter) var(--gutter);
+  overflow: auto;
+  background: transparent;
+  transform: none;
+}
+
+html[data-scene] #dropzone:not(.dz--hidden) {
+  pointer-events: auto;
+}
+
+html[data-scene] #dropzone.dz--hidden {
+  transform: none;
+}
+
+html[data-scene] body:has(#dropzone:not(.dz--hidden)) #pianoroll,
+html[data-scene] body:has(#dropzone:not(.dz--hidden)) #kbd-resizer {
+  visibility: hidden;
+}
+
+html[data-scene] .home-card {
+  flex: 1;
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  min-height: 100%;
+  margin: 0;
+  padding: var(--space-6) 0 var(--space-4);
+  gap: var(--space-3);
+  overflow: visible;
+}
+
+html[data-scene] .home-kicker {
+  padding: 0;
+  font: var(--type-caption);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+html[data-scene] .home-kicker::before {
+  display: none;
+}
+
+html[data-scene] .home-title {
+  margin: var(--space-1) 0 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(44px, 5.2vw, 72px);
+  font-variation-settings: var(--font-display-axes);
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+  color: var(--text-1);
+}
+
+html[data-scene] .home-title em {
+  font-style: normal;
+  font-weight: inherit;
+  color: inherit;
+}
+
+html[data-scene] .home-sub {
+  max-width: 62ch;
+  margin: 0;
+  font: var(--type-body);
+  color: var(--text-2);
+}
+
+html[data-scene] .home-actions {
+  align-items: center;
+  width: 100%;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+html[data-scene] .home-primary-btn,
+html[data-scene] .home-secondary-btn {
+  min-height: 48px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-md);
+  font: var(--type-label);
+}
+
+html[data-scene] .home-secondary-btn {
+  background: var(--surface-solid);
+  border-radius: var(--radius-md);
+  box-shadow: var(--elev-1);
+}
+
+html[data-scene] #home-learn {
+  flex: 1 1 320px;
+  justify-content: flex-start;
+  gap: var(--space-3);
+  max-width: 480px;
+  min-height: 64px;
+  padding: 10px var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--surface-solid);
+  text-align: left;
+}
+
+html[data-scene] .home-learn-icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--accent);
+}
+
+html[data-scene] .home-learn-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  gap: 2px;
+}
+
+html[data-scene] .home-learn-title {
+  font: var(--type-label);
+  color: var(--text-1);
+}
+
+html[data-scene] .home-learn-sub {
+  font: var(--type-caption);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+html[data-scene] .home-learn-badge {
+  position: static;
+  flex: none;
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font: var(--type-caption);
+  letter-spacing: 0.04em;
+  box-shadow: none;
+}
+
+html[data-scene] .home-midi-status {
+  gap: var(--space-2);
+  min-height: 0;
+  margin-top: var(--space-2);
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--text-2);
+  font: var(--type-label);
+}
+
+html[data-scene] .home-midi-glyph {
+  display: inline-flex;
+  color: var(--text-3);
+}
+
+html[data-scene] .home-midi-status[data-midi-status="connected"],
+html[data-scene] .home-midi-status[data-midi-status="blocked"] {
+  background: transparent;
+  border: 0;
+  color: var(--text-2);
+}
+
+html[data-scene] .home-samples {
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+html[data-scene] .home-samples-label {
+  font: var(--type-caption);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+html[data-scene] .home-samples .samples-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+html[data-scene] .sample-card {
+  --sample-accent: var(--accent);
+  gap: var(--space-3);
+  padding: var(--card-padding);
+  background: var(--surface-solid);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-1);
+  backdrop-filter: none;
+}
+
+html[data-scene] .sample-card::before,
+html[data-scene] .sample-card-viz::before,
+html[data-scene] .sample-card-bars span::after {
+  display: none;
+}
+
+html[data-scene] .sample-card-viz {
+  height: 48px;
+}
+
+html[data-scene] .sample-card-bars {
+  filter: none;
+}
+
+html[data-scene] .sample-card-bars span {
+  border-radius: 3px;
+  background: var(--accent);
+  opacity: 0.9;
+}
+
+html[data-scene] .sample-card:hover .sample-card-bars span {
+  animation: none;
+}
+
+html[data-scene] .sample-card-tag {
+  margin-bottom: 0;
+  padding: 3px 8px;
+  color: var(--text-3);
+  background: var(--surface-sunken);
+  border: 0;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+html[data-scene] .home-drop-hint {
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  width: max-content;
+  max-width: 100%;
+  margin-top: auto;
+  padding-top: var(--space-8);
+  color: var(--text-3);
+  font: var(--type-caption);
+  white-space: nowrap;
+}
+
+html[data-scene] .home-drop-hint code,
+html[data-scene] .home-drop-hint kbd {
+  color: var(--text-1);
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-xs);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+html[data-scene] #dropzone.dropzone--touch .home-drop-hint {
+  display: inline-flex;
+}
+
+html[data-scene] #dropzone.drag-over::after {
+  content: "";
+  position: absolute;
+  inset: var(--space-4);
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius-xl);
+  pointer-events: none;
+}
+
+html[data-scene] .ts-home {
+  gap: var(--space-3);
+  height: 40px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+html[data-scene] .ts-home:hover {
+  background: transparent;
+}
+
+html[data-scene] .ts-home-name {
+  font: var(--type-heading);
+  color: var(--text-1);
+}
+
+html[data-scene] .ts-home-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-1);
+  box-shadow: var(--elev-1);
+}
+
+html[data-scene] .ts-brand-link {
+  gap: var(--space-3);
+  color: inherit;
+  text-decoration: none;
+}
+
+html[data-scene] button.ts-home-icon {
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+html[data-scene] .ts-home-icon:hover,
+html[data-scene] .ts-home:hover .ts-home-icon {
+  background: var(--surface-hover);
+}
+
+html[data-scene] .ts-home:hover .ts-home-mark,
+html[data-scene] .ts-brand-link:hover .ts-home-mark {
+  transform: none;
+}
+
+html[data-scene] #top-strip[data-mode="home"] #ts-open {
+  display: none;
+}
+
+html[data-scene] #top-strip[data-mode="home"] #ts-status {
+  flex: 0 1 auto;
+  width: auto;
+  max-width: min(280px, 30vw);
+  height: 40px;
+  margin-inline: var(--space-2) auto;
+  padding: 0 14px 0 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--elev-1);
+}
+
+html[data-scene] #top-strip[data-mode="home"] .ts-status-dot {
+  background: var(--success);
+  box-shadow: none;
+}
+
+html[data-scene] #top-strip[data-mode="home"] .ts-status-kicker {
+  color: var(--text-3);
+}
+
+html[data-scene] #top-strip[data-mode="home"] .ts-status-title {
+  color: var(--text-1);
+}
+
+html[data-scene] #top-strip[data-mode="home"][data-midi-status="connected"] .ts-pill--midi {
+  display: inline-flex;
+}
+
+html[data-scene] #top-strip[data-mode="home"][data-midi-status="connected"] .ts-sep {
+  display: block;
+}
+
+@media (max-width: 1100px) {
+  html[data-scene] .home-samples .samples-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  html[data-scene] #home-learn {
+    flex-basis: 100%;
+    max-width: none;
+  }
+}
+
+@media (max-width: 640px) {
+  html[data-scene] #dropzone {
+    top: calc(64px + env(safe-area-inset-top));
+    padding: var(--space-3) var(--gutter-phone) var(--gutter-phone);
+  }
+
+  html[data-scene] .home-title {
+    font-size: clamp(36px, 10vw, 48px);
+  }
+
+  html[data-scene] .home-actions {
+    align-items: stretch;
+  }
+
+  html[data-scene] #home-learn {
+    flex: none;
+    width: 100%;
+    max-width: none;
+  }
+
+  html[data-scene] .home-samples .samples-grid {
+    display: flex;
+    gap: var(--space-3);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: var(--space-2);
+  }
+
+  html[data-scene] .home-samples .sample-card-slot {
+    flex: 0 0 min(240px, 78vw);
+    scroll-snap-align: start;
+  }
+
+  html[data-scene] #top-strip[data-mode="home"] .ts-mode-label {
+    display: inline;
+  }
+
+  html[data-scene] #top-strip[data-mode="home"] .ts-status-title {
+    display: none;
+  }
+
+  html[data-scene] #top-strip[data-mode="home"] #ts-status {
+    max-width: none;
+    padding-inline: 10px;
+  }
+}
+
+@media (max-width: 519px) {
+  html[data-scene] #top-strip .ts-sep {
+    display: none;
+  }
+}

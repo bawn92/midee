@@ -454,3 +454,48 @@ describe('parseMidiFileWithStats', () => {
     expect(parsed.tracks).toHaveLength(1)
   })
 })
+
+describe('parseMidiFile — hands and a note-less tempo track', () => {
+  it('reads set_tempo and 3/4 from a conductor track that has no notes', async () => {
+    const midi = new Midi()
+    midi.header.tempos = [
+      { ticks: 0, bpm: 100 },
+      { ticks: 480 * 6, bpm: 80 },
+    ]
+    midi.header.timeSignatures = [{ ticks: 0, timeSignature: [3, 4], measures: 0 }]
+    // Tempos need their seconds filled in before addNote converts time → ticks.
+    midi.header.update()
+    const conductor = midi.addTrack()
+    conductor.name = 'Conductor'
+    const right = midi.addTrack()
+    right.name = 'Right Hand'
+    right.channel = 0
+    right.addNote({ midi: 50, time: 0, duration: 0.6, velocity: 0.8 })
+    const left = midi.addTrack()
+    left.name = 'Left Hand'
+    left.channel = 1
+    left.addNote({ midi: 72, time: 0, duration: 0.6, velocity: 0.8 })
+    const buf = midi.toArray().slice().buffer as ArrayBuffer
+
+    const parsed = await parseMidiFile(buf, 'waltz.mid')
+    expect(parsed.tracks.map((t) => t.name)).toEqual(['Right Hand', 'Left Hand'])
+    expect(parsed.tracks.map((t) => t.hand)).toEqual(['right', 'left'])
+    expect(parsed.tracks.map((t) => t.colorIndex)).toEqual([0, 1])
+    expect(parsed.bpm).toBe(100)
+    expect(parsed.tempos.map((t) => t.bpm)).toEqual([100, 80])
+    expect(parsed.timeSignature).toEqual([3, 4])
+    expect(parsed.timeSignatures[0]).toMatchObject({ numerator: 3, denominator: 4 })
+  })
+
+  it('keeps a single unnamed piano track on the pitch split', async () => {
+    const buf = await makeBuf(
+      [
+        { midi: 48, time: 0, duration: 0.5 },
+        { midi: 72, time: 1, duration: 0.5 },
+      ],
+      { trackName: 'Piano', channel: 0 },
+    )
+    const parsed = await parseMidiFile(buf, 'solo.mid')
+    expect(parsed.tracks[0]?.hand).toBe('split')
+  })
+})

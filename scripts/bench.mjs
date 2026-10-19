@@ -223,7 +223,7 @@ const GATES = {
 
 // ── args ──────────────────────────────────────────────────────────────────
 
-const HELP = `midee perf harness - see docs/BENCH_HARNESS_V2_2026-07-02.md
+const HELP = `Piano Club perf harness - see docs/BENCH_HARNESS_V2_2026-07-02.md
 
 usage: npm run bench [-- <flags>]        build (${OUT_DIR}/) + run
        npm run bench:run [-- <flags>]    run against existing ${OUT_DIR}/

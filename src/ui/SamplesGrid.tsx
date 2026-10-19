@@ -10,15 +10,15 @@ import { icons } from './icons'
 // pulled from the MIDI — so the bars follow the actual shape of the piece
 // rather than a placeholder.
 //
-// Recents lead the row and can fill it completely — once you have three files
-// of your own, demos are noise. Storage keeps more than the row shows
+// Recents lead the grid and can fill it completely — once you have four files
+// of your own, demos are noise. Storage keeps more than the grid shows
 // (`MAX_RECENTS`), so dismissing a card promotes the next one into view rather
 // than handing the slot back to a sample. Recent cards deliberately drop the
 // per-sample accent colour and wear the app accent plus a "Recent" tag — they
 // read as a distinct family, not as another sample.
 
 const BARS = 32
-const TOTAL_SLOTS = 3
+const TOTAL_SLOTS = 4
 
 interface CardState {
   bars: readonly number[]
@@ -57,8 +57,20 @@ function CardShell(props: CardShellProps) {
         data-card-id={props.id}
         type="button"
         {...(props.accent ? { style: { '--sample-accent': props.accent } } : {})}
-        onClick={() => props.onSelect()}
+        onClick={(e) => {
+          document.querySelectorAll('.sample-card.is-vt-source').forEach((el) => {
+            el.classList.remove('is-vt-source')
+          })
+          e.currentTarget.classList.add('is-vt-source')
+          props.onSelect()
+        }}
       >
+        <Show
+          when={props.recent}
+          fallback={<span class="sample-card-tag">{t('card.sample.tag')}</span>}
+        >
+          <span class="sample-card-tag">{t('card.recent.tag')}</span>
+        </Show>
         <div class="sample-card-viz" aria-hidden="true">
           <div class="sample-card-bars">
             <For each={props.state().bars}>
@@ -74,9 +86,6 @@ function CardShell(props: CardShellProps) {
           </div>
         </div>
         <div class="sample-card-meta">
-          <Show when={props.recent}>
-            <span class="sample-card-tag">{t('card.recent.tag')}</span>
-          </Show>
           <div class="sample-card-title">{props.title}</div>
           <div class="sample-card-sub">{props.state().sub}</div>
         </div>
@@ -129,7 +138,6 @@ function SampleCard(props: { sample: Sample; onSelect: (id: string) => void }) {
     <CardShell
       id={props.sample.id}
       recent={false}
-      accent={props.sample.accent}
       title={props.sample.title}
       state={state}
       onSelect={() => props.onSelect(props.sample.id)}
@@ -174,8 +182,8 @@ interface GridProps {
 function SamplesGridView(props: GridProps) {
   const [recents, setRecents] = createSignal<RecentMidi[]>([])
 
-  // The row is a fixed three slots so the home card never reflows: recents
-  // take what they need, samples fill whatever is left over.
+  // Four slots, wrapping to two columns on the home card: recents take what
+  // they need, samples fill whatever is left over.
   const visibleRecents = (): readonly RecentMidi[] => recents().slice(0, TOTAL_SLOTS)
   const visibleSamples = (): readonly Sample[] =>
     SAMPLES.slice(0, Math.max(0, TOTAL_SLOTS - visibleRecents().length))

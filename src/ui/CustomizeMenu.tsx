@@ -1,11 +1,23 @@
-import { createSignal, For } from 'solid-js'
+import { createSignal, For, Show } from 'solid-js'
 import { render } from 'solid-js/web'
 import { LOCALES, type LocaleCode, locale, t } from '../i18n'
-import type { ParticleStyle, ParticleStyleInfo } from '../renderer/particleStyles'
+import type { KeyLights } from '../midi/KeyLights'
+import type { MidiInputManager } from '../midi/MidiInputManager'
+import {
+  displayParticle,
+  isRainyParticle,
+  type ParticleStyle,
+  type ParticleStyleInfo,
+  pickerStyles,
+} from '../renderer/particleStyles'
+import { SCENES } from '../renderer/scenes'
 import { accentCSS, type Theme } from '../renderer/theme'
-import { trackEvent } from '../telemetry'
+import { AppearanceStudio } from './AppearanceStudio'
 import { icons } from './icons'
-import { FEEDBACK_URL, isNarrowViewport } from './utils'
+import { KeyLightsSettings } from './KeyLightsSettings'
+import { CLOSE_MODE_POPOVERS } from './modeChrome'
+import { placeLayer } from './placeFloating'
+import { isNarrowViewport } from './utils'
 
 // Aesthetics popover — collapses theme, particles, and chord overlay (three
 // previously-separate topbar pills) into one trigger. Reduces topbar noise
@@ -21,6 +33,12 @@ export interface CustomizeMenuCallbacks {
   onToggleChord: () => void
   onToggleNoteLabels: () => void
   onSelectLocale: (code: LocaleCode) => void
+  volume?: (() => number) | undefined
+  onVolume?: ((value: number) => void) | undefined
+  rollSpeed?: (() => number) | undefined
+  onRollSpeed?: ((seconds: number) => void) | undefined
+  metroOn?: (() => boolean) | undefined
+  onMetro?: (() => void) | undefined
 }
 
 interface TriggerProps {
@@ -75,6 +93,7 @@ function TriggerView(props: TriggerProps) {
 }
 
 interface MenuProps {
+  keyLights?: { lights: KeyLights; midiInput: MidiInputManager } | undefined
   themes: readonly Theme[]
   particles: readonly ParticleStyleInfo[]
   themeIndex: () => number
@@ -88,11 +107,52 @@ interface MenuProps {
   onToggleChord: () => void
   onToggleNoteLabels: () => void
   onSelectLocale: (code: LocaleCode) => void
+  volume?: (() => number) | undefined
+  onVolume?: ((value: number) => void) | undefined
+  rollSpeed?: (() => number) | undefined
+  onRollSpeed?: ((seconds: number) => void) | undefined
+  metroOn?: (() => boolean) | undefined
+  onMetro?: (() => void) | undefined
   onClose: () => void
   registerEl: (el: HTMLElement) => void
 }
 
+function ParticleOption(props: {
+  style: ParticleStyleInfo
+  shown: ParticleStyle
+  onSelect: (id: ParticleStyle) => void
+}) {
+  const on = () => props.shown === props.style.id
+  return (
+    <button
+      class="particle-option"
+      classList={{ 'particle-option--on': on() }}
+      type="button"
+      data-particle={props.style.id}
+      data-tip={props.style.name}
+      aria-label={`${props.style.name} particles`}
+      aria-pressed={on()}
+      onClick={() => props.onSelect(props.style.id)}
+    >
+      <span
+        class="particle-option-icon"
+        data-style={props.style.id}
+        aria-hidden="true"
+        innerHTML={PARTICLE_GLYPHS[props.style.id] ?? PARTICLE_GLYPHS.sparks ?? ''}
+      />
+      <span class="particle-option-name">{props.style.name}</span>
+    </button>
+  )
+}
+
 function MenuView(props: MenuProps) {
+  const themeId = () => props.themes[props.themeIndex()]?.id ?? 'golden-hour'
+  const shownId = () =>
+    displayParticle(props.particles[props.particleIndex()]?.id ?? 'sparkle', themeId())
+  const select = (id: ParticleStyle) => {
+    const index = props.particles.findIndex((style) => style.id === id)
+    if (index >= 0) props.onSelectParticle(index)
+  }
   return (
     <div
       ref={(el) => props.registerEl(el)}
@@ -108,6 +168,7 @@ function MenuView(props: MenuProps) {
       }}
     >
       <div class="panel-header">
+        <span class="gh-appearance-mark" aria-hidden="true" innerHTML={icons.palette(22)} />
         <span class="panel-label" id="ts-appearance-title">
           {t('customize.title')}
         </span>
@@ -123,41 +184,32 @@ function MenuView(props: MenuProps) {
       <div class="ts-customize-body">
         <div class="customize-section">
           <div class="customize-section-head">
-            <span class="customize-section-label">{t('customize.theme')}</span>
-            <span class="customize-section-value">{props.themes[props.themeIndex()]?.name}</span>
+            <span class="customize-section-label">{t('customize.scene')}</span>
+            <span class="customize-section-value">
+              {SCENES.find((scene) => scene.themeId === props.themes[props.themeIndex()]?.id)?.name}
+            </span>
           </div>
-          <div class="customize-theme-grid">
-            <For each={props.themes}>
-              {(theme, index) => {
-                const isNew = theme.id === 'opal' || theme.id === 'liquid-glass'
+          <div class="customize-scene-row">
+            <For each={SCENES}>
+              {(scene) => {
+                const index = () => props.themes.findIndex((theme) => theme.id === scene.themeId)
+                const on = () => props.themes[props.themeIndex()]?.id === scene.themeId
                 return (
                   <button
-                    class="customize-theme-tile"
-                    classList={{
-                      'customize-theme-tile--on': props.themeIndex() === index(),
-                      'customize-theme-tile--material': !!theme.noteMaterial,
-                      'customize-theme-tile--new': isNew,
-                    }}
-                    style={{ '--theme-accent': accentCSS(theme) }}
-                    data-material={theme.noteMaterial}
+                    class="customize-scene-card"
+                    classList={{ 'customize-scene-card--on': on() }}
                     type="button"
-                    title={theme.name}
-                    aria-label={`${theme.name} theme`}
-                    aria-describedby={isNew ? `new-theme-${theme.id}` : undefined}
-                    aria-pressed={props.themeIndex() === index()}
+                    aria-label={`${scene.name} scene`}
+                    aria-pressed={on()}
+                    disabled={index() < 0}
                     onClick={() => props.onSelectTheme(index())}
                   >
                     <span
-                      class="customize-theme-tile-dot"
+                      class="customize-scene-swatch"
                       aria-hidden="true"
-                      style={{ background: theme.preview ?? accentCSS(theme) }}
+                      style={{ background: scene.preview }}
                     />
-                    <span class="customize-theme-tile-label">{theme.name}</span>
-                    {isNew && (
-                      <span class="customize-theme-new" id={`new-theme-${theme.id}`}>
-                        {t('customize.new')}
-                      </span>
-                    )}
+                    <span class="customize-scene-name">{scene.theme.name}</span>
                   </button>
                 )
               }}
@@ -165,41 +217,39 @@ function MenuView(props: MenuProps) {
           </div>
         </div>
 
-        <div class="customize-section">
+        <AppearanceStudio
+          volume={props.volume ?? (() => 0.8)}
+          onVolume={props.onVolume}
+          rollSpeed={props.rollSpeed ?? (() => 1)}
+          onRollSpeed={props.onRollSpeed}
+          metroOn={props.metroOn ?? (() => false)}
+          onMetro={props.onMetro}
+        />
+
+        <div class="customize-section" data-section="particles">
           <div class="customize-section-head">
             <span class="customize-section-label">{t('customize.particles')}</span>
-            <span class="customize-section-value">
-              {props.particles[props.particleIndex()]?.name}
+            <span class="customize-section-value" data-particle-value={shownId()}>
+              {props.particles.find((style) => style.id === shownId())?.name}
             </span>
           </div>
-          <div class="customize-particle-row">
-            <For each={props.particles}>
-              {(p, i) => (
-                <button
-                  class="customize-particle-chip"
-                  classList={{ 'customize-particle-chip--on': props.particleIndex() === i() }}
-                  type="button"
-                  title={p.name}
-                  aria-label={`${p.name} particles`}
-                  aria-pressed={props.particleIndex() === i()}
-                  onClick={() => props.onSelectParticle(i())}
-                >
-                  <span
-                    class="customize-particle-chip-glyph"
-                    data-style={p.id}
-                    aria-hidden="true"
-                    innerHTML={PARTICLE_GLYPHS[p.id] ?? PARTICLE_GLYPHS['sparks'] ?? ''}
-                  />
-                  <span class="customize-particle-chip-label">{p.name}</span>
-                  <span
-                    class="customize-particle-check"
-                    aria-hidden="true"
-                    innerHTML={icons.check(11)}
-                  />
-                </button>
-              )}
+          <div class="particle-grid" role="radiogroup" aria-label={t('customize.particles')}>
+            <For each={pickerStyles(themeId()).filter((style) => !isRainyParticle(style.id))}>
+              {(style) => <ParticleOption style={style} shown={shownId()} onSelect={select} />}
             </For>
           </div>
+          <Show when={themeId() === 'rainy-study'}>
+            <div class="particle-rainy-label">{t('customize.particles.rainy')}</div>
+            <div
+              class="particle-grid"
+              role="radiogroup"
+              aria-label={t('customize.particles.rainy')}
+            >
+              <For each={pickerStyles(themeId()).filter((style) => isRainyParticle(style.id))}>
+                {(style) => <ParticleOption style={style} shown={shownId()} onSelect={select} />}
+              </For>
+            </div>
+          </Show>
         </div>
 
         <div class="customize-section">
@@ -258,47 +308,7 @@ function MenuView(props: MenuProps) {
           </button>
         </div>
 
-        <div class="customize-section customize-section--footer">
-          <a
-            class="customize-feedback-card"
-            href={FEEDBACK_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => trackEvent('feedback_clicked', { source: 'customize_menu' })}
-          >
-            <span class="customize-feedback-icon" aria-hidden="true">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.9"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 9.6 9.6 0 0 1-4-.9L3 21l1.9-5.5a8.38 8.38 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z" />
-              </svg>
-            </span>
-            <span class="customize-feedback-label">{t('feedback.menu')}</span>
-            <svg
-              class="customize-feedback-arrow"
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M7 17L17 7" />
-              <path d="M8 7h9v9" />
-            </svg>
-          </a>
-        </div>
+        {props.keyLights && <KeyLightsSettings {...props.keyLights} />}
       </div>
     </div>
   )
@@ -344,6 +354,13 @@ export class CustomizeMenu {
       this.close(true)
     }
   }
+  private onOpenAppearance = (): void => {
+    this.openRangeStyle()
+  }
+  private onClosePopovers = (): void => {
+    this.close()
+  }
+
   private onResize = (): void => {
     if (!this.isOpen) return
     if (this.menu.classList.contains('popover--sheet') || isNarrowViewport()) {
@@ -367,6 +384,7 @@ export class CustomizeMenu {
     private themes: readonly Theme[],
     particles: readonly ParticleStyleInfo[],
     callbacks: CustomizeMenuCallbacks,
+    keyLights?: MenuProps['keyLights'],
   ) {
     const [themeIdx, setThemeIdx] = createSignal(0)
     const [particleIdx, setParticleIdx] = createSignal(0)
@@ -416,28 +434,52 @@ export class CustomizeMenu {
     this.menuWrapper = menuWrapper
     this.disposeMenu = render(
       () => (
-        <MenuView
-          themes={themes}
-          particles={particles}
-          themeIndex={themeIdx}
-          particleIndex={particleIdx}
-          chordOn={chordOn}
-          noteLabelsOn={noteLabelsOn}
-          isOpen={isOpen}
-          isSheet={isSheet}
-          onSelectTheme={(i) => callbacks.onSelectTheme(i)}
-          onSelectParticle={(i) => callbacks.onSelectParticle(i)}
-          onToggleChord={() => callbacks.onToggleChord()}
-          onToggleNoteLabels={() => callbacks.onToggleNoteLabels()}
-          onSelectLocale={(code) => callbacks.onSelectLocale(code)}
-          onClose={() => this.close(true)}
-          registerEl={(el) => {
-            this.menu = el
-          }}
-        />
+        <>
+          <Show when={isOpen()}>
+            <button
+              class="gh-appearance-scrim"
+              type="button"
+              tabindex="-1"
+              aria-label={t('midiPicker.close')}
+              onPointerDown={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+                this.close()
+              }}
+            />
+          </Show>
+          <MenuView
+            keyLights={keyLights}
+            themes={themes}
+            particles={particles}
+            themeIndex={themeIdx}
+            particleIndex={particleIdx}
+            chordOn={chordOn}
+            noteLabelsOn={noteLabelsOn}
+            isOpen={isOpen}
+            isSheet={isSheet}
+            onSelectTheme={(i) => callbacks.onSelectTheme(i)}
+            onSelectParticle={(i) => callbacks.onSelectParticle(i)}
+            onToggleChord={() => callbacks.onToggleChord()}
+            onToggleNoteLabels={() => callbacks.onToggleNoteLabels()}
+            onSelectLocale={(code) => callbacks.onSelectLocale(code)}
+            volume={callbacks.volume}
+            onVolume={callbacks.onVolume}
+            rollSpeed={callbacks.rollSpeed}
+            onRollSpeed={callbacks.onRollSpeed}
+            metroOn={callbacks.metroOn}
+            onMetro={callbacks.onMetro}
+            onClose={() => this.close(true)}
+            registerEl={(el) => {
+              this.menu = el
+            }}
+          />
+        </>
       ),
       menuWrapper,
     )
+    window.addEventListener('midee-open-appearance', this.onOpenAppearance)
+    window.addEventListener(CLOSE_MODE_POPOVERS, this.onClosePopovers)
   }
 
   // ── Public state setters (App pushes the active selection in) ──────────
@@ -508,16 +550,14 @@ export class CustomizeMenu {
   private positionUnder(): void {
     const rect = this.trigger.getBoundingClientRect()
     const menuW = this.menu.offsetWidth || 340
-    const right = Math.min(
-      Math.max(12, window.innerWidth - rect.right),
-      Math.max(12, window.innerWidth - menuW - 12),
-    )
-    const top = rect.bottom + 8
-    const rightValue = `${Math.round(right)}px`
-    const topValue = `${Math.ceil(top)}px`
-    if (this.menu.style.right !== rightValue) this.menu.style.right = rightValue
+    const menuH = this.menu.offsetHeight || 320
+    const placed = placeLayer(rect, { width: menuW, height: menuH })
+    const topValue = `${Math.round(placed.top)}px`
+    const leftValue = `${Math.round(placed.left)}px`
     if (this.menu.style.top !== topValue) this.menu.style.top = topValue
-    const availableHeight = `${Math.max(0, Math.floor(window.innerHeight - top - 12))}px`
+    if (this.menu.style.left !== leftValue) this.menu.style.left = leftValue
+    if (this.menu.style.right !== 'auto') this.menu.style.right = 'auto'
+    const availableHeight = `${Math.max(0, Math.floor(placed.maxHeight))}px`
     if (this.menu.style.getPropertyValue('--customize-available-height') !== availableHeight) {
       this.menu.style.setProperty('--customize-available-height', availableHeight)
     }
@@ -533,7 +573,17 @@ export class CustomizeMenu {
     return this.chordOnFn()
   }
 
+  openRangeStyle(): void {
+    const section = this.menu.querySelector<HTMLElement>('[data-section="range-style"]')
+    if (!this.isOpen) this.open()
+    requestAnimationFrame(() => {
+      section?.scrollIntoView({ block: 'nearest' })
+    })
+  }
+
   dispose(): void {
+    window.removeEventListener('midee-open-appearance', this.onOpenAppearance)
+    window.removeEventListener(CLOSE_MODE_POPOVERS, this.onClosePopovers)
     this.close()
     this.disposeTrigger?.()
     this.disposeMenu?.()
@@ -582,5 +632,10 @@ const PARTICLE_GLYPHS: Record<string, string> = {
   none: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
     <circle cx="12" cy="12" r="8" opacity="0.5"/>
     <line x1="6" y1="18" x2="18" y2="6" opacity="0.7"/>
+  </svg>`,
+  rain: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+    <path d="M7 4v5M12 2v7M17 4v5"/>
+    <path d="M5 16c1.2 2.4 3.2 3.6 7 3.6s5.8-1.2 7-3.6" opacity="0.7"/>
+    <path d="M8 20.5c.6 1 1.6 1.5 4 1.5s3.4-.5 4-1.5" opacity="0.45"/>
   </svg>`,
 }

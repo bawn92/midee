@@ -1,0 +1,76 @@
+/* Floating layer. No filter, transform, or overflow, so descendants are not
+   clipped by the glass cards they describe. */
+
+:root {
+  --z-overlay: 300;
+  --tooltip-bg: rgba(74, 47, 30, 0.94);
+  --tooltip-fg: #fff8ee;
+  --tooltip-border: rgba(255, 248, 238, 0.18);
+  --tooltip-shadow: 0 8px 22px rgba(94, 59, 36, 0.28);
+  --tooltip-radius: var(--radius-xs);
+}
+
+html[data-scene] [data-tip]::after,
+[data-tip]::after {
+  content: none;
+}
+
+#overlay-root {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  pointer-events: none;
+}
+
+.tip-bubble {
+  position: fixed;
+  z-index: 1000;
+  margin: 0;
+  padding: 5px 9px;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-fg);
+  border: 1px solid var(--tooltip-border);
+  border-radius: var(--tooltip-radius);
+  box-shadow: var(--tooltip-shadow);
+  font: var(--type-caption);
+  letter-spacing: 0.01em;
+  line-height: 1.35;
+  text-align: center;
+  pointer-events: none;
+  width: max-content;
+  max-width: min(280px, calc(100vw - 16px));
+  white-space: normal;
+}
+
+.tip-bubble[hidden] {
+  display: none;
+}
+
+/* Solid portals and menu hosts wrap the layer in a plain div, so these
+   rules are descendants of the root rather than direct children. */
+#overlay-root .ts-popover.ts-popover--open,
+#overlay-root .gh-appearance-scrim,
+#overlay-root .ts-end.ts-end--floating,
+#overlay-root .gh-menu {
+  pointer-events: auto;
+}
+
+#overlay-root .ts-end.ts-end--floating {
+  position: fixed;
+  right: auto;
+  bottom: auto;
+  z-index: 2;
+  display: flex;
+  overflow: auto;
+}
+
+#overlay-root .gh-menu {
+  position: fixed;
+  z-index: 3;
+  left: auto;
+  right: auto;
+  top: auto;
+  bottom: auto;
+  min-width: 0;
+  overflow: auto;
+}

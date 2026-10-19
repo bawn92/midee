@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { type MidiTrack, TRACK_COLOR_SLOTS } from '../core/midi/types'
 import {
   ALL_THEMES,
   accentCSS,
   getTrackColor,
   liveNoteColor,
+  readStoredThemeId,
   THEMES,
   type Theme,
   type ThemeId,
@@ -12,17 +13,8 @@ import {
 
 // Compile-time exhaustiveness over the `ThemeId` union.
 const EXPECTED_THEME_IDS: Record<ThemeId, true> = {
-  dark: true,
-  midnight: true,
-  neon: true,
-  sunset: true,
-  ocean: true,
-  'smoked-glass': true,
-  'aurora-silk': true,
-  'lacquer-gold': true,
-  opal: true,
-  'liquid-glass': true,
-  'ember-mist': true,
+  'golden-hour': true,
+  'rainy-study': true,
 }
 
 const track = (colorIndex: number): MidiTrack => ({
@@ -77,6 +69,27 @@ describe('liveNoteColor', () => {
 
   it('falls back to the now-line colour for an empty palette', () => {
     expect(liveNoteColor({ trackColors: [], nowLine: 0xabcdef } as unknown as Theme)).toBe(0xabcdef)
+  })
+})
+
+describe('readStoredThemeId', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('keeps a saved scene and rewrites a classic id to Golden Hour', () => {
+    localStorage.setItem('midee.theme', 'rainy-study')
+    expect(readStoredThemeId()).toBe('rainy-study')
+    expect(localStorage.getItem('midee.theme')).toBe('rainy-study')
+
+    localStorage.setItem('midee.theme', 'sunset')
+    expect(readStoredThemeId()).toBe('golden-hour')
+    expect(localStorage.getItem('midee.theme')).toBe('golden-hour')
+  })
+
+  it('rewrites a legacy theme index to Golden Hour', () => {
+    localStorage.removeItem('midee.theme')
+    localStorage.setItem('midee.themeIndex', '2')
+    expect(readStoredThemeId()).toBe('golden-hour')
+    expect(localStorage.getItem('midee.theme')).toBe('golden-hour')
   })
 })
 

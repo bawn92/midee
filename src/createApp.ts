@@ -33,6 +33,8 @@ export async function createApp(): Promise<{ ctx: AppCtxValue; app: App }> {
       resetInteractionState: () => app.resetInteractionState(),
       openFilePicker: () => app.openFilePicker(),
       primeInteractiveAudio: () => app.primeInteractiveAudio(),
+      enterLive: () => app.enterLive(),
+      connectMidi: () => app.connectMidiFromUi(),
     },
     app,
   }

@@ -1,0 +1,388 @@
+import type { MasterClock } from '../core/clock/MasterClock'
+import { getHandPractice, subscribeHandPractice } from '../core/handPractice'
+import {
+  getKeyboardRange,
+  placedPitch,
+  subscribeKeyboardRange,
+  unmapControllerPitch,
+} from '../core/keyboardRange'
+import { noteHandOf, noteMatchesHandOf } from '../core/midi/hands'
+import type { MidiFile } from '../core/midi/types'
+import { jsonPersisted } from '../core/persistence'
+import type { Theme } from '../renderer/theme'
+import { createEventSignal } from '../store/eventSignal'
+import { pianoMPaletteMessages, themeHandLights } from './pianoMColors'
+
+export type KeyLightsChannelMode = 'original' | 'track' | 'single' | 'synthesia' | 'pianoM'
+
+export interface KeyLightsSettings {
+  outputId: string
+  channelMode: KeyLightsChannelMode
+  channel: number // 1–16 in the UI
+}
+
+export interface LightNote {
+  pitch: number
+  // Written pitch when `pitch` was already folded for practice. Hand colour
+  // follows this so a note folded across middle C keeps its hand.
+  sourcePitch?: number
+  velocity: number
+  channel: number // zero-based MIDI channel
+  trackIndex: number
+}
+
+interface LightEvent extends LightNote {
+  time: number
+  on: boolean
+}
+
+const defaults: KeyLightsSettings = { outputId: '', channelMode: 'original', channel: 1 }
+const preferences = jsonPersisted('midee.keyLights', defaults, (raw): KeyLightsSettings => {
+  const value = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
+  return {
+    outputId: typeof value.outputId === 'string' ? value.outputId : '',
+    channelMode:
+      value.channelMode === 'track' ||
+      value.channelMode === 'single' ||
+      value.channelMode === 'synthesia' ||
+      value.channelMode === 'pianoM'
+        ? value.channelMode
+        : 'original',
+    channel:
+      typeof value.channel === 'number' &&
+      Number.isInteger(value.channel) &&
+      value.channel >= 1 &&
+      value.channel <= 16
+        ? value.channel
+        : 1,
+  }
+})
+
+// Note on/off drive the lights. Sustain and audio tails do not extend them
+// past the notated note end. Piano M mode also sends the theme's hand colours
+// as control changes so the littlefoot script can paint them.
+export class KeyLights {
+  readonly settings = createEventSignal(preferences.load())
+  readonly outputs = createEventSignal<{ id: string; name: string }[]>([])
+  readonly status = createEventSignal<'off' | 'connected' | 'disconnected' | 'error'>('off')
+  private access: MIDIAccess | null = null
+  private output: MIDIOutput | null = null
+  private midi: MidiFile | null = null
+  private disabled = new Set<string>()
+  private events: LightEvent[] = []
+  private handChannels = new Map<number, number>()
+  private cursor = 0
+  private counts = new Map<number, number>()
+  private guidance: readonly LightNote[] | null = null
+  private shownGuidance = new Map<number, LightNote>()
+  private practiceMode = false
+  private timer: ReturnType<typeof setInterval> | null = null
+  private readonly unsubscribe: () => void
+  private readonly unsubscribeRange: () => void
+  private readonly unsubscribeHand: () => void
+  private disposed = false
+  private theme: Theme | null = null
+
+  constructor(private readonly clock: MasterClock) {
+    this.unsubscribe = clock.subscribeTransport(() => {
+      // Practice owns which chord is shown. Its clock pauses/seeks/resumes
+      // internally; those transitions must not reset or replay the LEDs.
+      if (!this.practiceMode && this.guidance === null) this.restart()
+    })
+    // Window, calibration, fit, and hand changes retarget lights immediately.
+    const retarget = (): void => {
+      if (this.disposed) return
+      this.rebuild()
+      this.sendPalette()
+    }
+    this.unsubscribeRange = subscribeKeyboardRange(retarget)
+    this.unsubscribeHand = subscribeHandPractice(retarget)
+    window.addEventListener('pagehide', this.onPageHide)
+    window.addEventListener('pageshow', this.onPageShow)
+  }
+
+  setAccess(access: MIDIAccess | null): void {
+    this.access = access
+    this.outputs.set(
+      [...(access?.outputs.values() ?? [])]
+        .filter((port) => port.state === 'connected')
+        .map((port) => ({ id: port.id, name: port.name || port.id })),
+    )
+    const next = access?.outputs.get(this.settings.value.outputId) ?? null
+    const connected = next?.state === 'connected' ? next : null
+    if (connected !== this.output) {
+      this.stop()
+      this.output = connected
+      this.updateStatus()
+      this.restart()
+    } else this.updateStatus()
+    this.sendPalette()
+  }
+
+  // The Piano M script paints channels 12/13 with these colours and repaints
+  // keys that are already on, so a theme change does not need new note-ons.
+  setTheme(theme: Theme): void {
+    this.theme = theme
+    this.sendPalette()
+  }
+
+  configure(patch: Partial<KeyLightsSettings>): void {
+    this.stop()
+    this.output = null
+    this.settings.set({ ...this.settings.value, ...patch })
+    preferences.save(this.settings.value)
+    this.setAccess(this.access)
+  }
+
+  load(midi: MidiFile | null, disabledTracks: Iterable<string> = []): void {
+    this.midi = midi
+    this.guidance = null
+    this.practiceMode = false
+    this.disabled = new Set(disabledTracks)
+    this.rebuild()
+  }
+
+  setTrackEnabled(id: string, enabled: boolean): void {
+    if (enabled) this.disabled.delete(id)
+    else this.disabled.add(id)
+    this.rebuild()
+  }
+
+  setGuidance(notes: readonly LightNote[] | null): void {
+    if (notes === null && this.guidance === null) return
+    const enteringGuidance = this.guidance === null
+    this.guidance = notes
+    if (notes === null) this.restart()
+    else {
+      if (enteringGuidance) this.stop()
+      this.syncGuidance()
+    }
+  }
+
+  setPracticeMode(enabled: boolean): void {
+    if (enabled === this.practiceMode) return
+    this.practiceMode = enabled
+    this.guidance = null
+    this.restart()
+  }
+
+  private syncGuidance(): void {
+    if (this.disposed || !this.output) return
+    const desired = new Map<number, LightNote>()
+    for (const note of this.guidance ?? []) {
+      const placed = this.place(note)
+      if (!placed) continue
+      const track = this.midi?.tracks[note.trackIndex]
+      if (track && this.disabled.has(track.id)) continue
+      desired.set(this.channel(placed) * 128 + placed.pitch, placed)
+    }
+    for (const [key] of this.shownGuidance) {
+      if (desired.has(key)) continue
+      this.send([0x80 | Math.floor(key / 128), key % 128, 0])
+      if (!this.output) return
+      this.shownGuidance.delete(key)
+    }
+    for (const [key, note] of desired) {
+      if (this.shownGuidance.has(key)) continue
+      this.shownGuidance.set(key, note)
+      const velocity = Math.max(1, Math.min(127, Math.round(note.velocity * 127)))
+      this.send([0x90 | Math.floor(key / 128), note.pitch, velocity])
+      if (!this.output) return
+    }
+    this.shownGuidance = desired
+  }
+
+  private rebuild(): void {
+    this.events = []
+    this.handChannels.clear()
+    const pianoTracks = this.midi?.tracks.filter((track) => !track.isDrum && track.notes.length > 0)
+    this.midi?.tracks.forEach((track, trackIndex) => {
+      if ((pianoTracks?.length ?? 0) > 1 && track.notes.length > 0) {
+        // Synthesia's one-based channels 12/13 mean left/right, unknown finger.
+        // A named or channel-assigned part wins. Otherwise the track's average
+        // pitch is the old middle-C guess, and a single piano track stays
+        // per-note (handChannels left unset).
+        if (track.hand === 'left' || track.hand === 'right') {
+          this.handChannels.set(trackIndex, track.hand === 'left' ? 11 : 12)
+        } else {
+          const average =
+            track.notes.reduce((sum, note) => sum + note.pitch, 0) / track.notes.length
+          this.handChannels.set(trackIndex, average < 60 ? 11 : 12)
+        }
+      }
+      if (track.isDrum || this.disabled.has(track.id)) return
+      for (const note of track.notes) {
+        if (note.duration <= 0) continue
+        const light = this.place({
+          pitch: note.pitch,
+          sourcePitch: note.pitch,
+          velocity: note.velocity,
+          channel: track.channel,
+          trackIndex,
+        })
+        if (!light) continue
+        this.events.push({ ...light, time: note.time, on: true })
+        this.events.push({ ...light, time: note.time + note.duration, on: false })
+      }
+    })
+    // Release before re-striking the same key at a shared boundary.
+    this.events.sort((a, b) => a.time - b.time || Number(a.on) - Number(b.on))
+    this.restart()
+  }
+
+  // File pitch → the raw note the controller key sends. Fit folds into the
+  // window first; unmap then undoes calibration so the lit key is the one
+  // the player should press. Other-hand and unreachable notes are skipped.
+  private place(note: LightNote): LightNote | null {
+    const sourcePitch = Math.round(note.sourcePitch ?? note.pitch)
+    // A transposed file can carry pitches outside a MIDI byte. Those are not
+    // notes to fold into the window.
+    if (sourcePitch < 0 || sourcePitch > 127) return null
+    const track = this.midi?.tracks[note.trackIndex]
+    if (!noteMatchesHandOf(track, sourcePitch, getHandPractice().hand)) return null
+    const range = getKeyboardRange()
+    const placed = placedPitch(sourcePitch, range)
+    if (!placed) return null
+    const pitch = unmapControllerPitch(placed.pitch, range)
+    if (pitch === null) return null
+    return { ...note, pitch, sourcePitch }
+  }
+
+  private channel(note: LightNote): number {
+    const settings = this.settings.value
+    if (settings.channelMode === 'single') return settings.channel - 1
+    const handPitch = note.sourcePitch ?? note.pitch
+    const track = this.midi?.tracks[note.trackIndex]
+    // Piano M littlefoot listeners (and Synthesia's LUMI script) colour
+    // channel 12 left and channel 13 right. An assigned track uses that hand
+    // for every note. A single unnamed piano track still splits at middle C.
+    const hand = noteHandOf(track, handPitch)
+    if (settings.channelMode === 'pianoM') return hand === 'left' ? 11 : 12
+    if (settings.channelMode === 'synthesia') {
+      if (track?.hand === 'left' || track?.hand === 'right') return hand === 'left' ? 11 : 12
+      return this.handChannels.get(note.trackIndex) ?? (hand === 'left' ? 11 : 12)
+    }
+    if (settings.channelMode === 'track') return note.trackIndex % 16
+    return note.channel & 0x0f
+  }
+
+  private sendPalette(): void {
+    if (this.disposed || !this.output || !this.theme) return
+    if (this.settings.value.channelMode !== 'pianoM') return
+    for (const message of pianoMPaletteMessages(themeHandLights(this.theme), getKeyboardRange())) {
+      this.send(message)
+      if (!this.output) return
+    }
+  }
+
+  private send(data: number[]): void {
+    if (!this.output) return
+    try {
+      this.output.send(data)
+    } catch {
+      // Unplug/permission failures must never interrupt playback.
+      this.stop()
+      this.output = null
+      this.status.set('error')
+    }
+  }
+
+  private emit(event: LightNote, on: boolean): void {
+    const channel = this.channel(event)
+    const key = channel * 128 + event.pitch
+    const count = this.counts.get(key) ?? 0
+    if (on) {
+      this.counts.set(key, count + 1)
+      if (count === 0) {
+        const velocity = Math.max(1, Math.min(127, Math.round(event.velocity * 127)))
+        this.send([0x90 | channel, event.pitch, velocity])
+      }
+    } else if (count > 0) {
+      if (count === 1) {
+        this.send([0x80 | channel, event.pitch, 0])
+        this.counts.delete(key)
+      } else this.counts.set(key, count - 1)
+    }
+  }
+
+  private restart(): void {
+    this.stop()
+    if (this.disposed || !this.output) return
+    if (this.guidance) {
+      this.syncGuidance()
+      return
+    }
+    if (this.practiceMode || !this.clock.playing || !this.midi) return
+    const time = this.clock.currentTime
+    const held = new Map<number, LightNote>()
+    // Reconstruct notes held at the new position, including a seek mid-note.
+    this.cursor = 0
+    while (this.cursor < this.events.length && this.events[this.cursor]!.time <= time) {
+      const event = this.events[this.cursor++]!
+      const key = this.channel(event) * 128 + event.pitch
+      const count = this.counts.get(key) ?? 0
+      if (event.on) {
+        this.counts.set(key, count + 1)
+        held.set(key, event)
+      } else if (count <= 1) this.counts.delete(key)
+      else this.counts.set(key, count - 1)
+    }
+    for (const [key] of this.counts) {
+      const velocity = Math.max(1, Math.min(127, Math.round(held.get(key)!.velocity * 127)))
+      this.send([0x90 | Math.floor(key / 128), key % 128, velocity])
+      if (!this.output) return
+    }
+    // Chromium cannot cancel timestamped MIDI messages (no output.clear()).
+    // Poll due events locally so pause/seek can cancel all future work.
+    this.timer = setInterval(() => this.schedule(), 10)
+    this.schedule()
+  }
+
+  private schedule(): void {
+    if (!this.output || !this.clock.playing) return
+    const time = this.clock.currentTime
+    while (this.cursor < this.events.length && this.events[this.cursor]!.time <= time) {
+      const event = this.events[this.cursor++]!
+      this.emit(event, event.on)
+      if (!this.output) break
+    }
+  }
+
+  private stop(): void {
+    if (this.timer !== null) clearInterval(this.timer)
+    this.timer = null
+    if (this.output) {
+      const active = new Set([...this.counts.keys(), ...this.shownGuidance.keys()])
+      for (const key of active) {
+        try {
+          this.output.send([0x80 | Math.floor(key / 128), key % 128, 0])
+        } catch {
+          // A failed release must not prevent releasing the remaining keys.
+        }
+      }
+    }
+    this.counts.clear()
+    this.shownGuidance.clear()
+  }
+
+  private updateStatus(): void {
+    this.status.set(
+      !this.settings.value.outputId ? 'off' : this.output ? 'connected' : 'disconnected',
+    )
+  }
+
+  private onPageHide = (): void => this.stop()
+  private onPageShow = (event: PageTransitionEvent): void => {
+    if (event.persisted) this.restart()
+  }
+
+  dispose(): void {
+    this.disposed = true
+    this.stop()
+    this.unsubscribe()
+    this.unsubscribeRange()
+    this.unsubscribeHand()
+    window.removeEventListener('pagehide', this.onPageHide)
+    window.removeEventListener('pageshow', this.onPageShow)
+  }
+}

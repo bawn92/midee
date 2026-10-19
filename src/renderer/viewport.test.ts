@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { isBlackKey, type MidiNote } from '../core/midi/types'
-import { BLACK_KEY_HEIGHT_RATIO } from './keyGeometry'
+import { KBD, keyFrame, whiteKeyCount } from './keyboardMetrics'
 import { Viewport, type ViewportConfig, visibleNoteRange } from './viewport'
 
 const note = (time: number, duration: number): MidiNote => ({
@@ -114,29 +114,28 @@ describe('Viewport.pitchAtPoint', () => {
     const cSharp = vp.getAllKeyPositions().get(61)!
     expect(isBlackKey(61)).toBe(true)
 
-    // A point inside the black key's x-span, high in the keyboard (black zone:
-    // y <= keyboardTop + keyboardHeight * 0.62 = 500 + 62 = 562).
+    const frame = keyFrame(1000, whiteKeyCount(60, 71), 100)
     const xMid = cSharp.x + cSharp.width / 2
-    expect(vp.pitchAtPoint(xMid, 510)).toBe(61)
+    const keyboardTop = 500
+    expect(vp.pitchAtPoint(xMid, keyboardTop + frame.keysY + 4)).toBe(61)
   })
 
   it('falls through to the WHITE key when the point is below the black-key zone', () => {
     const vp = makeViewport({ pitchMin: 60, pitchMax: 71 })
     const cSharp = vp.getAllKeyPositions().get(61)!
     const xMid = cSharp.x + cSharp.width / 2
-    // Same x, but low in the keyboard (y=580 > 562 black-zone bottom): the black
-    // key is no longer eligible, so the underlying white key wins.
-    const pitch = vp.pitchAtPoint(xMid, 580)
+    const frame = keyFrame(1000, whiteKeyCount(60, 71), 100)
+    const pitch = vp.pitchAtPoint(xMid, 500 + frame.keysY + frame.blackH + 2)
     expect(pitch).not.toBeNull()
     expect(isBlackKey(pitch!)).toBe(false)
   })
 
-  it('places the black/white zone boundary at BLACK_KEY_HEIGHT_RATIO of the keyboard', () => {
+  it('places the black/white zone boundary at the 88px black key', () => {
     const vp = makeViewport({ pitchMin: 60, pitchMax: 71 })
     const cSharp = vp.getAllKeyPositions().get(61)!
     const xMid = cSharp.x + cSharp.width / 2
-    // keyboardTop = 500, keyboardHeight = 100. Boundary is inclusive.
-    const boundary = 500 + 100 * BLACK_KEY_HEIGHT_RATIO
+    const frame = keyFrame(1000, whiteKeyCount(60, 71), 100)
+    const boundary = 500 + frame.keysY + frame.blackH
     expect(vp.pitchAtPoint(xMid, boundary)).toBe(61)
     expect(vp.pitchAtPoint(xMid, boundary + 1)).not.toBe(61)
   })
@@ -144,10 +143,10 @@ describe('Viewport.pitchAtPoint', () => {
   it('resolves a clearly-white region to its white key in both zones', () => {
     const vp = makeViewport({ pitchMin: 60, pitchMax: 71 })
     const c4 = vp.getAllKeyPositions().get(60)!
-    // Far-left edge of C4 has no black key over it (C#4 sits to the right).
+    const frame = keyFrame(1000, whiteKeyCount(60, 71), 100)
     const xLeft = c4.x + 1
-    expect(vp.pitchAtPoint(xLeft, 510)).toBe(60)
-    expect(vp.pitchAtPoint(xLeft, 580)).toBe(60)
+    expect(vp.pitchAtPoint(xLeft, 500 + frame.keysY + 4)).toBe(60)
+    expect(vp.pitchAtPoint(xLeft, 500 + frame.keysY + frame.blackH + 2)).toBe(60)
   })
 })
 
@@ -167,31 +166,43 @@ describe('Viewport.buildKeyLayout with narrowed pitch range (fit-to-piece)', () 
     const vp = makeViewport({ canvasWidth: 1000, pitchMin: 48, pitchMax: 72 })
 
     // White keys in C3..C5: C3 D3 E3 F3 G3 A3 B3 (7) + C4..B4 (7) + C5 (1) = 15.
-    let whiteCount = 0
-    for (let p = 48; p <= 72; p++) if (!isBlackKey(p)) whiteCount++
-    expect(whiteCount).toBe(15)
+    expect(whiteKeyCount(48, 72)).toBe(15)
+    const frame = keyFrame(1000, 15, 100)
 
-    const whiteW = 1000 / whiteCount
-    // First white key (C3=48) starts at x=0 with full white width.
-    expect(vp.pitchToX(48)).toBeCloseTo(0)
-    expect(vp.pitchWidth(48)).toBeCloseTo(whiteW)
+    // Cheeks take 44/26 of a white key on each side. C3 starts after the left cheek.
+    expect(vp.pitchToX(48)).toBeCloseTo(frame.cheek)
+    expect(vp.pitchWidth(48)).toBeCloseTo(frame.pitch)
+    expect(frame.pitch).toBeCloseTo(KBD.pitch * (1000 / (15 * KBD.pitch + KBD.cheek * 2)))
 
-    // Each successive white key is offset by exactly one white-key width.
-    expect(vp.pitchToX(50)).toBeCloseTo(whiteW) // D3 is the 2nd white key
-    // Last white key (C5=72) is the 15th → x = 14 * whiteW.
-    expect(vp.pitchToX(72)).toBeCloseTo(14 * whiteW)
+    expect(vp.pitchToX(50)).toBeCloseTo(frame.cheek + frame.pitch)
+    expect(vp.pitchToX(72)).toBeCloseTo(frame.cheek + 14 * frame.pitch)
   })
 
-  it('positions black keys as narrower keys offset between their neighbours', () => {
+  it('keeps a leading black key when the range starts on one', () => {
+    // C#3=49. The white key to its left (C3) is outside the window. The black
+    // key still sits 17.5px (scaled) past that missing white key.
+    const vp = makeViewport({ canvasWidth: 700, pitchMin: 49, pitchMax: 60 })
+    const frame = keyFrame(700, whiteKeyCount(49, 60), 100)
+    expect(vp.hasKey(49)).toBe(true)
+    const blackX = frame.cheek - frame.pitch + (KBD.blackOff / KBD.pitch) * frame.pitch
+    expect(vp.pitchToX(49)).toBeCloseTo(Math.max(0, blackX))
+    expect(vp.pitchWidth(49)).toBeCloseTo((KBD.blackW / KBD.pitch) * frame.pitch)
+    const onBlack = 500 + frame.keysY + 4
+    expect(vp.pitchAtPoint(vp.pitchToX(49) + 2, onBlack)).toBe(49)
+    // The leading black key covers the first ~0.29 of D. Past that, the white key answers.
+    expect(vp.pitchAtPoint(frame.cheek + frame.pitch * 0.55, onBlack)).toBe(50)
+    const onWhiteFront = 500 + frame.keysY + frame.blackH + 2
+    const onD = vp.pitchToX(49) + vp.pitchWidth(49) - 1
+    expect(vp.pitchAtPoint(onD, onWhiteFront)).toBe(50)
+  })
+
+  it('positions black keys 16px wide at +17.5 from the white key below', () => {
     const vp = makeViewport({ canvasWidth: 1000, pitchMin: 48, pitchMax: 72 })
-    // Literals (not recomputed from the source 0.58 ratio, so a ratio change is
-    // actually caught): C3..C5 has 15 white keys → whiteW = 1000/15 = 66.667.
-    // blackW = whiteW * 0.58 = 38.667. C3 (48) is the first white at x=0, so
-    // C#3 (49) sits at whiteW - blackW/2 = 66.667 - 19.333 = 47.333.
+    const frame = keyFrame(1000, 15, 100)
     expect(isBlackKey(49)).toBe(true)
-    expect(vp.pitchToX(48)).toBeCloseTo(0)
-    expect(vp.pitchWidth(49)).toBeCloseTo(38.667, 2)
-    expect(vp.pitchToX(49)).toBeCloseTo(47.333, 2)
+    expect(vp.pitchToX(48)).toBeCloseTo(frame.cheek)
+    expect(vp.pitchWidth(49)).toBeCloseTo((KBD.blackW / KBD.pitch) * frame.pitch, 2)
+    expect(vp.pitchToX(49)).toBeCloseTo(frame.cheek + (KBD.blackOff / KBD.pitch) * frame.pitch, 2)
   })
 
   // Draw sites gate on hasKey because pitchToX/pitchWidth fall back to 0 for

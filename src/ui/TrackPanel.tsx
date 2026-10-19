@@ -5,6 +5,7 @@ import { t, tn } from '../i18n'
 import type { PianoRollRenderer } from '../renderer/PianoRollRenderer'
 import { getTrackColor, type Theme } from '../renderer/theme'
 import { icons } from './icons'
+import { placeLayer } from './placeFloating'
 import { hexToCSS, isNarrowViewport } from './utils'
 
 // Popover dropdown anchored under the Tracks button in the top strip.
@@ -227,13 +228,13 @@ export class TrackPanel {
     const panel = this.panelEl
     if (!trigger || !panel) return
     const rect = trigger.getBoundingClientRect()
-    const panelW = panel.offsetWidth || 320
-    const right = Math.max(12, window.innerWidth - rect.right)
-    const top = rect.bottom + 8
-    panel.style.right = `${right}px`
-    panel.style.top = `${top}px`
-    panel.style.left = ''
-    const desiredLeft = window.innerWidth - right - panelW
-    if (desiredLeft < 12) panel.style.right = `${Math.max(12, window.innerWidth - panelW - 12)}px`
+    const placed = placeLayer(rect, {
+      width: panel.offsetWidth || 300,
+      height: panel.offsetHeight || 240,
+    })
+    panel.style.right = 'auto'
+    panel.style.left = `${Math.round(placed.left)}px`
+    panel.style.top = `${Math.round(placed.top)}px`
+    panel.style.maxHeight = `${Math.max(120, Math.floor(placed.maxHeight))}px`
   }
 }

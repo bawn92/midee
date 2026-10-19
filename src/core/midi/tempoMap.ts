@@ -53,6 +53,27 @@ export function tempoAt(src: TempoMapSource, time: number): number {
   return bpm > 0 ? bpm : NOMINAL_BPM
 }
 
+function meterAt(src: TempoMapSource, time: number): MeterEntry {
+  const meters = src.timeSignatures
+  if (meters.length === 0) return NOMINAL_METER
+  return meters[indexAt(meters, time)] ?? NOMINAL_METER
+}
+
+// One bar at `time`, in seconds. The beat unit follows the denominator, so
+// 3/4 at 100 BPM is 1.8 s and 4/4 at 120 BPM is 2 s.
+export function secondsPerBar(src: TempoMapSource, time: number): number {
+  const meter = meterAt(src, time)
+  const beats = meter.numerator > 0 ? meter.numerator : NOMINAL_METER.numerator
+  return beats * beatSeconds(tempoAt(src, time), meter.denominator)
+}
+
+// Header label. Whole numbers stay whole; a fractional tempo keeps one decimal.
+export function formatBpm(bpm: number): string {
+  if (!Number.isFinite(bpm) || bpm <= 0) return String(NOMINAL_BPM)
+  const rounded = Math.round(bpm * 10) / 10
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1)
+}
+
 function beatSeconds(bpm: number, denominator: number): number {
   const den = denominator > 0 ? denominator : NOMINAL_METER.denominator
   return Math.max(MIN_BEAT_SECONDS, (4 / den) * (60 / bpm))

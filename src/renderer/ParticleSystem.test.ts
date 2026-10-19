@@ -140,7 +140,8 @@ describe('glass glints', () => {
     system.setStyle('sparks')
     expect(system.hasActive).toBe(false)
     system.burst(200, 400, 0x91cddd)
-    expect(snapshot(system)).toHaveLength(14)
+    expect(system.hitCount()).toBe(14)
+    expect(snapshot(system)).toHaveLength(0)
     system.setStyle('none')
     system.burst(200, 400, 0x91cddd)
     expect(snapshot(system)).toHaveLength(0)
@@ -151,9 +152,6 @@ describe('glass glints', () => {
 const materialCases = [
   { style: 'silk', onset: 33, sustain: 4, cap: 448 },
   { style: 'gold', onset: 24, sustain: 3, cap: 480 },
-  { style: 'pearl', onset: 33, sustain: 4, cap: 448 },
-  { style: 'liquid', onset: 37, sustain: 5, cap: 512 },
-  { style: 'mist', onset: 29, sustain: 4, cap: 384 },
 ] as const
 
 function material(style: ParticleStyle) {
@@ -236,7 +234,8 @@ describe.each(materialCases)('$style material particles', ({ style, onset, susta
     system.setStyle('sparks')
     expect(system.hasActive).toBe(false)
     system.burst(200, 400, 0x91cddd)
-    expect(snapshot(system)).toHaveLength(14)
+    expect(system.hitCount()).toBe(14)
+    expect(snapshot(system)).toHaveLength(0)
     system.setStyle('none')
     system.burst(200, 400, 0x91cddd, 20, 5)
     system.sustainBurst(200, 400, 0x91cddd)
@@ -259,41 +258,36 @@ describe('material particle resources and composition', () => {
       'pearl',
       'liquid',
       'mist',
+      'rain',
     ])
   })
 
-  it('builds only selected styles, reuses shared textures and disposes every cached source', () => {
+  it('builds only selected styles, reuses one hit layer and disposes every cached source', () => {
     const system = new ParticleSystem()
     expect(Texture.from).toHaveBeenCalledTimes(1)
-    system.setStyle('liquid')
-    // Radial + contact, powder, chip. No hidden silk/foil/old-glass textures.
-    expect(Texture.from).toHaveBeenCalledTimes(4)
-    system.burst(200, 400, 0x91cddd)
-    system.update(0.1)
-    const firstContact = (system.container.children as Sprite[]).find(
-      (sprite) => sprite.visible && sprite.position.y === 398,
-    )!.texture
-    system.setStyle('pearl')
-    // Reuse contact; add only mineral and pollen.
-    expect(Texture.from).toHaveBeenCalledTimes(6)
-    system.burst(200, 400, 0x91cddd)
-    system.update(0.1)
-    const opalContact = (system.container.children as Sprite[]).find(
-      (sprite) => sprite.visible && sprite.position.y === 398,
-    )!.texture
-    expect(opalContact).toBe(firstContact)
-    for (const style of ['none', 'liquid', 'pearl', 'liquid'] as const) {
+    system.setStyle('embers')
+    // Radial texture plus one shared hit canvas. No per-effect Pixi textures.
+    expect(Texture.from).toHaveBeenCalledTimes(2)
+    for (const style of [
+      'pearl',
+      'liquid',
+      'mist',
+      'rain',
+      'sparkle',
+      'bloom',
+      'sparks',
+    ] as const) {
       system.setStyle(style)
       system.burst(200, 400, 0x91cddd)
+      system.update(0.1)
     }
-    expect(Texture.from).toHaveBeenCalledTimes(6)
-    // Hidden families remain usable without preallocating them for shipping presets.
+    expect(Texture.from).toHaveBeenCalledTimes(2)
     system.setStyle('silk')
-    expect(Texture.from).toHaveBeenCalledTimes(7)
+    expect(Texture.from).toHaveBeenCalledTimes(5)
     system.setStyle('gold')
-    expect(Texture.from).toHaveBeenCalledTimes(10)
+    expect(Texture.from).toHaveBeenCalledTimes(8)
     system.setStyle('glass')
-    expect(Texture.from).toHaveBeenCalledTimes(15)
+    expect(Texture.from).toHaveBeenCalledTimes(13)
     system.setStyle('none')
     const textures = vi.mocked(Texture.from).mock.results.map(({ value }) => value as Texture)
     system.destroy()
@@ -303,7 +297,7 @@ describe('material particle resources and composition', () => {
   })
 
   it('never creates textures in sustained frame updates or repeated bursts', () => {
-    const system = material('liquid')
+    const system = material('silk')
     expect(Texture.from).toHaveBeenCalledTimes(4)
     for (let frame = 0; frame < 240; frame++) {
       if (frame % 20 === 0) system.burst(200, 400, 0x91cddd)
@@ -316,78 +310,37 @@ describe('material particle resources and composition', () => {
     system.destroy()
   })
 
-  it('uses fine material shapes instead of beads, halos, or broad ribbons', () => {
-    const allowed = {
-      silk: ['contact', 'fiber', 'pollen'],
-      pearl: ['contact', 'mineral', 'pollen'],
-      liquid: ['contact', 'powder', 'chip'],
-    } as const
-    for (const style of ['silk', 'pearl', 'liquid'] as const) {
-      const recipe = MATERIAL_CHOREOGRAPHY[style]
-      expect(recipe.onset.length).toBeGreaterThanOrEqual(30)
-      expect(recipe.onset.filter((kind) => kind === 'contact')).toHaveLength(1)
-      for (const kind of [...recipe.onset, ...recipe.sustain]) {
-        expect(allowed[style]).toContain(kind)
-      }
+  it('uses fine silk shapes instead of beads, halos, or broad ribbons', () => {
+    const recipe = MATERIAL_CHOREOGRAPHY.silk
+    expect(recipe.onset.length).toBeGreaterThanOrEqual(30)
+    expect(recipe.onset.filter((kind) => kind === 'contact')).toHaveLength(1)
+    for (const kind of [...recipe.onset, ...recipe.sustain]) {
+      expect(['contact', 'fiber', 'pollen']).toContain(kind)
     }
-    const glass = MATERIAL_CHOREOGRAPHY.liquid.onset
-    expect(glass.filter((kind) => kind === 'powder').length / glass.length).toBeGreaterThan(0.7)
   })
 
-  it('keeps the liquid powder and chips fine while they disperse', () => {
-    const system = material('liquid')
-    system.burst(200, 400, 0x91cddd, 20)
-    for (const dt of [0.18, 0.32]) {
-      system.update(dt)
-      const airborne = snapshot(system).filter((p) => p.y < 395)
-      expect(airborne.length).toBeGreaterThan(20)
-      for (const grain of airborne) {
-        // Bound the whole sprite quad, including transparent margins. Tiny
-        // optical grains must not swell into the former bubbles or splashes.
-        expect(Math.max(grain.scaleX, grain.scaleY) * 64).toBeLessThan(10)
-      }
+  it('groups a same-frame chord under the square-root divisor and pauses while hidden', () => {
+    const system = new ParticleSystem()
+    system.setStyle('sparks')
+    const note = { x: 120, y: 400, keyWidth: 22, velocity: 1, hand: 'rh' as const }
+    system.queueHits([note, note, note])
+    expect(system.hitCount()).toBe(0)
+    system.update(1 / 60)
+    expect(system.hitCount()).toBe(24)
+    system.clear()
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => true })
+    try {
+      system.queueHits([note])
+      system.update(1 / 60)
+      expect(system.hitCount()).toBe(0)
+    } finally {
+      Reflect.deleteProperty(document, 'hidden')
     }
+    system.update(1 / 60)
+    expect(system.hitCount()).toBe(14)
+    for (let frame = 0; frame < 20; frame++) system.update(0.05)
+    expect(system.hitCount()).toBe(0)
     system.destroy()
-  })
-
-  it('keeps mist plumes transparent, windblown and warm even with a purple note', () => {
-    const system = material('mist')
-    system.burst(200, 400, 0x9933ee, 20)
-    system.update(0.2)
-    const plumes = (system.container.children as Sprite[]).filter(
-      (sprite) => sprite.visible && Math.abs(sprite.scale.x) * 64 > 20 && sprite.position.y < 395,
-    )
-    expect(plumes).toHaveLength(4)
-    const grains = (system.container.children as Sprite[]).filter(
-      (sprite) => sprite.visible && Math.abs(sprite.scale.x) * 64 < 10,
-    )
-    const grainPositions = grains.map((sprite) => sprite.position.x)
-    const positions = plumes.map((sprite) => ({ x: sprite.position.x, y: sprite.position.y }))
-    system.update(0.4)
-    for (const [i, sprite] of grains.entries()) {
-      expect(sprite.position.x).toBeGreaterThan(grainPositions[i]!)
-    }
-    for (const [i, sprite] of plumes.entries()) {
-      expect(sprite.position.x).toBeGreaterThan(positions[i]!.x)
-      expect(sprite.position.y).toBeLessThan(positions[i]!.y)
-      expect(sprite.alpha).toBeLessThan(0.32)
-      expect((sprite.tint >> 16) & 255).toBeGreaterThan((sprite.tint >> 8) & 255)
-      expect((sprite.tint >> 8) & 255).toBeGreaterThan(sprite.tint & 255)
-    }
-    system.destroy()
-  })
-
-  it('lazily shares mist contact and dust textures with glass dust', () => {
-    const system = material('liquid')
-    expect(Texture.from).toHaveBeenCalledTimes(4)
-    system.setStyle('mist')
-    expect(Texture.from).toHaveBeenCalledTimes(5)
-    system.setStyle('liquid')
-    system.setStyle('mist')
-    expect(Texture.from).toHaveBeenCalledTimes(5)
-    const textures = vi.mocked(Texture.from).mock.results.map(({ value }) => value as Texture)
-    system.destroy()
-    for (const texture of textures) expect(texture.destroy).toHaveBeenCalledExactlyOnceWith(true)
   })
 
   it('keeps lacquer particles warm gold even when the struck note is red', () => {

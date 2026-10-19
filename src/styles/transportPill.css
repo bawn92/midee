@@ -1,0 +1,88 @@
+/* Two-row transport pill. A half-height stadium tucks the time, skip, and
+   play into the curve, so the corners stay at 24px and the content sits
+   28px in (24px on a phone). The elapsed time lines up under the play
+   button and the bar starts under the title. */
+
+html[data-scene] #hud.float-hud {
+  --hud-pad-x: 28px;
+  --hud-skip: 36px;
+  --hud-play: 48px;
+  --hud-gap: 8px;
+  align-items: flex-start;
+  border-radius: 24px;
+  padding: 10px var(--hud-pad-x) 34px;
+}
+
+html[data-scene] #hud .hud-group--transport {
+  gap: var(--hud-gap);
+}
+
+html[data-scene] #hud .btn-skip {
+  width: var(--hud-skip);
+  height: var(--hud-skip);
+  padding: 0;
+}
+
+html[data-scene] #hud .float-hud__close {
+  /* The shared close button centres itself on the whole pill. Pin it to the
+     title row and centre the 24px disc on the 48px play button. */
+  align-self: flex-start;
+  margin-top: 12px;
+  margin-right: 0;
+  margin-left: var(--hud-gap);
+}
+
+html[data-scene] #hud .scrubber-wrap {
+  position: absolute;
+  left: calc(var(--hud-pad-x) + var(--hud-skip) + var(--hud-gap));
+  right: var(--hud-pad-x);
+  bottom: 10px;
+  display: grid;
+  grid-template-columns: var(--hud-play) minmax(48px, 1fr) auto;
+  column-gap: var(--hud-gap);
+  align-items: center;
+  width: auto;
+  height: 16px;
+}
+
+html[data-scene] #hud .scrubber-wrap .time-display {
+  width: auto;
+  min-width: 0;
+  text-align: left;
+}
+
+html[data-scene] #hud .scrubber-wrap .time-display.dim {
+  text-align: right;
+}
+
+html[data-scene] #hud .scrubber-wrap .scrubber {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  html[data-scene] #hud.float-hud,
+  html[data-scene]
+    #hud.hud--active.float-hud--idle:not(.float-hud--pinned):not(.float-hud--dragging) {
+    --hud-pad-x: 24px;
+    border-radius: 24px;
+    padding: 10px var(--hud-pad-x) 12px;
+  }
+
+  html[data-scene] #hud .float-hud__close {
+    /* The phone bar adds its own padding above the play button. */
+    margin-top: 20px;
+  }
+
+  html[data-scene] #hud .scrubber-wrap {
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    width: auto;
+    flex: 1 1 calc(100% - var(--hud-skip) - var(--hud-gap));
+    order: 10;
+    height: 20px;
+    margin: 2px 0 0 calc(var(--hud-skip) + var(--hud-gap));
+  }
+}

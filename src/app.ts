@@ -1,7 +1,20 @@
 import { Metronome } from './audio/Metronome'
 import { INSTRUMENTS, type InstrumentId, SynthEngine } from './audio/SynthEngine'
+import { APP_NAME, APP_SLUG } from './brand'
 import { MasterClock } from './core/clock/MasterClock'
+import { getHandPractice, subscribeHandPractice } from './core/handPractice'
 import { type BusNoteEvent, InputBus } from './core/input/InputBus'
+import {
+  adoptControllerNote,
+  getKeyboardRange,
+  isControllerCalibrateArmed,
+  type KeyboardRangePrefs,
+  mapControllerPitch,
+  setControllerCalibrateArmed,
+  setKeyboardRange,
+  shiftRangeToInclude,
+  subscribeKeyboardRange,
+} from './core/keyboardRange'
 import { lazyHandle } from './core/lazyHandle'
 import { parseMidiFileWithStats } from './core/midi/parser'
 import type { MidiFile } from './core/midi/types'
@@ -37,8 +50,11 @@ import {
 import type { ExportStage, VideoExporter } from './export/VideoExporter'
 import { audioBufferToWav } from './export/wav'
 import { setLocale, t } from './i18n'
+import { markStarted, modePath, normalizePath, parseRoute, readStarted } from './landing/route'
+import { bindPlayKeyLights } from './midi/bindPlayKeyLights'
 import { CaptureFanout } from './midi/CaptureFanout'
 import { ComputerKeyboardInput } from './midi/ComputerKeyboardInput'
+import { KeyLights } from './midi/KeyLights'
 import { LiveLooper, type LiveLooperState } from './midi/LiveLooper'
 import { LiveNoteStore } from './midi/LiveNoteStore'
 import type { CapturedEvent } from './midi/MidiEncoding'
@@ -49,9 +65,21 @@ import { sessionToMidiFile } from './midi/SessionToMidi'
 import type { LearnController } from './modes/LearnController'
 import { setNextLiveOpts } from './modes/LiveMode'
 import { MODE_CAPTURES_LIVE, type ModeContext } from './modes/ModeController'
+import {
+  focusPitchWindow,
+  keyboardFocusEnabled,
+  subscribeKeyboardFocus,
+} from './renderer/keyboardFocus'
 import { PianoRollRenderer } from './renderer/PianoRollRenderer'
-import { ALL_PARTICLE_STYLES, PARTICLE_STYLES, type ParticleStyle } from './renderer/particleStyles'
-import { ALL_THEMES, accentCSS, THEMES, type Theme, type ThemeId } from './renderer/theme'
+import {
+  ALL_PARTICLE_STYLES,
+  displayParticle,
+  PARTICLE_STYLES,
+  type ParticleStyle,
+} from './renderer/particleStyles'
+import { finishRangeAdjust } from './renderer/rangeOverlay'
+import { applySceneClass } from './renderer/scenes'
+import { accentCSS, readStoredThemeId, THEMES, type Theme, type ThemeId } from './renderer/theme'
 import type { AppMode, AppStore } from './store/state'
 import { watch } from './store/watch'
 import {
@@ -79,12 +107,25 @@ import { DropZone } from './ui/DropZone'
 import type { ExportSettings } from './ui/ExportModal'
 import { THROUGHPUT_KEY, throughputFrom } from './ui/exportSettings'
 import { InstrumentMenu } from './ui/InstrumentMenu'
+import { KeyboardRangeBand, KeyboardRangeControl } from './ui/KeyboardRangeControl'
 import { KeyboardResizer } from './ui/KeyboardResizer'
+import { closeModePopovers } from './ui/modeChrome'
+import { overlayRoot } from './ui/overlayRoot'
+import { mountPhoneDock } from './ui/PhoneDock'
 import type { SessionAction } from './ui/PostSessionModal'
 import { PEDAL_HIDDEN, type PedalIndicatorState, pedalIndicatorState } from './ui/pedalIndicator'
+import { SongGuideController } from './ui/SongGuide'
 import { showError, showSuccess } from './ui/Toast'
 import { TrackPanel } from './ui/TrackPanel'
+import { installTooltips } from './ui/tooltips'
 import { installViewportClassSync } from './ui/utils'
+import {
+  crossfadeModes,
+  enterLiveView,
+  isModeCrossfade,
+  leaveLiveView,
+  prefersReducedMotion,
+} from './ui/viewTransition'
 import { whenIdle } from './whenIdle'
 
 // Total note count across all tracks — the content-size signal attached to
@@ -100,6 +141,7 @@ export class App {
   private synth = new SynthEngine()
   private inputBus = new InputBus()
   midiInput!: MidiInputManager
+  private keyLights!: KeyLights
   keyboardInput!: ComputerKeyboardInput
   private liveNotes = new LiveNoteStore()
   private loopNotes = new LiveNoteStore()
@@ -168,6 +210,13 @@ export class App {
   // without re-querying the DOM.
   private overlay!: HTMLElement
   private kbdResizer!: KeyboardResizer
+  private kbdRange!: KeyboardRangeControl
+  private kbdRangeBand!: KeyboardRangeBand
+  private songGuide!: SongGuideController
+  // Hardware note-on pitch → the transposed pitch we actually sounded, so
+  // note-off releases that pitch even if the range moves while the key is held.
+  private mappedMidi = new Map<number, number>()
+  private lowerLeft: HTMLElement | null = null
   private chordOverlay!: ChordOverlay
   private customizeMenu!: CustomizeMenu
   // Shared handles passed into subsystems (Controls today, mode controllers and
@@ -255,6 +304,8 @@ export class App {
     const canvas = document.querySelector<HTMLCanvasElement>('#pianoroll')!
     const overlay = document.querySelector<HTMLElement>('#ui-overlay')!
     this.overlay = overlay
+    const layer = overlayRoot()
+    this.unsubs.push(installTooltips())
 
     // Flip `body.is-touch` / `body.is-narrow` so CSS can adapt (bottom-sheet
     // popovers, touch-friendly hit targets, etc.).
@@ -264,8 +315,22 @@ export class App {
     this.renderer.attachClock(this.clock)
     this.renderer.setLiveNoteStore(this.liveNotes)
     this.renderer.setLoopNoteStore(this.loopNotes)
+    this.applyKeyboardRange(getKeyboardRange())
+    this.unsubs.push(subscribeKeyboardRange((prefs) => this.applyKeyboardRange(prefs)))
+    this.unsubs.push(subscribeKeyboardFocus(() => this.applyKeyboardRange(getKeyboardRange())))
+    this.applyHandPractice(getHandPractice())
+    this.unsubs.push(subscribeHandPractice((prefs) => this.applyHandPractice(prefs)))
 
     this.midiInput = new MidiInputManager(this.clock)
+    this.keyLights = new KeyLights(this.clock)
+    this.midiInput.setLightOutput(this.keyLights.settings.value.outputId)
+    this.unsubs.push(
+      this.keyLights.settings.subscribe((settings) =>
+        this.midiInput.setLightOutput(settings.outputId),
+      ),
+      this.midiInput.midiAccess.subscribe((access) => this.keyLights.setAccess(access)),
+      bindPlayKeyLights(this.keyLights, this.store, () => this.synth.getDisabledTrackIds()),
+    )
     // Space is the sustain pedal only in Live; Play and Learn own it as the
     // transport / exercise key.
     this.keyboardInput = new ComputerKeyboardInput(
@@ -326,6 +391,7 @@ export class App {
       metronome: this.metronome,
       renderer: this.renderer,
       input: this.inputBus,
+      keyLights: this.keyLights,
     }
 
     // Wire the LivePerformanceBus fan-out sinks. Audio and visual-key
@@ -398,8 +464,8 @@ export class App {
       onMidiConnect: () => void this.connectMidi(),
       onOpenTracks: () => this.trackPanel.toggle(),
       onRecord: () => {
-        // First-time vs repeat opens are derivable in PostHog funnels via
-        // "first occurrence per user" — no need for a duplicate event.
+        // First-time vs repeat opens are the same event. Callers that care
+        // about the first open can count it themselves.
         track('export_opened', { has_midi: this.store.state.loadedMidi !== null })
         void this.openExportModal()
       },
@@ -485,10 +551,11 @@ export class App {
     pushSession()
 
     this.trackPanel = new TrackPanel(
-      overlay,
+      layer,
       this.renderer,
       (id, enabled) => {
         this.synth.setTrackEnabled(id, enabled)
+        this.keyLights.setTrackEnabled(id, enabled)
         trackEvent('track_toggled', { enabled })
       },
       () => this.openFilePicker(),
@@ -496,7 +563,7 @@ export class App {
     )
     this.trackPanel.setTrigger(this.controls.tracksButton)
 
-    this.instrumentMenu = new InstrumentMenu(this.controls.instrumentSlot, overlay)
+    this.instrumentMenu = new InstrumentMenu(this.controls.instrumentSlot, layer)
     this.instrumentMenu.onSelect = (id) => this.setInstrumentById(id)
     this.unsubs.push(
       this.synth.loadingInstrument.subscribe((id) => {
@@ -518,6 +585,23 @@ export class App {
       (px) => this.renderer.setKeyboardHeight(px),
     )
     this.kbdResizer.restoreSaved()
+    // Shortcuts card and keyboard-range control share the lower-left corner.
+    // One column stacks the range bar above the card so they can't overlap.
+    const lowerLeft = document.createElement('div')
+    lowerLeft.id = 'lower-left'
+    overlay.appendChild(lowerLeft)
+    this.lowerLeft = lowerLeft
+    const keyHint = overlay.querySelector('#key-hint')
+    if (keyHint) lowerLeft.appendChild(keyHint)
+    this.kbdRange = new KeyboardRangeControl(lowerLeft, this.store)
+    this.kbdRangeBand = new KeyboardRangeBand(overlay, this.store, {
+      rect: (start, end) => this.renderer.keyBandRect(start, end),
+      pitchAt: (clientX) => this.renderer.pitchFromClientX(clientX),
+    })
+    this.songGuide = new SongGuideController(overlay, this.store, this.clock, this.synth, (pitch) =>
+      this.renderer.keyClientBox(pitch),
+    )
+    this.unsubs.push(mountPhoneDock(overlay))
 
     this.chordOverlay = new ChordOverlay(this.controls.chordSlot)
     this.chordOverlayOn = chordOverlayStore.load()
@@ -537,7 +621,7 @@ export class App {
     // collapses three topbar pills into a single trigger.
     this.customizeMenu = new CustomizeMenu(
       this.controls.customizeSlot,
-      overlay,
+      layer,
       THEMES,
       PARTICLE_STYLES,
       {
@@ -553,9 +637,22 @@ export class App {
         onSelectLocale: (code) => {
           void setLocale(code).then(() => window.location.reload())
         },
+        volume: () => this.store.state.volume,
+        onVolume: (value) => this.store.setState('volume', value),
+        rollSpeed: () => 200 / Math.max(40, this.renderer.currentPixelsPerSecond),
+        onRollSpeed: (seconds) => this.renderer.setZoom(200 / Math.max(0.5, seconds)),
+        metroOn: () => this.metronome.running.value,
+        onMetro: () => this.metronome.toggle(),
       },
+      { lights: this.keyLights, midiInput: this.midiInput },
     )
     this.customizeMenu.setChord(this.chordOverlayOn)
+    const onPaint = (): void => {
+      const theme = THEMES[this.themeIndex]
+      if (theme) this.renderer.setTheme(theme)
+    }
+    window.addEventListener('midee-paint', onPaint)
+    this.unsubs.push(() => window.removeEventListener('midee-paint', onPaint))
 
     this.noteLabelsOn = noteLabelsStore.load()
     this.renderer.setNoteLabels(this.noteLabelsOn)
@@ -669,10 +766,12 @@ export class App {
     // per-source because the bus merges them with an OR.
     this.unsubs.push(
       this.midiInput.noteOn.subscribe((evt) => {
-        if (evt) this.inputBus.emitNoteOn(evt, 'midi')
+        if (!evt) return
+        this.inputBus.emitNoteOn({ ...evt, pitch: this.takeMidiPitch(evt.pitch, true) }, 'midi')
       }),
       this.midiInput.noteOff.subscribe((evt) => {
-        if (evt) this.inputBus.emitNoteOff(evt, 'midi')
+        if (!evt) return
+        this.inputBus.emitNoteOff({ ...evt, pitch: this.takeMidiPitch(evt.pitch, false) }, 'midi')
       }),
       this.midiInput.pedal.subscribe((down) => {
         this.inputBus.emitPedal(down, 'midi')
@@ -766,8 +865,61 @@ export class App {
     }
 
     // Start in home. <HomeMode/>'s onMount handles the side effects.
+    // A deep link to /play, /live, or /learn replaces that before Solid paints.
     this.services.store.enterHome()
+    this.installModeRoutes()
     void this.autoConnectMidi()
+  }
+
+  // The address bar follows the mode. Popstate applies the URL without
+  // pushing a second entry on top of the one the browser just restored.
+  private urlQuiet = false
+
+  private installModeRoutes(): void {
+    this.unsubs.push(
+      watch(
+        () => this.store.state.mode,
+        (mode) => this.pushModeUrl(mode),
+      ),
+    )
+    window.addEventListener('popstate', this.onModePopState)
+    this.unsubs.push(() => window.removeEventListener('popstate', this.onModePopState))
+    this.applyLocationMode()
+  }
+
+  private pushModeUrl(mode: AppMode): void {
+    if (this.urlQuiet) return
+    const path = normalizePath(location.pathname)
+    if (mode === 'home') {
+      if (path === '/' || path === '/welcome' || path === '/start') return
+      history.pushState({ mode: 'home' }, '', `/start${location.search}${location.hash}`)
+      return
+    }
+    const next = modePath(mode)
+    if (path === next) return
+    history.pushState({ mode }, '', `${next}${location.search}${location.hash}`)
+  }
+
+  private onModePopState = (): void => {
+    this.urlQuiet = true
+    try {
+      this.applyLocationMode()
+    } finally {
+      queueMicrotask(() => {
+        this.urlQuiet = false
+      })
+    }
+  }
+
+  private applyLocationMode(): void {
+    const route = parseRoute(location.pathname, location.search, readStarted())
+    if (route.kind === 'hero' || route.kind === 'home') {
+      if (this.store.state.mode !== 'home') this.enterHomeMode()
+      return
+    }
+    if (route.mode === 'learn') this.renderer.setVisible(false)
+    if (this.store.state.mode === route.mode) return
+    this.requestMode(route.mode, true)
   }
 
   private releaseAllLiveNotes(): void {
@@ -809,6 +961,7 @@ export class App {
 
   private handleLiveNoteOn(evt: BusNoteEvent): void {
     if (this.store.state.status === 'exporting') return
+    markStarted()
     const mode = this.store.state.mode
     const captures = MODE_CAPTURES_LIVE[mode]
     if (mode === 'home') this.enterLiveMode(false)
@@ -819,16 +972,22 @@ export class App {
       trackActivation('live_note')
     }
 
+    // A controller's octave buttons move which MIDI notes it sends. When
+    // follow is on, a note outside the window slides the window onto it
+    // before the key lights up, so the roll matches the hardware.
+    if (evt.source === 'midi') this.maybeFollowKeyboardRange(evt.pitch)
+
     // Route through the bus: repress-release (note-off sinks, then on),
     // sustained-pitches bookkeeping, and note-on fan-out to audio+visual sinks.
     // Capture uses the bus's note-off path only — no duplicate captureNoteOff
     // here (routeNoteOn already fans off to subscribers).
     this.performanceBus.routeNoteOn(evt)
+    finishRangeAdjust()
 
     // Looper + session captures are live-performance concerns — practice
     // key-presses (Learn) should not pollute a saved session recording.
     if (captures) {
-      this.renderer.burstParticleAt(evt.pitch)
+      this.renderer.burstParticleAt(evt.pitch, evt.velocity)
       this.capture.captureNoteOn(evt.pitch, evt.velocity, evt.clockTime)
     }
 
@@ -840,6 +999,70 @@ export class App {
         this.store.setState('status', 'playing')
       }
     }
+  }
+
+  private applyKeyboardRange(range: KeyboardRangePrefs): void {
+    // The logical piano stays 88 keys. Focus only changes which of them are
+    // on screen. Fit-to-range is read while drawing, so a window move
+    // repaints note positions even when the highlight's endpoints did not change.
+    const view = focusPitchWindow(range, keyboardFocusEnabled())
+    this.renderer.aimPitchRange(view.min, view.max)
+    this.renderer.setPlayableRange(range.start, range.start + range.size - 1)
+    this.renderer.refreshPlacement()
+    this.refreshSoundingPitches()
+  }
+
+  private applyHandPractice(prefs: {
+    hand: 'left' | 'right' | 'both'
+    otherHandAudible: boolean
+  }): void {
+    this.renderer.refreshPlacement()
+    this.synth.setHandGate(prefs.hand, prefs.otherHandAudible)
+  }
+
+  // Folded pitches are baked into the scheduled Part. A live window move has
+  // to rebuild that Part while playback is running, and drop the pause-resume
+  // shortcut so the next play doesn't reuse the old pitches.
+  private refreshSoundingPitches(): void {
+    this.synth.invalidateScheduledPitches()
+    const mode = this.store.state.mode
+    const learnPlaying =
+      mode === 'learn' && this.learnControllerHandle.peek()?.learnState.state.status === 'playing'
+    const playPlaying = mode === 'play' && this.store.state.status === 'playing'
+    if (playPlaying || learnPlaying) this.synth.seek(this.clock.currentTime)
+  }
+
+  // Transpose a hardware note so the controller's lowest key plays the
+  // window's lowest key. Uncalibrated 24- and 25-key windows assume middle C.
+  // Note-off uses the pitch chosen at note-on.
+  private takeMidiPitch(raw: number, down: boolean): number {
+    if (!down) {
+      const held = this.mappedMidi.get(raw)
+      this.mappedMidi.delete(raw)
+      if (held !== undefined) return held
+      return mapControllerPitch(raw, getKeyboardRange())
+    }
+    const before = getKeyboardRange()
+    const adopted = adoptControllerNote(raw, before, isControllerCalibrateArmed())
+    if (!adopted.calibrating) setControllerCalibrateArmed(false)
+    if (
+      adopted.controllerLow !== before.controllerLow ||
+      adopted.calibrated !== before.calibrated
+    ) {
+      setKeyboardRange({ controllerLow: adopted.controllerLow, calibrated: adopted.calibrated })
+    }
+    this.mappedMidi.set(raw, adopted.mapped)
+    return adopted.mapped
+  }
+
+  private maybeFollowKeyboardRange(pitch: number): void {
+    const prefs = getKeyboardRange()
+    // Once the controller maps onto the window, notes outside it are an
+    // octave shift (handled in takeMidiPitch), not a request to move the window.
+    if (!prefs.followMidi || prefs.controllerLow != null) return
+    const next = shiftRangeToInclude(prefs, pitch)
+    if (next.start === prefs.start) return
+    setKeyboardRange({ start: next.start })
   }
 
   private handleLiveNoteOff(evt: BusNoteEvent): void {
@@ -1001,6 +1224,7 @@ export class App {
       // drives renderer.loadMidi, trackPanel.render, document.title, and
       // dropzone.hide off the new loadedMidi.
       this.store.completePlayLoad(midi)
+      markStarted()
       this.synth.load(midi).catch((err) => {
         console.error('SynthEngine.load failed:', err)
         // Visuals load but there's no sound — a silent session-killer that
@@ -1109,7 +1333,21 @@ export class App {
   }
 
   private cycleParticleStyle(): void {
-    this.setParticleByIndex((this.particleIndex + 1) % PARTICLE_STYLES.length, 'cycle')
+    const themeId = THEMES[this.themeIndex]?.id ?? 'golden-hour'
+    const visible = PARTICLE_STYLES.filter(
+      (style) => themeId === 'rainy-study' || (style.id !== 'rain' && style.id !== 'mist'),
+    )
+    const shown = displayParticle(PARTICLE_STYLES[this.particleIndex]!.id, themeId)
+    const at = Math.max(
+      0,
+      visible.findIndex((style) => style.id === shown),
+    )
+    const next = visible[(at + 1) % visible.length]
+    if (!next) return
+    this.setParticleByIndex(
+      PARTICLE_STYLES.findIndex((style) => style.id === next.id),
+      'cycle',
+    )
   }
 
   private setParticleByIndex(idx: number, method: 'cycle' | 'menu'): void {
@@ -1122,7 +1360,8 @@ export class App {
 
   private applyParticleStyle(): void {
     const info = PARTICLE_STYLES[this.particleIndex]!
-    this.renderer.setParticleStyle(info.id)
+    const themeId = THEMES[this.themeIndex]?.id ?? 'golden-hour'
+    this.renderer.setParticleStyle(displayParticle(info.id, themeId))
     this.customizeMenu?.setParticle(this.particleIndex)
   }
 
@@ -1324,6 +1563,11 @@ export class App {
         instrumentId: INSTRUMENTS[this.instrumentIndex]!.id,
         volume: this.store.state.volume,
         disabledTrackIds: this.synth.getDisabledTrackIds(),
+        audibility: {
+          range: getKeyboardRange(),
+          hand: getHandPractice().hand,
+          otherHandAudible: getHandPractice().otherHandAudible,
+        },
         onRenderAudioProgressMode: (d) => exportModal.setRenderAudioProgressMode(d),
         onProgress: report,
       })
@@ -1550,6 +1794,14 @@ export class App {
   // the user is still choosing). If we read `store.state.mode` inside the
   // file callback, it would still be 'learn' and the file would route to
   // LearnController instead of Play. Explicit target avoids the race.
+  enterLive(): void {
+    this.enterLiveMode()
+  }
+
+  connectMidiFromUi(): Promise<void> {
+    return this.connectMidi()
+  }
+
   openFilePicker(target?: 'play' | 'learn'): void {
     const resolveTarget = (): 'play' | 'learn' =>
       target ?? (this.store.state.mode === 'learn' ? 'learn' : 'play')
@@ -1646,6 +1898,7 @@ export class App {
       return
     }
     this.loadSessionAsFile(midi)
+    markStarted()
     trackMidiLoaded({
       source: 'recent',
       trackCount: midi.tracks.length,
@@ -1674,32 +1927,64 @@ export class App {
     }, 250)
   }
 
-  private requestMode(mode: Exclude<AppMode, 'home'>): void {
-    if (mode === 'live') {
-      this.enterLiveMode()
+  private requestMode(mode: Exclude<AppMode, 'home'>, fromHistory = false): void {
+    // Play with nothing loaded opens the picker and stays in the current mode.
+    // That is not a view change, so it must not arm the roll-preserving flag.
+    // A back/forward visit to /play still enters Play so the URL and the
+    // surface agree; the picker is the empty Play state.
+    if (mode === 'play' && !this.store.state.loadedMidi && !fromHistory) {
+      this.openFilePicker('play')
       return
     }
-    if (mode === 'learn') {
-      // Re-clicking Learn while already inside an exercise pops back to the
-      // hub. closeActiveExercise is idempotent (no-op when no runner) so this
-      // is safe to call regardless of prior state.
-      const lc = this.learnControllerHandle.peek()
-      if (this.store.state.mode === 'learn' && lc) {
-        lc.closeActiveExercise('abandoned')
+    const from = this.store.state.mode
+    if (mode === 'live' && from !== 'live') {
+      enterLiveView(
+        from,
+        () => {
+          if (!prefersReducedMotion()) this.renderer.playLiveArrival()
+          if (from !== 'home') this.closeTransientOverlays()
+          this.enterLiveMode(true, !isModeCrossfade(from, mode))
+        },
+        () => this.renderer.finishLiveArrival(),
+      )
+      return
+    }
+    if (from === 'live') this.renderer.finishLiveMotion()
+    const cross = isModeCrossfade(from, mode)
+    const run = (): void => {
+      if (from !== 'home' && from !== mode) this.closeTransientOverlays()
+      if (mode === 'live') {
+        this.enterLiveMode(true, !cross)
         return
       }
-      this.store.setState('mode', 'learn')
-      return
+      if (mode === 'learn') {
+        // Re-clicking Learn while already inside an exercise pops back to the
+        // hub. closeActiveExercise is idempotent (no-op when no runner) so this
+        // is safe to call regardless of prior state.
+        const lc = this.learnControllerHandle.peek()
+        if (this.store.state.mode === 'learn' && lc) {
+          lc.closeActiveExercise('abandoned')
+          return
+        }
+        this.store.setState('mode', 'learn')
+        return
+      }
+      if (this.store.state.loadedMidi) {
+        this.enterPlayMode(!cross)
+        return
+      }
+      if (fromHistory) {
+        this.store.setState('mode', 'play')
+        return
+      }
+      // Pin the target — without it, the picker would read `state.mode` at
+      // file-pick time and (if we came here from Learn) route the file back
+      // into Learn instead of opening it in Play. The user clicked Play; honor
+      // that even if their mode hasn't flipped yet.
+      this.openFilePicker('play')
     }
-    if (this.store.state.loadedMidi) {
-      this.enterPlayMode()
-      return
-    }
-    // Pin the target — without it, the picker would read `state.mode` at
-    // file-pick time and (if we came here from Learn) route the file back
-    // into Learn instead of opening it in Play. The user clicked Play; honor
-    // that even if their mode hasn't flipped yet.
-    this.openFilePicker('play')
+    if (isModeCrossfade(this.store.state.mode, mode)) crossfadeModes(run)
+    else run()
   }
 
   // Hands the currently-loaded Play MIDI off to Learn and switches modes.
@@ -1712,23 +1997,41 @@ export class App {
     track('learn_from_play', { duration_s: Math.round(midi.duration) })
     void this.ensureLearnController().then((c) => {
       c.queueMidi(midi)
-      this.store.setState('mode', 'learn')
+      crossfadeModes(() => {
+        this.closeTransientOverlays()
+        this.store.setState('mode', 'learn')
+      })
     })
   }
 
   // Thin delegators: each flips the store and lets Solid's mode shell run
   // the side effects (onMount in HomeMode/PlayMode/LiveMode/LearnMode).
   private enterHomeMode(): void {
-    this.store.enterHome()
+    const from = this.store.state.mode
+    const apply = (): void => {
+      if (from !== 'home') this.closeTransientOverlays()
+      this.store.enterHome()
+    }
+    if (from !== 'live') {
+      apply()
+      return
+    }
+    leaveLiveView(
+      () => {
+        if (!prefersReducedMotion()) this.renderer.playLiveDeparture()
+        apply()
+      },
+      () => this.renderer.finishLiveMotion(),
+    )
   }
 
-  private enterLiveMode(primeAudio = true): void {
+  private enterLiveMode(primeAudio = true, resetTime = true): void {
     setNextLiveOpts({ primeAudio })
-    this.store.enterLive()
+    this.store.enterLive(resetTime)
   }
 
-  private enterPlayMode(): void {
-    this.store.enterPlay()
+  private enterPlayMode(resetTime = true): void {
+    this.store.enterPlay(resetTime)
   }
 
   // Schedules a UI side-effect to run at (roughly) the AudioContext time
@@ -1782,11 +2085,13 @@ export class App {
       const bytes = await encodeCapturedEvents(pending.events, {
         bpm: this.metronomeBpm(),
         closeOrphansAt: pending.duration,
-        midiName: 'midee session',
+        midiName: `${APP_NAME} session`,
         trackName: 'Live performance',
       })
-      triggerMidiDownload(bytes, 'midee-session.mid')
-      this.showSuccess(`↓ ${t('toast.session.saved', { seconds: Math.round(pending.duration) })}`)
+      triggerMidiDownload(bytes, `${APP_SLUG}-session.mid`)
+      this.showSuccess(
+        `↓ ${t('toast.session.saved', { seconds: Math.round(pending.duration), name: APP_SLUG })}`,
+      )
       this.pendingSession = null
       return
     }
@@ -1827,11 +2132,11 @@ export class App {
     const bytes = await encodeCapturedEvents(snap.events, {
       bpm: this.metronomeBpm(),
       closeOrphansAt: snap.duration,
-      midiName: 'midee loop',
+      midiName: `${APP_NAME} loop`,
       trackName: 'Loop',
     })
-    triggerMidiDownload(bytes, 'midee-loop.mid')
-    this.showSuccess(`↓ ${t('toast.loop.saved')}`)
+    triggerMidiDownload(bytes, `${APP_SLUG}-loop.mid`)
+    this.showSuccess(`↓ ${t('toast.loop.saved', { name: APP_SLUG })}`)
     track('loop_saved', {
       duration_s: Math.round(snap.duration),
       layers: this.liveLooper.layerCount.value,
@@ -1948,15 +2253,15 @@ export class App {
     this.closeTransientOverlays()
   }
 
-  // Dismiss every modal-style overlay so mode switches and fresh-load flows
-  // don't leave a stale picker / export / post-session card floating over the
-  // new surface. Idempotent — `.close()` is a no-op when the modal is already
-  // hidden. Popovers (instrument menu, customize) close themselves on the
-  // outside click that triggered the transition.
+  // Dismiss every modal and popover so a mode switch cannot keep the previous
+  // surface's chrome. The range card ignores outside clicks while it is pinned,
+  // so the mode change itself has to close it. Idempotent.
   private closeTransientOverlays(): void {
     this.exportHandle.peek()?.close()
     this.postSessionHandle.peek()?.close()
     this.midiPickerHandle.peek()?.close()
+    this.trackPanel?.close()
+    closeModePopovers()
   }
 
   primeInteractiveAudio(): void {
@@ -1969,13 +2274,16 @@ export class App {
   }
 
   private applyTheme(theme: Theme): void {
+    applySceneClass(theme.id)
     this.renderer.setTheme(theme)
+    this.keyLights.setTheme(theme)
     this.customizeMenu?.setTheme(this.themeIndex)
     this.trackPanel?.setTheme(theme)
     const accent = accentCSS(theme)
     document.documentElement.style.setProperty('--accent', accent)
     document.documentElement.style.setProperty('--accent-soft', `${accent}2e`)
     document.documentElement.style.setProperty('--accent-glow', `${accent}66`)
+    this.applyParticleStyle()
   }
 
   private showLoading(): void {
@@ -2019,6 +2327,12 @@ export class App {
     this.dropzone.dispose()
     this.controls.dispose()
     this.kbdResizer.dispose()
+    this.kbdRange.dispose()
+    this.kbdRangeBand.dispose()
+    this.songGuide.dispose()
+    this.lowerLeft?.remove()
+    this.lowerLeft = null
+    this.keyLights.dispose()
     this.midiInput.dispose()
     this.keyboardInput.dispose()
     this.liveLooper.dispose()
@@ -2036,12 +2350,16 @@ export class App {
 // localStorage. Defined here (not in persistence.ts) because they validate
 // against rosters owned by other modules. Stored as stable ids, with a one-shot
 // migration from the old `midee.*Index` integer keys (see `idPersisted`).
-const themeStore = idPersisted<ThemeId>(
-  'midee.theme',
-  'sunset',
-  THEMES.map((t) => t.id),
-  { key: 'midee.themeIndex', ids: ALL_THEMES.map((t) => t.id) },
-)
+const themeStore = {
+  load: readStoredThemeId,
+  save(id: ThemeId): void {
+    try {
+      localStorage.setItem('midee.theme', id)
+    } catch (err) {
+      console.warn('[persistence] setItem failed for midee.theme:', err)
+    }
+  },
+}
 // New visitors default to Upright (1.2 MB of self-hosted samples) so first-load
 // is fast. Returning users keep whatever they had, including Salamander Grand.
 const instrumentStore = idPersisted<InstrumentId>(
@@ -2052,7 +2370,7 @@ const instrumentStore = idPersisted<InstrumentId>(
 )
 const particleStore = idPersisted<ParticleStyle>(
   'midee.particle',
-  'embers',
+  'sparkle',
   PARTICLE_STYLES.map((s) => s.id),
   { key: 'midee.particleIndex', ids: ALL_PARTICLE_STYLES.map((s) => s.id) },
 )
@@ -2077,7 +2395,7 @@ function indexOfId<T extends { id: string }>(list: readonly T[], id: string): nu
 // Falls back to a constant if the result is empty.
 function sanitiseFilename(name: string): string {
   const cleaned = name.replace(/[\\/:*?"<>|]+/g, ' ').trim()
-  return cleaned.length > 0 ? cleaned : 'midee'
+  return cleaned.length > 0 ? cleaned : APP_SLUG
 }
 
 // A loop total spread over its frames, to 0.01 ms (telemetry).

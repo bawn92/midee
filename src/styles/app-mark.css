@@ -1,0 +1,60 @@
+/* Two marks in one box. Golden Hour keeps the current mark. Rainy Study
+   fades the header-mark.svg in over it. 150ms, opacity only. */
+
+.app-mark {
+  display: inline-grid;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.app-mark__layer {
+  grid-area: 1 / 1;
+  width: 22px;
+  height: 22px;
+  opacity: 1;
+  transition: opacity 150ms ease;
+}
+
+.app-mark__golden svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.app-mark__rainy {
+  object-fit: contain;
+  opacity: 0;
+}
+
+html[data-scene="rainy-study"] .app-mark__golden {
+  opacity: 0;
+}
+
+html[data-scene="rainy-study"] .app-mark__rainy {
+  opacity: 1;
+}
+
+.landing-mark.app-mark {
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+}
+
+.landing-mark.app-mark .app-mark__layer {
+  width: 30px;
+  height: 30px;
+}
+
+@media (max-width: 759px) {
+  .landing-mark.app-mark,
+  .landing-mark.app-mark .app-mark__layer {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-mark__layer {
+    transition: none;
+  }
+}

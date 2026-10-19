@@ -14,6 +14,14 @@ export interface Sample {
 
 export const SAMPLES: readonly Sample[] = [
   {
+    id: 'untitled-g-sharp-minor',
+    title: 'Untitled in G# minor',
+    composer: 'G♯ minor',
+    accent: '#c084fc',
+    url: `${import.meta.env.BASE_URL}samples/untitled-g-sharp-minor.mid`,
+    displayName: 'Untitled in G# minor',
+  },
+  {
     id: 'chopin-nocturne-op9-2',
     title: 'Nocturne Op. 9 No. 2',
     composer: 'Chopin',

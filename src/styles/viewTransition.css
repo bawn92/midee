@@ -1,0 +1,426 @@
+/* View changes. Durations and the ease live on the root as --vt-* so they stay
+   in step with src/ui/viewTransition.ts. Transform and opacity only. */
+
+:root {
+  --vt-ease: cubic-bezier(0.2, 0, 0, 1);
+  --vt-ms: 360ms;
+  --vt-reduced: 120ms;
+  --vt-stagger: 40ms;
+  --vt-slide: 8px;
+  --vt-keys: 8px;
+  --vt-roll: 16px;
+  --vt-live-lift: 260ms;
+  --vt-live-stagger: 30ms;
+  --vt-live-rise: 520ms;
+  --vt-live-ease: cubic-bezier(0.34, 1.3, 0.64, 1);
+  --vt-live-overshoot: 6px;
+}
+
+/* The overlay must not eat clicks or keys. The transition is scoped to the
+   song card, so this root is the card — not a snapshot of the page. */
+::view-transition {
+  pointer-events: none;
+}
+
+::view-transition-group(root) {
+  animation-duration: var(--vt-ms);
+  animation-timing-function: var(--vt-ease);
+}
+
+::view-transition-old(root) {
+  animation: vt-dissolve var(--vt-ms) var(--vt-ease) both;
+}
+
+::view-transition-group(vt-guide),
+::view-transition-group(vt-learn-hub),
+::view-transition-group(vt-learn-ex),
+::view-transition-group(vt-pa),
+::view-transition-group(vt-sr),
+::view-transition-group(vt-hints) {
+  animation: none;
+}
+
+::view-transition-old(vt-guide),
+::view-transition-old(vt-learn-hub),
+::view-transition-old(vt-learn-ex),
+::view-transition-old(vt-pa),
+::view-transition-old(vt-sr),
+::view-transition-old(vt-hints) {
+  animation: vt-panel-out var(--vt-ms) var(--vt-ease) both;
+}
+
+::view-transition-new(vt-guide),
+::view-transition-new(vt-learn-hub),
+::view-transition-new(vt-learn-ex),
+::view-transition-new(vt-pa),
+::view-transition-new(vt-sr),
+::view-transition-new(vt-hints) {
+  animation: vt-panel-in var(--vt-ms) var(--vt-ease) both;
+}
+
+@keyframes vt-dissolve {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes vt-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes vt-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* `translate` is independent of `transform`, so a slide does not undo the
+   centering on the transport pill or the classic song guide. */
+@keyframes vt-panel-in {
+  from {
+    opacity: 0;
+    translate: 0 var(--vt-slide);
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes vt-panel-out {
+  from {
+    opacity: 1;
+    translate: 0 0;
+  }
+  to {
+    opacity: 0;
+    translate: 0 var(--vt-slide);
+  }
+}
+
+@keyframes vt-roll-in {
+  from {
+    opacity: 1;
+    transform: translateY(var(--vt-roll));
+  }
+  to {
+    opacity: 0;
+    transform: none;
+  }
+}
+
+@keyframes vt-keys-in {
+  from {
+    transform: translateY(var(--vt-keys));
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes vt-hud-in {
+  from {
+    opacity: 0;
+    translate: 0 var(--vt-slide);
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+.vt-roll-veil {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: calc(100% - var(--keyboard-h, 180px));
+  pointer-events: none;
+  background: linear-gradient(
+    212deg,
+    var(--bg-top, #f8e3c8) 16.7%,
+    var(--bg-bottom, #f3d2ae) 83.3%
+  );
+}
+
+html[data-vt="enter"] .vt-roll-veil {
+  animation: vt-roll-in var(--vt-ms) var(--vt-ease) both;
+}
+
+html[data-vt="enter"] #pianoroll {
+  animation: vt-keys-in var(--vt-ms) var(--vt-ease) both;
+  transform-origin: 50% 100%;
+}
+
+html[data-vt="enter"] #dropzone.dz--hidden {
+  transform: translateY(calc(var(--vt-slide) * -1));
+  transition:
+    opacity var(--vt-ms) var(--vt-ease),
+    transform var(--vt-ms) var(--vt-ease),
+    visibility 0s linear var(--vt-ms);
+}
+
+html[data-vt="enter"] #hud.float-hud {
+  animation: vt-hud-in var(--vt-ms) var(--vt-ease) var(--vt-stagger) both;
+}
+
+html[data-scene][data-vt="enter"] .song-guide {
+  animation: vt-panel-in var(--vt-ms) var(--vt-ease) calc(var(--vt-stagger) * 2) both;
+}
+
+html[data-scene][data-vt="enter"] .kbd-range-bar,
+html[data-scene][data-vt="enter"] .kbd-range-panel {
+  animation: vt-panel-in var(--vt-ms) var(--vt-ease) calc(var(--vt-stagger) * 3) both;
+}
+
+.vt-song-ghost,
+.vt-song-target {
+  position: fixed;
+  z-index: 200;
+  margin: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.vt-song-target {
+  opacity: 0;
+}
+
+/* Mode switch. The thumb slide is the active segment. Panels crossfade with
+   a short rise. The canvas is not in this set, so notes, keys, and the wall
+   stay where they are. */
+.ts-mode-thumb {
+  transition:
+    transform var(--vt-ms) var(--vt-ease),
+    width var(--vt-ms) var(--vt-ease),
+    opacity 160ms linear;
+}
+
+html[data-vt="mode"] .song-guide {
+  view-transition-name: vt-guide;
+  animation: vt-panel-in var(--vt-ms) var(--vt-ease) both;
+}
+
+html[data-vt="mode"] .learn-host--hub:not(.learn-host--hidden):not(.mode-view--leave) {
+  view-transition-name: vt-learn-hub;
+  animation: vt-panel-in var(--vt-ms) var(--vt-ease) both;
+}
+
+/* Outgoing mode surface. Pointers drop immediately; the node leaves when the
+   fade ends, or sooner when another switch retargets the transition. */
+.learn-host.mode-view--leave {
+  pointer-events: none;
+  animation: vt-fade-out var(--vt-ms) var(--vt-ease) forwards;
+}
+
+html[data-vt="mode"] .learn-host--exercise:not(.learn-host--hidden):not(.mode-view--leave) {
+  view-transition-name: vt-learn-ex;
+  animation: vt-panel-in var(--vt-ms) var(--vt-ease) both;
+}
+
+html[data-vt="mode"] .pa-hud,
+html[data-vt="mode"] .sr-hud {
+  view-transition-name: vt-pa;
+  animation: vt-hud-in var(--vt-ms) var(--vt-ease) both;
+}
+
+html[data-vt="mode"] .sr-hud {
+  view-transition-name: vt-sr;
+}
+
+html[data-vt="mode"] #key-hint.kh--visible:not(.kh--idle) {
+  view-transition-name: vt-hints;
+  animation: vt-panel-in var(--vt-ms) var(--vt-ease) both;
+}
+
+/* The View Transitions snapshots already crossfade these. A second CSS
+   animation on the live element would replay when the snapshot hands back. */
+html[data-vt-api="on"][data-vt="mode"]
+:is(.song-guide, .learn-host--hub, .learn-host--exercise, .pa-hud, .sr-hud, #key-hint) {
+  animation: none;
+}
+
+/* Live entrance. Home copy lifts 12px and fades, staggered 30ms. The
+   keyboard rise, lamp, shimmer, and range glide are drawn on the live
+   canvas so a key pressed during the move still lights. */
+@keyframes vt-live-lift {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes vt-live-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* The View Transitions API only snapshots this empty node. Naming the home
+   copy would hide it for the whole transition, so the lift runs on the live
+   elements instead. */
+#vt-live-sentinel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  view-transition-name: vt-live-sentinel;
+}
+
+::view-transition-group(vt-live-sentinel),
+::view-transition-old(vt-live-sentinel),
+::view-transition-new(vt-live-sentinel) {
+  animation: none;
+  opacity: 0;
+  display: none;
+}
+
+html[data-vt="live"] #dropzone.dz--hidden {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  transition: none;
+  pointer-events: none;
+}
+
+/* Once the lift has finished, drop the home surface without fading it back in. */
+html.vt-live-hold #dropzone.dz--hidden {
+  transition: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: none;
+}
+
+html[data-vt="live"] .home-kicker {
+  animation: vt-live-lift var(--vt-live-lift) var(--vt-ease) both;
+}
+
+html[data-vt="live"] .home-title {
+  animation: vt-live-lift var(--vt-live-lift) var(--vt-ease) var(--vt-live-stagger) both;
+}
+
+html[data-vt="live"] .home-sub,
+html[data-vt="live"] .home-actions {
+  animation: vt-live-lift var(--vt-live-lift) var(--vt-ease) calc(var(--vt-live-stagger) * 2) both;
+}
+
+html[data-vt="live"] .home-samples {
+  animation: vt-live-lift var(--vt-live-lift) var(--vt-ease) calc(var(--vt-live-stagger) * 3) both;
+}
+
+html[data-vt="live"] .song-guide,
+html[data-vt="live"] .learn-host.mode-view--leave {
+  animation: vt-live-lift var(--vt-live-lift) var(--vt-ease) both;
+  pointer-events: none;
+}
+
+html[data-vt="live-out"] #dropzone {
+  transition: none;
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  pointer-events: none;
+}
+
+html[data-scene][data-vt="live-out"] body:has(#dropzone:not(.dz--hidden)) #pianoroll,
+html[data-scene][data-vt="live-out"] body:has(#dropzone:not(.dz--hidden)) #kbd-resizer {
+  visibility: visible;
+}
+
+html[data-vt="live-out"] .home-kicker {
+  animation: vt-live-rise-in var(--vt-live-lift) var(--vt-ease) both;
+}
+
+html[data-vt="live-out"] .home-title {
+  animation: vt-live-rise-in var(--vt-live-lift) var(--vt-ease) var(--vt-live-stagger) both;
+}
+
+html[data-vt="live-out"] .home-sub,
+html[data-vt="live-out"] .home-actions {
+  animation: vt-live-rise-in var(--vt-live-lift) var(--vt-ease) calc(var(--vt-live-stagger) * 2)
+    both;
+}
+
+html[data-vt="live-out"] .home-samples {
+  animation: vt-live-rise-in var(--vt-live-lift) var(--vt-ease) calc(var(--vt-live-stagger) * 3)
+    both;
+}
+
+html[data-vt="reduced"] #dropzone {
+  transform: none;
+  transition:
+    opacity var(--vt-reduced) linear,
+    visibility 0s linear var(--vt-reduced);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ts-mode-thumb {
+    transition: opacity var(--vt-reduced) linear;
+  }
+
+  html[data-vt="reduced"] #dropzone.dz--hidden {
+    transform: none;
+    transition:
+      opacity var(--vt-reduced) linear,
+      visibility 0s linear var(--vt-reduced);
+  }
+
+  html[data-vt="reduced"] .vt-roll-veil {
+    animation: vt-fade-out var(--vt-reduced) linear both;
+  }
+
+  html[data-vt="reduced"] #hud.float-hud,
+  html[data-vt="reduced"] .song-guide,
+  html[data-vt="reduced"] .kbd-range-bar,
+  html[data-vt="reduced"] .kbd-range-panel,
+  html[data-vt="reduced"] .learn-host--hub:not(.learn-host--hidden):not(.mode-view--leave),
+  html[data-vt="reduced"] .learn-host--exercise:not(.learn-host--hidden):not(.mode-view--leave),
+  html[data-vt="reduced"] .pa-hud,
+  html[data-vt="reduced"] .sr-hud,
+  html[data-vt="reduced"] #key-hint.kh--visible {
+    animation: vt-fade-in var(--vt-reduced) linear both;
+  }
+
+  .learn-host.mode-view--leave {
+    animation: vt-fade-out var(--vt-reduced) linear forwards;
+  }
+
+  html[data-vt="live"] :is(.home-kicker, .home-title, .home-sub, .home-actions, .home-samples),
+  html[data-vt="live-out"] :is(.home-kicker, .home-title, .home-sub, .home-actions, .home-samples),
+  html[data-vt="live"] .song-guide,
+  html[data-vt="live"] .learn-host.mode-view--leave,
+  html[data-vt="enter"] #pianoroll,
+  html[data-vt="mode"] .song-guide,
+  html[data-vt="mode"] .learn-host--hub:not(.learn-host--hidden),
+  html[data-vt="mode"] .learn-host--exercise:not(.learn-host--hidden),
+  html[data-vt="mode"] .pa-hud,
+  html[data-vt="mode"] .sr-hud,
+  html[data-vt="mode"] #key-hint.kh--visible:not(.kh--idle) {
+    animation: none;
+  }
+}

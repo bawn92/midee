@@ -5,7 +5,8 @@ import {
   GLASS_PARTICLES,
   type GlassParticleKind,
 } from './glassParticleTextures'
-
+import { hitLayerBlend, paintHitCanvas, readHitPalette } from './hitParticleCanvas'
+import { HitField, type HitFx, type HitNote } from './hitParticles'
 import {
   buildMaterialParticleTextures,
   isMaterialParticleStyle,
@@ -16,7 +17,6 @@ import {
   materialParticleTint,
   updateMaterialParticle,
 } from './materialParticles'
-
 import type { ParticleStyle } from './particleStyles'
 
 // Compatibility for renderer consumers; menus and persistence use the light catalog.
@@ -185,6 +185,27 @@ const STYLES: Record<ParticleStyle, StyleConfig> = {
     valueJitter: 0,
     blend: 'add',
   },
+  rain: {
+    count: 0,
+    sustainCount: 0,
+    speedMin: 0,
+    speedMax: 0,
+    lifeMin: 0,
+    lifeMax: 0,
+    sizeMin: 0,
+    sizeMax: 0,
+    gravity: 0,
+    drag: 0,
+    upwardArc: 0,
+    windStrength: 0,
+    windFlutter: 0,
+    turbulence: 0,
+    alphaScale: 0,
+    fadeCurve: 'ease-out',
+    hueJitter: 0,
+    valueJitter: 0,
+    blend: 'normal',
+  },
 }
 
 function materialConfig(style: MaterialParticleStyle): StyleConfig {
@@ -255,13 +276,28 @@ export class ParticleSystem {
   // True while any particle is mid-flight. The renderer's idle detector keeps
   // the ticker alive until the last burst decays, then stops rendering.
   get hasActive(): boolean {
-    return this.active.length > 0
+    return this.active.length > 0 || this.hit.particles.length > 0 || this.hitQueue.length > 0
+  }
+  /** Live hit-model particles. Pool sprites stay at zero for these styles. */
+  hitCount(): number {
+    return this.hit.particles.length
   }
   private texture: Texture | null = null
   private glassTextures: Record<GlassParticleKind, Texture> | null = null
   private materialTextures: Partial<Record<MaterialParticleKind, Texture>> = {}
   private emissionSerial = 0
   private style: ParticleStyle = 'sparks'
+  private hitFx: HitFx | null = 'sparks'
+  private readonly hit = new HitField()
+  private hitQueue: HitNote[] = []
+  private hitCanvas: HTMLCanvasElement | null = null
+  private hitSprite: Sprite | null = null
+  private hitTexture: Texture | null = null
+  private viewW = 0
+  private viewH = 0
+  private scene: 'golden' | 'rainy' = 'golden'
+  private motionQuery: MediaQueryList | null = null
+  private onMotion: ((event: MediaQueryListEvent) => void) | null = null
   // Wind always blows to the right — a gentle consistent breeze. Kept as a
   // field for future theming (leftward/rightward per theme) without churn.
   private windDirection = 1
@@ -271,7 +307,9 @@ export class ParticleSystem {
     this.container = new Container()
     this.container.label = 'particles'
     this.container.blendMode = 'add'
+    this.container.eventMode = 'none'
     this.texture = buildRadialTexture()
+    this.listenForMotion()
 
     for (let i = 0; i < POOL_SIZE; i++) {
       const sprite = new Sprite(this.texture)
@@ -302,11 +340,34 @@ export class ParticleSystem {
     if (this.style === style) return
     this.clear()
     this.style = style
+    this.hitFx = hitFxFor(style)
+    if (this.hitFx) {
+      this.container.blendMode = 'normal'
+      if (this.hitFx !== 'off') this.ensureHitLayer()
+      this.applyHitBlend()
+      return
+    }
     if (style === 'glass' && !this.glassTextures) this.glassTextures = buildGlassParticleTextures()
     if (isMaterialParticleStyle(style)) buildMaterialParticleTextures(style, this.materialTextures)
     this.container.blendMode = STYLES[style].blend === 'add' ? 'add' : 'normal'
-    // Switching to Off is meant to feel immediate — clear any motes mid-flight.
-    if (style === 'none') this.clear()
+    if (this.hitSprite) this.hitSprite.visible = false
+  }
+
+  setViewport(width: number, height: number): void {
+    if (width === this.viewW && height === this.viewH) return
+    this.viewW = width
+    this.viewH = height
+    this.layoutHit()
+  }
+
+  setScene(themeId: string): void {
+    this.scene = themeId === 'rainy-study' ? 'rainy' : 'golden'
+    this.applyHitBlend()
+  }
+
+  queueHits(notes: readonly HitNote[]): void {
+    if (!this.hitFx || this.hitFx === 'off' || notes.length === 0) return
+    for (const note of notes) this.hitQueue.push(note)
   }
 
   // `x,y` = centre of the key's top edge. `keyWidth` = key width in px — used
@@ -322,6 +383,14 @@ export class ParticleSystem {
   }
 
   burst(x: number, y: number, color: number, keyWidth = 20, count?: number): void {
+    if (this.hitFx) {
+      // Sustains pass an explicit count. Hit effects fire on note-on only.
+      if (this.hitFx === 'off' || count !== undefined) return
+      this.ensureHitLayer()
+      this.hit.spawn(this.hitFx, [{ x, y, keyWidth, velocity: 1, hand: 'rh' }])
+      this.paintHits()
+      return
+    }
     const cfg = STYLES[this.style]
     const emitCount = count ?? cfg.count
     if (emitCount <= 0 || this.style === 'none') return
@@ -365,10 +434,7 @@ export class ParticleSystem {
       // produces a naturally spreading column rather than a starburst.
       const positionTilt = u * 0.32 // max ±0.32 rad = ±18°
       const angle =
-        -Math.PI / 2 +
-        (material === 'mist' ? 0.2 : 0) +
-        (random() - 0.5) * Math.PI * cfg.upwardArc * arcKeyMul +
-        positionTilt
+        -Math.PI / 2 + (random() - 0.5) * Math.PI * cfg.upwardArc * arcKeyMul + positionTilt
       const speed = cfg.speedMin + random() * (cfg.speedMax - cfg.speedMin)
 
       p.x = x + spawnOffset
@@ -449,6 +515,15 @@ export class ParticleSystem {
   update(dt: number): void {
     // A preview / theme repaint must not move particles.
     if (dt <= 0) return
+    // visibilitychange: keep the burst frozen, and don't flush a chord that
+    // arrived while the tab was hidden. HitField also clamps dt to 0.05.
+    if (typeof document !== 'undefined' && document.hidden) return
+    this.flushHits()
+    if (this.hitFx) {
+      this.hit.step(dt)
+      this.paintHits()
+      return
+    }
     this.clock += dt
     if (this.active.length === 0) return
     const glass = this.style === 'glass'
@@ -515,16 +590,132 @@ export class ParticleSystem {
     this.active.length = 0
     this.clock = 0
     this.emissionSerial = 0
+    this.hit.clear()
+    this.hitQueue = []
+    if (this.hitSprite) this.hitSprite.visible = false
   }
 
   destroy(): void {
+    this.motionQuery?.removeEventListener('change', this.onMotion ?? (() => {}))
     this.clear()
     this.container.destroy({ children: true })
     this.texture?.destroy(true)
+    this.hitTexture?.destroy(true)
     if (this.glassTextures)
       for (const texture of Object.values(this.glassTextures)) texture.destroy(true)
     for (const texture of Object.values(this.materialTextures)) texture.destroy(true)
     this.pool = []
+    this.hitSprite = null
+    this.hitCanvas = null
+    this.hitTexture = null
+  }
+
+  private listenForMotion(): void {
+    if (typeof matchMedia !== 'function') return
+    let query: MediaQueryList
+    try {
+      query = matchMedia('(prefers-reduced-motion: reduce)')
+    } catch {
+      return
+    }
+    this.motionQuery = query
+    this.hit.reduced = query.matches
+    this.onMotion = (event: MediaQueryListEvent) => {
+      this.hit.reduced = event.matches
+    }
+    query.addEventListener?.('change', this.onMotion)
+  }
+
+  private flushHits(): void {
+    if (!this.hitFx || this.hitFx === 'off' || this.hitQueue.length === 0) return
+    this.ensureHitLayer()
+    this.hit.spawn(this.hitFx, this.hitQueue)
+    this.hitQueue = []
+  }
+
+  private ensureHitLayer(): void {
+    if (this.hitSprite) return
+    const canvas = document.createElement('canvas')
+    this.hitCanvas = canvas
+    this.hitTexture = Texture.from(canvas)
+    const sprite = new Sprite(this.hitTexture)
+    sprite.eventMode = 'none'
+    sprite.visible = false
+    this.container.addChild(sprite)
+    this.hitSprite = sprite
+    this.container.blendMode = 'normal'
+    this.layoutHit()
+    this.applyHitBlend()
+  }
+
+  private layoutHit(): void {
+    const canvas = this.hitCanvas
+    const sprite = this.hitSprite
+    if (!canvas || !sprite || this.viewW <= 0 || this.viewH <= 0) return
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    const width = Math.max(1, Math.round(this.viewW * dpr))
+    const height = Math.max(1, Math.round(this.viewH * dpr))
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width
+      canvas.height = height
+      this.hitTexture?.source.resize(width, height)
+    }
+    sprite.width = this.viewW
+    sprite.height = this.viewH
+  }
+
+  private applyHitBlend(): void {
+    if (!this.hitSprite || !this.hitFx) return
+    this.hitSprite.blendMode = hitLayerBlend(this.scene, this.hitFx)
+  }
+
+  private paintHits(): void {
+    const sprite = this.hitSprite
+    const canvas = this.hitCanvas
+    if (!sprite || !canvas) return
+    if (this.hit.particles.length === 0 || this.viewW <= 0 || this.viewH <= 0) {
+      sprite.visible = false
+      return
+    }
+    const ctx = canvas.getContext('2d')
+    if (!ctx || typeof ctx.ellipse !== 'function' || typeof ctx.drawImage !== 'function') {
+      sprite.visible = false
+      return
+    }
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    paintHitCanvas(
+      ctx,
+      this.hit.particles,
+      readHitPalette(this.scene),
+      this.viewW,
+      this.viewH,
+      dpr,
+      this.hit.size,
+      this.hit.reduced,
+    )
+    this.hitTexture?.source.update()
+    sprite.visible = true
+  }
+}
+
+function hitFxFor(style: ParticleStyle): HitFx | null {
+  switch (style) {
+    case 'sparks':
+    case 'embers':
+    case 'bloom':
+    case 'sparkle':
+    case 'rain':
+      return style
+    case 'pearl':
+      return 'opal'
+    case 'liquid':
+      return 'glass'
+    case 'mist':
+      return 'mist'
+    case 'none':
+      return 'off'
+    default:
+      return null
   }
 }
 

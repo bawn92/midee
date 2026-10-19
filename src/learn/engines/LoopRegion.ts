@@ -14,9 +14,8 @@ export interface LoopRegion {
   end: number
 }
 
-// Bars → seconds using 4 beats/bar. Caller supplies BPM — this module
-// doesn't bind a specific time-signature because today's content library is
-// 4/4. When we ship pieces in 3/4 or 7/8 the numerator comes in as an arg.
+// Bars → seconds. The default is 4/4. Callers that know the file pass its
+// numerator, so a 3/4 bar is three beats at the file tempo.
 export function barsToSeconds(bars: number, bpm: number, beatsPerBar = 4): number {
   if (bars <= 0 || bpm <= 0) return 0
   return bars * beatsPerBar * (60 / bpm)
@@ -46,6 +45,7 @@ export function makeRegionFromBars(
   bars: number | null,
   bpm: number,
   pieceDuration: number,
+  beatsPerBar = 4,
 ): LoopRegion | null {
   if (pieceDuration <= 0) return null
   if (bars === null) {
@@ -53,7 +53,7 @@ export function makeRegionFromBars(
     return { start: 0, end: pieceDuration }
   }
   if (bars <= 0) return null
-  const span = barsToSeconds(bars, bpm)
+  const span = barsToSeconds(bars, bpm, beatsPerBar)
   if (span <= 0) return null
   const end = Math.min(pieceDuration, Math.max(0, playhead))
   const start = Math.max(0, end - span)

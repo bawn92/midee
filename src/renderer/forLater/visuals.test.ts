@@ -7,11 +7,9 @@ import { availableVisuals, FOR_LATER_PARTICLE_IDS, FOR_LATER_THEME_IDS } from '.
 beforeEach(() => localStorage.clear())
 
 describe('visual release gate', () => {
-  it('ships only the two final materials and keeps their paired effects available', () => {
-    expect(THEMES.filter((theme) => theme.noteMaterial).map(({ id }) => id)).toEqual([
-      'opal',
-      'liquid-glass',
-    ])
+  it('ships the two scenes and keeps the particle roster available', () => {
+    expect(THEMES.map(({ id }) => id)).toEqual(['golden-hour', 'rainy-study'])
+    expect(THEMES.filter((theme) => theme.noteMaterial)).toEqual([])
     expect(PARTICLE_STYLES.map(({ id }) => id)).toEqual([
       'sparks',
       'embers',
@@ -20,6 +18,8 @@ describe('visual release gate', () => {
       'none',
       'pearl',
       'liquid',
+      'mist',
+      'rain',
     ])
     for (const theme of THEMES) {
       if (theme.recommendedParticles) {
@@ -37,7 +37,7 @@ describe('visual release gate', () => {
   })
 
   it.each([
-    ['theme', ALL_THEMES, THEMES, 'sunset'],
+    ['theme', ALL_THEMES, THEMES, 'golden-hour'],
     ['particle', ALL_PARTICLE_STYLES, PARTICLE_STYLES, 'embers'],
   ] as const)('migrates original %s indices without shifting hidden entries', (kind, catalog, available, fallback) => {
     const key = `midee.${kind}`
@@ -60,11 +60,11 @@ describe('visual release gate', () => {
   ])('preserves deferred saved preference %s when falling back', (id) => {
     const store = idPersisted(
       'midee.theme',
-      'sunset',
+      'golden-hour',
       THEMES.map(({ id }) => id),
     )
     localStorage.setItem('midee.theme', id)
-    expect(store.load()).toBe('sunset')
+    expect(store.load()).toBe('golden-hour')
     expect(localStorage.getItem('midee.theme')).toBe(id)
   })
 })

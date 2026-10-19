@@ -3,6 +3,8 @@ import { render } from 'solid-js/web'
 import { INSTRUMENTS, type InstrumentId } from '../audio/SynthEngine'
 import { t } from '../i18n'
 import { icons } from './icons'
+import { CLOSE_MODE_POPOVERS } from './modeChrome'
+import { placeLayer } from './placeFloating'
 import { isNarrowViewport } from './utils'
 
 // Topbar instrument picker — a pill trigger + dropdown menu. Available in
@@ -28,7 +30,7 @@ function TriggerView(props: TriggerProps) {
       }}
       id="ts-instrument"
       type="button"
-      title={t('instrument.title')}
+      data-tip={t('instrument.title')}
       aria-label={t('instrument.aria')}
       aria-busy={props.loading() ? 'true' : 'false'}
       onClick={() => props.onToggle()}
@@ -120,6 +122,9 @@ export class InstrumentMenu {
   private onKey = (e: KeyboardEvent): void => {
     if (e.key === 'Escape' && this.isOpen) this.close()
   }
+  private onClosePopovers = (): void => {
+    this.close()
+  }
   private onResize = (): void => {
     if (!this.isOpen) return
     if (this.menu.classList.contains('popover--sheet') || isNarrowViewport()) {
@@ -189,6 +194,7 @@ export class InstrumentMenu {
       ),
       menuWrapper,
     )
+    window.addEventListener(CLOSE_MODE_POPOVERS, this.onClosePopovers)
   }
 
   setCurrent(id: InstrumentId): void {
@@ -241,18 +247,18 @@ export class InstrumentMenu {
 
   private positionUnder(): void {
     const rect = this.trigger.getBoundingClientRect()
-    const menuW = this.menu.offsetWidth || 260
-    const right = Math.max(12, window.innerWidth - rect.right)
-    const top = rect.bottom + 8
-    this.menu.style.right = `${right}px`
-    this.menu.style.top = `${top}px`
-    this.menu.style.left = ''
-    const desiredLeft = window.innerWidth - right - menuW
-    if (desiredLeft < 12)
-      this.menu.style.right = `${Math.max(12, window.innerWidth - menuW - 12)}px`
+    const placed = placeLayer(rect, {
+      width: this.menu.offsetWidth || 260,
+      height: this.menu.offsetHeight || 240,
+    })
+    this.menu.style.right = 'auto'
+    this.menu.style.left = `${Math.round(placed.left)}px`
+    this.menu.style.top = `${Math.round(placed.top)}px`
+    this.menu.style.maxHeight = `${Math.max(120, Math.floor(placed.maxHeight))}px`
   }
 
   dispose(): void {
+    window.removeEventListener(CLOSE_MODE_POPOVERS, this.onClosePopovers)
     this.close()
     this.disposeTrigger?.()
     this.disposeMenu?.()

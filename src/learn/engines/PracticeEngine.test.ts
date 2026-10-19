@@ -378,6 +378,130 @@ describe('PracticeEngine.setVisibleTracks', () => {
   })
 })
 
+describe('PracticeEngine playable range', () => {
+  it('does not wait on notes outside the configured window', () => {
+    const midi = midiWithNotes([
+      { pitch: 36, time: 1 },
+      { pitch: 60, time: 2 },
+      { pitch: 84, time: 3 },
+    ])
+    const { clock, engine, onWaitStart } = makeEngine(midi)
+    engine.setPlayableRange(48, 71)
+    clock.emit(1.01)
+    expect(engine.isWaiting).toBe(false)
+    clock.emit(2)
+    expect(engine.isWaiting).toBe(true)
+    expect([...(engine.peekNextStep()?.pitches ?? [])]).toEqual([60])
+    engine.notePressed(60)
+    clock.emit(3)
+    expect(engine.isWaiting).toBe(false)
+    expect(onWaitStart).toHaveBeenCalledTimes(1)
+  })
+
+  it('a mixed chord only requires in-range pitches and keeps the rest to auto-play', () => {
+    const midi = midiWithNotes([
+      { pitch: 36, time: 2 },
+      { pitch: 60, time: 2 },
+      { pitch: 64, time: 2 },
+    ])
+    const { clock, engine } = makeEngine(midi)
+    engine.setPlayableRange(48, 71)
+    clock.emit(2.01)
+    const step = engine.peekNextStep()
+    expect([...(step?.pitches ?? [])].sort()).toEqual([60, 64])
+    expect(step?.auto).toEqual([{ pitch: 36, velocity: 1, duration: 0.5 }])
+    expect(engine.notePressed(60).kind).toBe('accepted')
+    expect(engine.notePressed(64).kind).toBe('advanced')
+    expect(engine.isWaiting).toBe(false)
+  })
+
+  it('drops a wait when the held note leaves the range, and keeps it when the note stays', () => {
+    const { clock, engine, onWaitStart } = makeEngine()
+    clock.emit(2.01)
+    expect(engine.isWaiting).toBe(true)
+    engine.setPlayableRange(48, 72)
+    expect(engine.isWaiting).toBe(true)
+    expect(engine.peekNextStep()?.pitches.has(60)).toBe(true)
+    engine.setPlayableRange(72, 84)
+    expect(engine.isWaiting).toBe(false)
+    expect(engine.peekNextStep()).toBeNull()
+    // Re-engaging the same chord fires onWaitStart again; leaving the range does not.
+    expect(onWaitStart).toHaveBeenCalledTimes(2)
+  })
+
+  it('setting the current range again does not release the wait', () => {
+    const { clock, engine } = makeEngine()
+    clock.emit(2.01)
+    engine.setPlayableRange(21, 108)
+    expect(engine.isWaiting).toBe(true)
+  })
+
+  it('retargets an active wait onto the folded pitches when the window moves', () => {
+    const { clock, engine } = makeEngine()
+    clock.emit(2.01)
+    expect(engine.isWaiting).toBe(true)
+    engine.setPlayableRange(72, 84, true)
+    expect(engine.isWaiting).toBe(true)
+    expect([...(engine.peekNextStep()?.pitches ?? [])]).toEqual([72])
+    expect(engine.notePressed(60).kind).toBe('rejected')
+    expect(engine.notePressed(72).kind).toBe('advanced')
+  })
+
+  it('waits on a note folded into the window when fit-to-range is on', () => {
+    const midi = midiWithNotes([
+      { pitch: 36, time: 1 },
+      { pitch: 60, time: 2 },
+    ])
+    const { clock, engine } = makeEngine(midi)
+    engine.setPlayableRange(48, 71, true)
+    clock.emit(1.01)
+    expect([...(engine.peekNextStep()?.pitches ?? [])]).toEqual([48])
+    expect(engine.peekNextStep()?.notes).toEqual([
+      expect.objectContaining({ pitch: 48, sourcePitch: 36 }),
+    ])
+    expect(engine.notePressed(36).kind).toBe('rejected')
+    expect(engine.notePressed(48).kind).toBe('advanced')
+    expect(engine.isWaiting).toBe(false)
+  })
+
+  it('keeps a pitch class that cannot fit as an auto note', () => {
+    const midi = midiWithNotes([{ pitch: 59, time: 2 }])
+    const { clock, engine } = makeEngine(midi)
+    engine.setPlayableRange(48, 58, true)
+    clock.emit(2.01)
+    expect(engine.isWaiting).toBe(false)
+    expect(engine.peekNextStep()).toBeNull()
+  })
+})
+
+describe('PracticeEngine hand filter', () => {
+  it('waits only on the chosen hand and keeps the other hand to auto-play', () => {
+    const midi = midiWithNotes([
+      { pitch: 48, time: 2 },
+      { pitch: 72, time: 2 },
+    ])
+    const { clock, engine } = makeEngine(midi)
+    engine.setHandFilter('right')
+    clock.emit(2.01)
+    expect([...(engine.peekNextStep()?.pitches ?? [])]).toEqual([72])
+    expect(engine.peekNextStep()?.auto).toEqual([{ pitch: 48, velocity: 1, duration: 0.5 }])
+    expect(engine.notePressed(72).kind).toBe('advanced')
+  })
+
+  it('drops the other hand entirely when it is muted', () => {
+    const midi = midiWithNotes([
+      { pitch: 48, time: 2 },
+      { pitch: 72, time: 2 },
+    ])
+    const { clock, engine } = makeEngine(midi)
+    engine.setHandFilter('left')
+    engine.setOtherHandAudible(false)
+    clock.emit(2.01)
+    expect([...(engine.peekNextStep()?.pitches ?? [])]).toEqual([48])
+    expect(engine.peekNextStep()?.auto).toEqual([])
+  })
+})
+
 describe('PracticeEngine.toggle and dispose', () => {
   it('toggle() alternates enabled state and returns the new value', () => {
     const { engine } = makeEngine()

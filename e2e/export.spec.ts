@@ -52,7 +52,7 @@ async function loadFixtureAndOpenExport(page: Page, midi = FIXTURE_MID): Promise
 }
 
 async function loadFixture(page: Page, midi: string): Promise<void> {
-  await page.goto('/')
+  await page.goto('/start')
 
   // Secure-context guard — WebCodecs encoders require it (spike finding).
   expect(await page.evaluate(() => window.isSecureContext)).toBe(true)

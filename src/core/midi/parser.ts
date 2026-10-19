@@ -1,3 +1,4 @@
+import { assignTrackHands } from './hands'
 import {
   applySustain,
   buildPedalIntervals,
@@ -102,6 +103,12 @@ export async function parseMidiFileWithStats(
     })
 
   if (tracks.length === 0) throw new EmptyMidiError()
+
+  // Hands come from the note-bearing tracks only. A conductor track that
+  // holds the tempo and the meter has already been dropped, so it cannot
+  // shift color slots or steal a hand from the part that follows it.
+  const hands = assignTrackHands(tracks)
+  for (let i = 0; i < tracks.length; i++) tracks[i]!.hand = hands[i]!
 
   // Pedal resolution is pitch-independent, so it runs here on the parsed
   // pitches; deriveMidi (transpose) preserves `releaseAt` downstream.

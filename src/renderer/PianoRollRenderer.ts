@@ -1,18 +1,38 @@
-import { Application, Graphics, Sprite, type Ticker } from 'pixi.js'
+import { Application, Graphics, Sprite, Texture, type Ticker } from 'pixi.js'
 import type { MasterClock } from '../core/clock/MasterClock'
+import { getHandPractice, noteHand } from '../core/handPractice'
+import { getKeyboardRange, placedPitch } from '../core/keyboardRange'
+import { noteHandOf, noteMatchesHandOf } from '../core/midi/hands'
 import type { MidiFile } from '../core/midi/types'
 import type { LiveNoteStore } from '../midi/LiveNoteStore'
+import { guideForMidi } from '../songGuide'
+import { glideRange, LiveMotionClock } from '../ui/liveEntrance'
+import { paintPrefs } from '../ui/paint'
 import { BeatGrid } from './BeatGrid'
+import { readCssColor } from './cssColor'
 import { type EmitCadence, scheduleEmissions } from './emitSchedule'
 import { EmberMistStrike } from './forLater/EmberMistStrike'
 import { ENABLE_FOR_LATER_VISUALS } from './forLater/visuals'
 import { KeyboardRenderer } from './KeyboardRenderer'
+import { KBD, keyFrame, proportionalKeyboardHeight, whiteKeyCount } from './keyboardMetrics'
+import { subscribeKeyboardStyle } from './keyboardStyle'
 import { LiveNoteRenderer } from './LiveNoteRenderer'
 import { makeMaterialAtmosphere } from './materialAtmosphere'
 import { NoteRenderer } from './NoteRenderer'
 import { type ParticleStyle, ParticleSystem } from './ParticleSystem'
+import { PlantShadowField } from './plantShadowField'
+import {
+  plantShadowId,
+  plantShadowsActive,
+  readPlantShadowBudget,
+  subscribePlantShadow,
+} from './plantShadows'
 import { layersAnimating, type RenderContext, type RenderLayer } from './RenderLayer'
-import { darkTheme, getTrackColor, liveNoteColor, type Theme } from './theme'
+import { rangeLayerAlpha, rangePhaseAnimating, subscribeRangeOverlay } from './rangeOverlay'
+import { sceneForTheme } from './scenes'
+import { paintSceneBackdrop } from './scenes/backdrop'
+import { goldenHourTheme } from './scenes/goldenHour'
+import { getTrackColor, liveNoteColor, type Theme } from './theme'
 import { Viewport, visibleNoteRange } from './viewport'
 
 // Must match the `--keyboard-h` value in main.css :root and the reset value
@@ -24,7 +44,7 @@ export const KEYBOARD_HEIGHT_MIN = 80
 // Raised from 220 so portrait phones can host a substantial keyboard —
 // a 220px cap on an 844px-tall iPhone only gives 26% of the screen to the
 // keys. Desktop users rarely drag above ~200px, so this is purely headroom.
-export const KEYBOARD_HEIGHT_MAX = 360
+export const KEYBOARD_HEIGHT_MAX = 480
 
 // Fresh-load keyboard size, viewport-aware. Portrait phones get ~20% of
 // viewport so keys feel playable without dominating; landscape phones get
@@ -34,7 +54,12 @@ export const KEYBOARD_HEIGHT_MAX = 360
 function computeInitialKeyboardHeight(): number {
   if (typeof window === 'undefined' || !window.matchMedia) return DEFAULT_KEYBOARD_HEIGHT
   const isCoarse = window.matchMedia('(pointer: coarse)').matches
-  if (!isCoarse) return DEFAULT_KEYBOARD_HEIGHT
+  const scene = typeof document !== 'undefined' && Boolean(document.documentElement.dataset.scene)
+  if (!isCoarse) {
+    if (!scene) return DEFAULT_KEYBOARD_HEIGHT
+    const vh = window.innerHeight || 800
+    return Math.min(220, Math.max(160, Math.round(vh * 0.22)))
+  }
   const vh = window.innerHeight || 800
   const isPortrait = window.matchMedia('(orientation: portrait)').matches
   if (isPortrait) {
@@ -86,16 +111,30 @@ export class PianoRollRenderer {
   private beatGrid!: BeatGrid
   private nowLineGraphics!: Graphics
   private backgroundGraphics!: Graphics
+  private rangeLaneGraphics!: Graphics
+  private playStart = 21
+  private playEnd = 108
+  private liveClock = new LiveMotionClock()
+  private liveRoll: number | null = null
+  private liveRange: { start: number; end: number } | null = null
   private mistStrike: EmberMistStrike | null = null
   private materialAtmosphere: Sprite | null = null
   private atmosphereThemeId: string | null = null
+  private sceneBackdrop: Sprite | null = null
+  private sceneBackdropKey = ''
+  private plantField: PlantShadowField | null = null
+  private plantSprite: Sprite | null = null
+  private plantGlowSprite: Sprite | null = null
+  private plantUnsub: (() => void) | null = null
+  private plantMotionQuery: MediaQueryList | null = null
+  private plantReduced = false
 
   private midi: MidiFile | null = null
   private liveNoteStore: LiveNoteStore | null = null
   private loopNoteStore: LiveNoteStore | null = null
   private visibleTrackIds = new Set<string>()
   private practiceFocusTrackIds: Set<string> | null = null
-  private theme: Theme = darkTheme
+  private theme: Theme = goldenHourTheme
   private pixelsPerSecond = DEFAULT_PIXELS_PER_SECOND
   private keyboardHeight = DEFAULT_KEYBOARD_HEIGHT
   private lastRenderTime = 0
@@ -120,7 +159,10 @@ export class PianoRollRenderer {
   // to emit particles this frame and their burst geometry/color. Pooled to keep
   // the hot path allocation-free; cleared at the top of each frame.
   private emitEligible = new Set<number>()
-  private emitGeom = new Map<number, { cx: number; w: number; color: number }>()
+  private emitGeom = new Map<
+    number,
+    { cx: number; w: number; color: number; velocity: number; hand: 'lh' | 'rh' }
+  >()
 
   // Practice-mode hints (pitches that should glow on the keyboard as "play
   // these to advance"). `pending` is what's still required, `accepted` is what
@@ -152,7 +194,7 @@ export class PianoRollRenderer {
       canvas,
       width: window.innerWidth,
       height: window.innerHeight,
-      backgroundColor: darkTheme.background,
+      backgroundColor: goldenHourTheme.background,
       antialias: true,
       // Cap the raster resolution at 2×: a dpr-3 phone would rasterize 2.25×
       // the pixels of 2× for no visible gain on falling rectangles, and the
@@ -186,6 +228,7 @@ export class PianoRollRenderer {
     document.documentElement.style.setProperty('--keyboard-h', `${this.keyboardHeight}px`)
 
     this.buildScene()
+    this.mountPlantShadows()
     // handleResize calls resize() → rebuildStaticLayers() + renderStaticFrame(0),
     // so buildScene must not call rebuildStaticLayers itself.
     this.handleResize()
@@ -203,6 +246,10 @@ export class PianoRollRenderer {
     this.backgroundGraphics.label = 'background'
     stage.addChild(this.backgroundGraphics)
 
+    this.rangeLaneGraphics = new Graphics()
+    this.rangeLaneGraphics.label = 'range-lanes'
+    stage.addChild(this.rangeLaneGraphics)
+
     this.beatGrid = new BeatGrid()
     stage.addChild(this.beatGrid.graphics)
 
@@ -217,6 +264,12 @@ export class PianoRollRenderer {
     stage.addChild(this.nowLineGraphics)
 
     this.keyboardRenderer = new KeyboardRenderer(this.app, this.theme)
+    subscribeKeyboardStyle(() => {
+      this.keyboardRenderer.updateTheme(this.theme)
+      this.rebuildStaticLayers()
+      this.presentFrame()
+    })
+    subscribeRangeOverlay(() => this.wake())
     stage.addChild(this.keyboardRenderer.container)
 
     this.particles = new ParticleSystem()
@@ -231,7 +284,9 @@ export class PianoRollRenderer {
     this.drawBackground()
     this.drawNowLine()
     this.keyboardRenderer.build(this.viewport, this.viewport.rollHeight)
+    this.particles.setViewport(this.viewport.config.canvasWidth, this.viewport.config.canvasHeight)
     this.rebuildExternalLayers()
+    this.layoutPlantShadows()
   }
 
   private drawBackground(): void {
@@ -257,19 +312,82 @@ export class PianoRollRenderer {
     }
     g.clear()
 
-    g.rect(0, 0, canvasWidth, canvasHeight)
-    g.fill({ color: this.theme.background })
-
-    // Subtle vertical lines at C notes
-    for (let pitch = 24; pitch <= 108; pitch += 12) {
-      const x = this.viewport.pitchToX(pitch)
-      g.rect(x, 0, 1, rollHeight)
-      g.fill({ color: 0xffffff, alpha: 0.025 })
+    const scene = sceneForTheme(this.theme.id)
+    if (scene) {
+      this.syncSceneBackdrop(scene.themeId, canvasWidth, canvasHeight)
+      const { pitchMin, pitchMax } = this.viewport.config
+      const frame = keyFrame(
+        canvasWidth,
+        whiteKeyCount(pitchMin ?? 21, pitchMax ?? 108),
+        this.keyboardHeight,
+      )
+      const positions = this.viewport.getAllKeyPositions()
+      for (const [pitch, pos] of positions) {
+        if (
+          pitch % 12 === 1 ||
+          pitch % 12 === 3 ||
+          pitch % 12 === 6 ||
+          pitch % 12 === 8 ||
+          pitch % 12 === 10
+        ) {
+          continue
+        }
+        const laneC = pitch % 12 === 0
+        const lane = readCssColor(laneC ? '--roll-lane-c' : '--roll-lane', {
+          color: 0x7a4e2c,
+          alpha: laneC ? 0.08 : 0.04,
+        })
+        g.rect(pos.x, 0, Math.max(1, frame.h), rollHeight)
+        g.fill({ color: lane.color, alpha: lane.alpha })
+      }
+      const fade = readCssColor('--roll-fade', { color: 0xf6d6b4, alpha: 1 })
+      const fadeH = Math.round(rollHeight * 0.15)
+      for (let i = 0; i < 8; i++) {
+        const t = i / 8
+        g.rect(0, fadeH * t, canvasWidth, fadeH / 8)
+        g.fill({ color: fade.color, alpha: (1 - t) * 0.22 * fade.alpha })
+      }
+    } else {
+      this.clearSceneBackdrop()
+      g.rect(0, 0, canvasWidth, canvasHeight)
+      g.fill({ color: this.theme.background })
+      for (let pitch = 24; pitch <= 108; pitch += 12) {
+        const x = this.viewport.pitchToX(pitch)
+        g.rect(x, 0, 1, rollHeight)
+        g.fill({ color: 0xffffff, alpha: 0.025 })
+      }
     }
 
     // Separator line between roll and keyboard
     g.rect(0, rollHeight, canvasWidth, 1)
-    g.fill({ color: this.theme.keyBorder })
+    g.fill({ color: scene ? 0x000000 : this.theme.keyBorder, alpha: scene ? 0.08 : 1 })
+  }
+
+  private syncSceneBackdrop(themeId: string, width: number, height: number): void {
+    const scene = sceneForTheme(themeId)
+    if (!scene) return
+    const key = `${scene.id}:${width}x${height}`
+    if (this.sceneBackdrop && this.sceneBackdropKey === key) {
+      this.sceneBackdrop.width = width
+      this.sceneBackdrop.height = height
+      return
+    }
+    this.clearSceneBackdrop()
+    const canvas = document.createElement('canvas')
+    paintSceneBackdrop(canvas, scene, Math.min(width, 1400), Math.min(height, 900))
+    const texture = Texture.from(canvas)
+    this.sceneBackdrop = new Sprite(texture)
+    this.sceneBackdrop.label = 'scene-backdrop'
+    this.sceneBackdrop.width = width
+    this.sceneBackdrop.height = height
+    this.sceneBackdropKey = key
+    this.app.stage.addChildAt(this.sceneBackdrop, 0)
+  }
+
+  private clearSceneBackdrop(): void {
+    this.sceneBackdrop?.destroy({ texture: true, textureSource: true })
+    this.sceneBackdrop = null
+    this.sceneBackdropKey = ''
   }
 
   private drawNowLine(): void {
@@ -290,30 +408,45 @@ export class PianoRollRenderer {
     const y = this.viewport.nowLineY
     const w = this.viewport.config.canvasWidth
     const glow = this.theme.nowLineGlow
+    const warm = sceneForTheme(this.theme.id) !== null
+    const lift = warm ? 3 : 1
 
-    // Layered soft glow above the now-line
-    g.rect(0, y - 14, w, 14)
-    g.fill({ color: glow, alpha: 0.01 })
+    // Hit line sits 4px (scaled) above the key bed, with a 24px honey glow.
+    if (warm) {
+      const { pitchMin, pitchMax } = this.viewport.config
+      const frame = keyFrame(w, whiteKeyCount(pitchMin ?? 21, pitchMax ?? 108), this.keyboardHeight)
+      const lineY = y - KBD.hitGap * frame.v
+      const x = frame.cheek
+      const span = Math.max(1, w - frame.cheek * 2)
+      g.rect(x, lineY + 2 * frame.v, span, 24 * frame.v)
+      g.fill({ color: glow, alpha: 0.18 })
+      g.rect(x, lineY, span, Math.max(1, 2 * frame.v))
+      g.fill({ color: this.theme.nowLine, alpha: this.theme.nowLineAlpha })
+      return
+    }
+    g.rect(0, y - 18, w, 18)
+    g.fill({ color: glow, alpha: 0.02 * lift })
     g.rect(0, y - 8, w, 8)
-    g.fill({ color: glow, alpha: 0.022 })
-    g.rect(0, y - 4, w, 4)
-    g.fill({ color: glow, alpha: 0.04 })
-    g.rect(0, y - 2, w, 2)
-    g.fill({ color: glow, alpha: 0.065 })
-
+    g.fill({ color: glow, alpha: 0.045 * lift })
+    g.rect(0, y - 3, w, 3)
+    g.fill({ color: glow, alpha: 0.08 * lift })
     g.rect(0, y, w, 1.5)
     g.fill({ color: this.theme.nowLine, alpha: this.theme.nowLineAlpha })
   }
 
-  loadMidi(midi: MidiFile): void {
+  loadMidi(midi: MidiFile, atTime?: number): void {
     this.midi = midi
     this.visibleTrackIds = new Set(midi.tracks.map((t) => t.id))
     this.practiceFocusTrackIds = null
     this.noteRenderer.setTracks(midi.tracks)
-    this.particles.clear()
-    this.prevActive.clear()
-    this.currActive.clear()
-    this.renderStaticFrame(0)
+    this.noteRenderer.setFingerGuide(guideForMidi(midi))
+    this.noteRenderer.setTempo(midi.bpm)
+    if (atTime === undefined) {
+      this.particles.clear()
+      this.prevActive.clear()
+      this.currActive.clear()
+    }
+    this.renderStaticFrame(atTime ?? 0)
   }
 
   clearMidi(): void {
@@ -321,6 +454,7 @@ export class PianoRollRenderer {
     this.visibleTrackIds.clear()
     this.practiceFocusTrackIds = null
     this.noteRenderer.setTracks([])
+    this.noteRenderer.setFingerGuide(null)
     this.noteRenderer.clear()
     this.liveNoteRenderer.clear()
     this.particles.clear()
@@ -355,12 +489,41 @@ export class PianoRollRenderer {
     this.presentFrame()
   }
 
-  // Narrows or widens the visible pitch range. Used during vertical/square
-  // export so the keyboard zooms onto the piece's actual range instead of
-  // squeezing all 88 keys into a 1080px-wide canvas.
+  // Narrows or widens the visible pitch range immediately. Export framing
+  // uses this so a capture never waits on a focus change.
   setPitchRange(min: number, max: number): void {
     this.viewport.update({ pitchMin: min, pitchMax: max })
+    this.syncKeyboardProportion()
     this.rebuildStaticLayers()
+  }
+
+  // The logical piano stays 88 keys. This only changes how many of them are
+  // on screen. Applied immediately: the render loop is often idle, and a
+  // deferred ease would leave the full piano up until the next note.
+  aimPitchRange(min: number, max: number): void {
+    if (this.exportMode) return
+    const curMin = this.viewport.config.pitchMin ?? 21
+    const curMax = this.viewport.config.pitchMax ?? 108
+    if (curMin === min && curMax === max) return
+    this.setPitchRange(min, max)
+    this.presentFrame()
+  }
+
+  // Default case height follows the 26px pitch. A saved drag still wins.
+  private syncKeyboardProportion(): void {
+    if (this.exportMode) return
+    if (!sceneForTheme(this.theme.id)) return
+    try {
+      if (localStorage.getItem('midee.keyboardHeight')) return
+    } catch {
+      // Keep the proportional height when storage is blocked.
+    }
+    const { canvasWidth, pitchMin, pitchMax } = this.viewport.config
+    const px = proportionalKeyboardHeight(
+      canvasWidth,
+      whiteKeyCount(pitchMin ?? 21, pitchMax ?? 108),
+    )
+    this.applyKeyboardHeight(px)
   }
 
   get pitchRange(): { min: number; max: number } {
@@ -410,6 +573,7 @@ export class PianoRollRenderer {
     this.noteRenderer.updateTheme(theme)
     this.liveNoteRenderer.updateTheme(theme)
     this.keyboardRenderer.updateTheme(theme)
+    this.particles.setScene(theme.id)
     // App theme selection applies the authored particle preset separately;
     // keeping that explicit also supports saved overrides and export settings.
     this.rebuildStaticLayers()
@@ -454,10 +618,22 @@ export class PianoRollRenderer {
     // in-flight particles, or external layers (animating unless they opt out
     // via `isAnimating()`).
     const animating =
-      clock.playing || hasLive || this.particles.hasActive || layersAnimating(this.externalLayers)
+      clock.playing ||
+      hasLive ||
+      this.particles.hasActive ||
+      layersAnimating(this.externalLayers) ||
+      rangePhaseAnimating() ||
+      this.liveClock.active
     if (animating) {
       this.idleFrames = 0
       this.renderFrame(clock.currentTime, ticker.deltaMS / 1000, clock.playing)
+      return
+    }
+    // Shadows sway on a paused wall without rebuilding the note scene.
+    // The ticker still presents the stage, so the updated texture shows.
+    if (this.plantMoving()) {
+      this.idleFrames = 0
+      this.stepPlantShadows()
       return
     }
     // Static scene. Render through a short grace window so the settled state
@@ -502,6 +678,8 @@ export class PianoRollRenderer {
   }
 
   private renderFrame(currentTime: number, dt: number, emitParticles: boolean): void {
+    this.stepLiveMotion()
+    this.stepPlantShadows()
     this.lastRenderTime = currentTime
     const curr = this.currActive
     const activeColors = this.activeKeyColors
@@ -531,6 +709,8 @@ export class PianoRollRenderer {
       // normal "sounds now" rule applies — pausing mid-piece still shows
       // sustained notes correctly.
       const beforeFirstPlay = !emitParticles && currentTime === 0
+      const rangePrefs = getKeyboardRange()
+      const practiceHand = getHandPractice().hand
 
       for (let ti = 0; ti < tracks.length; ti++) {
         const track = tracks[ti]!
@@ -545,22 +725,39 @@ export class PianoRollRenderer {
         const [alo, ahi] = visibleNoteRange(track.notes, currentTime, currentTime)
         for (let ni = alo; ni < ahi; ni++) {
           const note = track.notes[ni]!
+          const placement = track.isDrum ? null : placedPitch(note.pitch, rangePrefs)
+          const sounding = placement?.pitch ?? note.pitch
           // No key to light up or burst from — see Viewport.hasKey.
-          if (!this.viewport.hasKey(note.pitch)) continue
+          if (!this.viewport.hasKey(sounding)) continue
+          const handDim = !track.isDrum && !noteMatchesHandOf(track, note.pitch, practiceHand)
+          const dimmed = practiceInactive || handDim
+          const handId = noteHandOf(track, note.pitch)
+          const byHand = sceneForTheme(this.theme.id) !== null && paintPrefs().colorBy === 'hand'
+          const litColor =
+            byHand && !track.isDrum
+              ? ((handId === 'left' ? this.theme.trackColors[1] : this.theme.trackColors[0]) ??
+                trackColor)
+              : trackColor
 
-          const key = keyBase + note.pitch
-          const awaitingPracticePress = this.practiceHintPending?.has(note.pitch) ?? false
-          if (!practiceInactive && !awaitingPracticePress) {
+          const key = keyBase + sounding
+          const awaitingPracticePress = this.practiceHintPending?.has(sounding) ?? false
+          if (!dimmed && !awaitingPracticePress) {
             curr.add(key)
-            if (!beforeFirstPlay) activeColors.set(note.pitch, trackColor)
+            if (!beforeFirstPlay) activeColors.set(sounding, litColor)
           }
 
-          if (!emitParticles || practiceInactive || awaitingPracticePress) continue
+          if (!emitParticles || dimmed || awaitingPracticePress) continue
 
-          const w = this.viewport.pitchWidth(note.pitch)
-          const cx = this.viewport.pitchToX(note.pitch) + w / 2
+          const w = this.viewport.pitchWidth(sounding)
+          const cx = this.viewport.pitchToX(sounding) + w / 2
           eligible.add(key)
-          geom.set(key, { cx, w, color: trackColor })
+          geom.set(key, {
+            cx,
+            w,
+            color: litColor,
+            velocity: note.velocity,
+            hand: handId === 'left' ? 'lh' : 'rh',
+          })
         }
       }
 
@@ -574,12 +771,26 @@ export class PianoRollRenderer {
         currentTime,
         cadence: SUSTAIN_CADENCE,
       })
+      const hits: {
+        x: number
+        y: number
+        keyWidth: number
+        velocity: number
+        hand: 'lh' | 'rh'
+      }[] = []
       for (const { key, kind } of emits) {
+        if (kind !== 'onset') continue
         const g = geom.get(key)
         if (!g) continue
-        if (kind === 'onset') this.particles.burst(g.cx, nowLineY, g.color, g.w)
-        else this.particles.sustainBurst(g.cx, nowLineY, g.color, g.w)
+        hits.push({
+          x: g.cx,
+          y: nowLineY,
+          keyWidth: g.w,
+          velocity: g.velocity,
+          hand: g.hand,
+        })
       }
+      if (hits.length > 0) this.particles.queueHits(hits)
 
       this.beatGrid.draw(currentTime, this.midi, this.viewport, this.theme)
       this.noteRenderer.draw(
@@ -619,10 +830,9 @@ export class PianoRollRenderer {
           // synchronously via burstParticleAt. Schedule the first sustain puff.
           this.liveEmitNext.set(pitch, currentTime + SUSTAIN_INITIAL_DELAY_SEC)
         } else if (currentTime >= nextAt) {
-          const w = this.viewport.pitchWidth(pitch)
-          const cx = this.viewport.pitchToX(pitch) + w / 2
-          this.particles.sustainBurst(cx, nowLineY, liveColor, w)
           this.liveEmitNext.set(pitch, currentTime + SUSTAIN_INTERVAL_SEC)
+          void nowLineY
+          void liveColor
         }
       }
 
@@ -659,6 +869,10 @@ export class PianoRollRenderer {
     }
 
     this.keyboardRenderer.drawActiveKeys(activeColors, this.viewport)
+    this.keyboardRenderer.drawShimmer(this.viewport)
+    this.keyboardRenderer.drawRange(this.viewport)
+    this.drawRangeLanes()
+    this.applyLiveRollFade()
     this.particles.update(dt)
     this.mistStrike?.update(this.viewport, activeColors, currentTime)
 
@@ -708,12 +922,18 @@ export class PianoRollRenderer {
     for (const layer of this.externalLayers) layer.rebuild?.(ctx)
   }
 
-  burstParticleAt(pitch: number): void {
-    const w = this.viewport.pitchWidth(pitch)
-    const cx = this.viewport.pitchToX(pitch) + w / 2
-    const color = liveNoteColor(this.theme)
-    this.particles.burst(cx, this.viewport.nowLineY, color, w)
-    // Particles animate over the next ~1 s — make sure the loop is running.
+  burstParticleAt(pitch: number, velocity = 1): void {
+    if (!this.viewport.hasKey(pitch)) return
+    const keyWidth = this.viewport.pitchWidth(pitch)
+    this.particles.queueHits([
+      {
+        x: this.viewport.pitchToX(pitch) + keyWidth / 2,
+        y: this.viewport.nowLineY,
+        keyWidth,
+        velocity,
+        hand: noteHand(pitch) === 'left' ? 'lh' : 'rh',
+      },
+    ])
     this.wake()
   }
 
@@ -805,6 +1025,217 @@ export class PianoRollRenderer {
     return this.app.canvas as HTMLCanvasElement
   }
 
+  // Highlight which keys the controller window covers. The pitch viewport
+  // is owned by focus (aimPitchRange) and, during a capture, by export.
+  setPlayableRange(start: number, end: number): void {
+    this.playStart = start
+    this.playEnd = end
+    this.keyboardRenderer.setPlayableRange(start, end)
+    if (!this.exportMode) this.presentFrame()
+  }
+
+  // Keyboard rises from below the fold. The canvas keeps painting, so a key
+  // pressed while it settles still lights and the note still sounds.
+  playLiveArrival(): void {
+    if (this.exportMode) return
+    this.liveClock.beginIn(performance.now(), this.keyboardHeight)
+    this.stepLiveMotion()
+    this.presentFrame()
+    this.wake()
+  }
+
+  playLiveDeparture(): void {
+    if (this.exportMode) return
+    this.liveClock.beginOut(
+      performance.now(),
+      this.keyboardRenderer.container.y,
+      this.keyboardHeight,
+    )
+    this.stepLiveMotion()
+    this.presentFrame()
+    this.wake()
+  }
+
+  // Snap back to a resting keyboard. Presents while the canvas is hidden so
+  // the sunk frame cannot flash once Home covers it.
+  finishLiveMotion(): void {
+    this.liveClock.stop()
+    this.liveRoll = null
+    this.liveRange = null
+    this.keyboardRenderer.container.y = 0
+    this.keyboardRenderer.setArrivalLight(0)
+    this.keyboardRenderer.setShimmerClock(null)
+    this.keyboardRenderer.setRangeGlide(null, null)
+    this.backgroundGraphics.alpha = 1
+    this.nowLineGraphics.alpha = 1
+    this.rangeLaneGraphics.alpha = 1
+    const canvas = this.app.canvas as HTMLCanvasElement
+    const previous = canvas.style.visibility
+    canvas.style.visibility = 'hidden'
+    this.presentFrame()
+    canvas.style.visibility = previous
+  }
+
+  finishLiveArrival(): void {
+    if (!this.liveClock.active) return
+    this.liveClock.stop()
+    this.liveRoll = null
+    this.liveRange = null
+    this.keyboardRenderer.container.y = 0
+    this.keyboardRenderer.setArrivalLight(1)
+    this.keyboardRenderer.setShimmerClock(null)
+    this.keyboardRenderer.setRangeGlide(null, null)
+    this.backgroundGraphics.alpha = 1
+    this.nowLineGraphics.alpha = 1
+    this.rangeLaneGraphics.alpha = 1
+    if (!this.exportMode) this.presentFrame()
+  }
+
+  private stepLiveMotion(): void {
+    if (!this.liveClock.active) return
+    const frame = this.liveClock.sample(performance.now())
+    this.keyboardRenderer.container.y = frame.keyboardY
+    this.keyboardRenderer.setArrivalLight(frame.light)
+    this.keyboardRenderer.setShimmerClock(frame.shimmerMs)
+    this.liveRoll = frame.roll
+    this.backgroundGraphics.alpha = frame.roll
+    this.nowLineGraphics.alpha = frame.roll
+    if (frame.rangeT === null) {
+      this.liveRange = null
+      this.keyboardRenderer.setRangeGlide(null, null)
+    } else {
+      const next = glideRange(frame.rangeT, this.playStart, this.playEnd)
+      this.liveRange = next
+      this.keyboardRenderer.setRangeGlide(next.start, next.end)
+    }
+    if (!frame.done || this.liveClock.kind !== 'in') return
+    this.liveClock.stop()
+    this.liveRoll = null
+    this.liveRange = null
+    this.keyboardRenderer.container.y = 0
+    this.keyboardRenderer.setArrivalLight(1)
+    this.keyboardRenderer.setShimmerClock(null)
+    this.keyboardRenderer.setRangeGlide(null, null)
+    this.backgroundGraphics.alpha = 1
+    this.nowLineGraphics.alpha = 1
+    this.rangeLaneGraphics.alpha = 1
+  }
+
+  // drawRangeLanes resets its own alpha. Re-apply the entrance fade after it,
+  // and keep the hit line and lane wash on the same clock.
+  private applyLiveRollFade(): void {
+    const roll = this.liveRoll
+    if (roll === null) return
+    this.backgroundGraphics.alpha = roll
+    this.nowLineGraphics.alpha = roll
+    if (this.rangeLaneGraphics) this.rangeLaneGraphics.alpha *= roll
+  }
+
+  // Tinted highway above the playable window. 24 stepped bands of
+  // --range-lane, 0 → 36% from the top of the roll down to the keys,
+  // with --range-edge rails and a foot. Opacity lives on this layer.
+  private drawRangeLanes(): void {
+    const g = this.rangeLaneGraphics
+    if (!g) return
+    const alphaMul = rangeLayerAlpha('lanes')
+    g.clear()
+    g.alpha = 1
+    if (alphaMul < 0.02) return
+    const { pitchMin, pitchMax } = this.viewport.config
+    const lo = pitchMin ?? 21
+    const hi = pitchMax ?? 108
+    const windowStart = this.liveRange?.start ?? this.playStart
+    const windowEnd = this.liveRange?.end ?? this.playEnd
+    if (windowStart <= lo && windowEnd >= hi) return
+    const positions = this.viewport.getAllKeyPositions()
+    const startPos = positions.get(windowStart)
+    const endPos = positions.get(windowEnd)
+    if (!startPos || !endPos) return
+    const x0 = startPos.x
+    const width = endPos.x + endPos.width - x0
+    if (width < 2) return
+    const rollHeight = this.viewport.rollHeight
+    const lane = readCssColor('--range-lane', { color: 0xe6a94f, alpha: 1 })
+    const edge = readCssColor('--range-edge', { color: 0xa65c28, alpha: 1 })
+    const bands = 24
+    const bandH = rollHeight / bands
+    for (let i = 0; i < bands; i++) {
+      const y = i * bandH
+      const towardKeys = (i + 1) / bands
+      g.rect(x0, y, width, bandH + 0.5)
+      g.fill({ color: lane.color, alpha: towardKeys * 0.36 })
+      const rail = (1 - i / bands) * 0.8
+      g.rect(x0, y, 1.5, bandH + 0.5)
+      g.fill({ color: edge.color, alpha: rail })
+      g.rect(x0 + width - 1.5, y, 1.5, bandH + 0.5)
+      g.fill({ color: edge.color, alpha: rail })
+    }
+    g.rect(x0, Math.max(0, rollHeight - 3), width, 3)
+    g.fill({ color: edge.color, alpha: 0.8 })
+    g.alpha = alphaMul
+  }
+
+  // Repaint note positions after fit-to-range or the practice hand changes.
+  // The idle ticker may already be stopped, so this cannot wait for a tick.
+  refreshPlacement(): void {
+    if (!this.exportMode) this.presentFrame()
+  }
+
+  // Screen rect of the on-screen keys from `start` through `end`, inclusive.
+  keyBandRect(
+    start: number,
+    end: number,
+  ): { left: number; top: number; width: number; height: number } | null {
+    if (!this.viewport.hasKey(start) || !this.viewport.hasKey(end)) return null
+    const bounds = this.canvas.getBoundingClientRect()
+    const { canvasWidth, canvasHeight } = this.viewport.config
+    if (bounds.width < 2 || bounds.height < 2 || canvasWidth < 1 || canvasHeight < 1) return null
+    const scaleX = bounds.width / canvasWidth
+    const scaleY = bounds.height / canvasHeight
+    const x0 = this.viewport.pitchToX(start) * scaleX
+    const x1 = (this.viewport.pitchToX(end) + this.viewport.pitchWidth(end)) * scaleX
+    const frame = keyFrame(
+      canvasWidth,
+      whiteKeyCount(this.viewport.config.pitchMin ?? 21, this.viewport.config.pitchMax ?? 108),
+      this.keyboardHeight,
+    )
+    const glassTop = (canvasHeight - this.keyboardHeight + frame.glassTop) * scaleY
+    return {
+      left: bounds.left + x0,
+      top: bounds.top + glassTop,
+      width: Math.max(12, x1 - x0),
+      height: Math.max(12, frame.glassH * scaleY),
+    }
+  }
+
+  // Pitch under a client X, using the white-key row so a horizontal drag
+  // moves monotonically across the piano.
+  // Top of one key in client pixels, for overlays that number a key.
+  keyClientBox(pitch: number): { x: number; y: number; width: number } | null {
+    if (!this.viewport.hasKey(pitch)) return null
+    const bounds = this.canvas.getBoundingClientRect()
+    const { canvasWidth, canvasHeight } = this.viewport.config
+    if (bounds.width < 2 || canvasHeight < 1) return null
+    const scaleX = bounds.width / canvasWidth
+    const scaleY = bounds.height / canvasHeight
+    const x = this.viewport.pitchToX(pitch) * scaleX
+    const width = this.viewport.pitchWidth(pitch) * scaleX
+    const keyboardPx = this.keyboardHeight * scaleY
+    return {
+      x: bounds.left + x + width / 2,
+      y: bounds.top + bounds.height - keyboardPx,
+      width,
+    }
+  }
+
+  pitchFromClientX(clientX: number): number {
+    const bounds = this.canvas.getBoundingClientRect()
+    if (bounds.width <= 0) return 21
+    const x = ((clientX - bounds.left) / bounds.width) * this.viewport.config.canvasWidth
+    const y = this.viewport.config.canvasHeight - 2
+    return this.viewport.pitchAtPoint(x, y) ?? 21
+  }
+
   // Convert a client-space (canvas) point into a MIDI pitch if it lands on a key.
   pitchAtClientPoint(clientX: number, clientY: number): number | null {
     const rect = this.app.canvas.getBoundingClientRect()
@@ -830,6 +1261,7 @@ export class PianoRollRenderer {
     }
     this.app.renderer.resize(width, height)
     this.viewport.update({ canvasWidth: width, canvasHeight: height })
+    this.syncKeyboardProportion()
     this.rebuildStaticLayers()
     // Present at the *current* playhead, not t=0 — a window resize while
     // paused mid-piece must not repaint the piece's start. (Under the old
@@ -903,14 +1335,143 @@ export class PianoRollRenderer {
     this.resize(window.innerWidth, window.innerHeight, resolution)
   }
 
+  // Shadow buffer sits above the backdrop and under the lanes, notes, and
+  // keyboard. Golden Hour only; Rainy Study and Off leave the sprites hidden.
+  private mountPlantShadows(): void {
+    this.plantReduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+    this.plantField = new PlantShadowField(() => {
+      document.documentElement.dataset.plantReady = '1'
+      this.onPlantSetting()
+    })
+    this.plantField.setReducedMotion(this.plantReduced)
+    const id = plantShadowId()
+    if (id !== 'off') this.plantField.setPlant(id)
+    const shadow = new Sprite(Texture.from(this.plantField.shadow))
+    shadow.label = 'plant-shadows'
+    shadow.blendMode = 'multiply'
+    shadow.eventMode = 'none'
+    shadow.visible = false
+    const glow = new Sprite(Texture.from(this.plantField.glow))
+    glow.label = 'plant-glow'
+    glow.blendMode = 'soft-light'
+    glow.eventMode = 'none'
+    glow.visible = false
+    shadow.texture.source.autoGenerateMipmaps = false
+    glow.texture.source.autoGenerateMipmaps = false
+    this.plantSprite = shadow
+    this.plantGlowSprite = glow
+    // Under the notes until the backdrop exists; layout then pins them to it.
+    this.app.stage.addChildAt(glow, 0)
+    this.app.stage.addChildAt(shadow, 0)
+    if (this.plantField.ready) {
+      document.documentElement.dataset.plantReady = '1'
+      this.onPlantSetting()
+    }
+    this.plantUnsub = subscribePlantShadow(this.onPlantSetting)
+    this.plantMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    this.plantMotionQuery.addEventListener('change', this.onPlantMotion)
+    document.addEventListener('visibilitychange', this.onPlantVisibility)
+  }
+
+  private onPlantSetting = (): void => {
+    const id = plantShadowId()
+    if (id !== 'off') this.plantField?.setPlant(id)
+    this.layoutPlantShadows()
+    this.stepPlantShadows()
+    if (!this.exportMode) this.presentFrame()
+    if (this.plantMoving()) this.wake()
+  }
+
+  private onPlantMotion = (event: MediaQueryListEvent): void => {
+    this.plantReduced = event.matches
+    this.plantField?.setReducedMotion(event.matches)
+    this.stepPlantShadows()
+    if (this.plantMoving()) this.wake()
+    else if (!this.exportMode) this.presentFrame()
+  }
+
+  private onPlantVisibility = (): void => {
+    if (!document.hidden && this.plantMoving()) this.wake()
+  }
+
+  private plantMoving(): boolean {
+    return (
+      this.plantSprite?.visible === true &&
+      this.plantField?.ready === true &&
+      !this.plantReduced &&
+      !document.hidden &&
+      !this.exportMode
+    )
+  }
+
+  private layoutPlantShadows(): void {
+    const field = this.plantField
+    const shadow = this.plantSprite
+    const glow = this.plantGlowSprite
+    if (!field || !shadow || !glow) return
+    const active = plantShadowsActive(this.theme.id)
+    shadow.visible = active
+    glow.visible = active
+    document.documentElement.dataset.plantShadows = active ? plantShadowId() : 'off'
+    if (!active) return
+    field.setBudget(readPlantShadowBudget())
+    const w = Math.max(1, this.viewport.config.canvasWidth)
+    const h = Math.max(1, this.viewport.rollHeight)
+    field.resize(w, h)
+    shadow.position.set(0, 0)
+    glow.position.set(0, 0)
+    shadow.width = w
+    glow.width = w
+    shadow.height = h
+    glow.height = h
+    this.placePlantSprites()
+  }
+
+  private placePlantSprites(): void {
+    const shadow = this.plantSprite
+    const glow = this.plantGlowSprite
+    const backdrop = this.sceneBackdrop
+    if (!shadow || !glow || !backdrop) return
+    const stage = this.app.stage
+    const at = stage.getChildIndex(backdrop)
+    stage.addChildAt(shadow, at + 1)
+    stage.addChildAt(glow, stage.getChildIndex(shadow) + 1)
+  }
+
+  private stepPlantShadows(): void {
+    if (document.hidden && !this.exportMode) return
+    const field = this.plantField
+    const shadow = this.plantSprite
+    const glow = this.plantGlowSprite
+    if (!field || !shadow?.visible || !glow) return
+    // Matching the texture to the buffer clears the canvas, so resize first
+    // and paint once into the final bitmap. Export frames stay on the parked pose.
+    this.preparePlantTexture(shadow, field.shadow)
+    this.preparePlantTexture(glow, field.glow)
+    field.paint(performance.now(), this.exportMode)
+    shadow.texture.source.update()
+    glow.texture.source.update()
+    if (field.ready) document.documentElement.dataset.plantReady = '1'
+  }
+
+  private preparePlantTexture(sprite: Sprite, canvas: HTMLCanvasElement): void {
+    const source = sprite.texture.source
+    if (source.width === canvas.width && source.height === canvas.height) return
+    source.resize(canvas.width, canvas.height)
+  }
+
   destroy(): void {
     window.removeEventListener('resize', this.handleResize)
+    this.plantUnsub?.()
+    this.plantMotionQuery?.removeEventListener('change', this.onPlantMotion)
+    document.removeEventListener('visibilitychange', this.onPlantVisibility)
     this.clockUnsub?.()
     this.liveStoreUnsub?.()
     this.loopStoreUnsub?.()
     this.noteRenderer.destroy()
     this.liveNoteRenderer.destroy()
     this.materialAtmosphere?.destroy({ texture: true, textureSource: true })
+    this.clearSceneBackdrop()
     this.particles.destroy()
     this.mistStrike?.destroy()
     this.app.destroy()

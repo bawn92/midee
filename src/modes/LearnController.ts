@@ -1,8 +1,10 @@
+import { APP_NAME } from '../brand'
 import { parseMidiFileWithStats } from '../core/midi/parser'
 import type { MidiFile } from '../core/midi/types'
 import { forgetRecent, readRecentMidi, rememberRecent } from '../core/recentMidi'
 import { fetchSampleMidi, getSample } from '../core/samples'
 import { t } from '../i18n'
+import { markStarted } from '../landing/route'
 import type { ExerciseDescriptor } from '../learn/core/Exercise'
 import { ExerciseRunner } from '../learn/core/ExerciseRunner'
 import { createLearnState, type LearnState, type LearnStatus } from '../learn/core/LearnState'
@@ -21,6 +23,7 @@ import {
   trackMidiLoaded,
   trackMidiLoadFailed,
 } from '../telemetry'
+import { consumePreserveRoll, retireModeView } from '../ui/viewTransition'
 import type { ModeContext } from './ModeController'
 
 // Learn mode host. Owns all Learn-scoped state (loaded MIDI, transport,
@@ -79,34 +82,40 @@ export class LearnController {
       this.ctx
     const from = services.store.state.mode
     const wasAlreadyLearn = from === 'learn'
-    resetInteractionState()
-    // Halt the shared transport BEFORE switching modes. A Play-mode session
-    // that was still playing would otherwise keep the clock ticking and its
-    // synth scheduling MIDI into the background of Learn until something
-    // explicitly pauses it.
-    services.clock.pause()
-    services.clock.seek(0)
+    // A header switch keeps the song where it is. Opening Learn from Home
+    // still parks the clock and clears the roll.
+    const keep = consumePreserveRoll()
+    if (!keep) {
+      resetInteractionState()
+      // Halt the shared transport BEFORE switching modes. A Play-mode session
+      // that was still playing would otherwise keep the clock ticking and its
+      // synth scheduling MIDI into the background of Learn until something
+      // explicitly pauses it.
+      services.clock.pause()
+      services.clock.seek(0)
+    }
     // Mode is a cross-cutting router concern, so it still lives on AppStore.
     // Everything else about Learn's transport lives on `this.learnState`.
     services.store.setState('mode', 'learn')
-    services.renderer.clearMidi()
+    if (!keep) services.renderer.clearMidi()
     // Hide the ascending live-note sprites — Learn surfaces show the scheduled
     // piece (if any) and user presses should only highlight the keyboard.
     services.renderer.setLiveNotesVisible(false)
     trackPanel.close()
     dropzone.hide()
     keyboardInput.enable()
-    document.title = t('doc.title.learn')
+    document.title = t('doc.title.learn', { name: APP_NAME })
 
     this.mountHostElements(overlay)
-    this.showHubView()
+    this.showHubView(keep)
     this.hub.mount(this.hubHost!, this.hubOpts)
     this.overlay = new LearnOverlay()
     services.renderer.addLayer(this.overlay)
 
     // Learn is intentionally session-local: entering the hub starts from the
-    // picker instead of resurrecting a previous practice file.
-    this.clearLoadedLearnMidi()
+    // picker instead of resurrecting a previous practice file. A header
+    // switch leaves the playing piece alone.
+    if (!keep) this.clearLoadedLearnMidi()
     // Touch the streak so attendance counts even if the user bails before
     // finishing an exercise — "opened the app today" is still practice.
     this.progress.touchStreak()
@@ -184,6 +193,7 @@ export class LearnController {
         tempo_events: stats.tempoEvents,
       })
       await this.consumeMidi(midi)
+      markStarted()
       // Recents are shared with Play: a file practised here is one click away
       // from the home grid, and vice versa. Fire-and-forget — a storage
       // failure must never surface as a failed load.
@@ -261,6 +271,7 @@ export class LearnController {
       return
     }
     await this.consumeMidi(midi)
+    markStarted()
     trackMidiLoaded({
       source: 'recent',
       target: 'learn',
@@ -389,7 +400,15 @@ export class LearnController {
   // ── Host element management ────────────────────────────────────────────
 
   private mountHostElements(overlay: HTMLElement): void {
-    if (this.hubHost && this.exerciseHost) return
+    // A switch that landed mid-fade may have left the previous hosts in the
+    // overlay. Drop them before mounting so two hubs cannot stack.
+    for (const el of overlay.querySelectorAll('.learn-host')) {
+      if (el === this.hubHost || el === this.exerciseHost) continue
+      el.remove()
+    }
+    if (this.hubHost?.isConnected && this.exerciseHost?.isConnected) return
+    this.hubHost = null
+    this.exerciseHost = null
     const hub = document.createElement('div')
     hub.className = 'learn-host learn-host--hub'
     const ex = document.createElement('div')
@@ -401,24 +420,26 @@ export class LearnController {
   }
 
   private unmountHostElements(): void {
-    this.hubHost?.remove()
-    this.exerciseHost?.remove()
+    const hub = this.hubHost
+    const exercise = this.exerciseHost
     this.hubHost = null
     this.exerciseHost = null
+    // Forget the nodes first so a re-entry during the fade mounts a new pair
+    // instead of reviving the one that is on its way out.
+    if (hub) retireModeView(hub)
+    if (exercise) retireModeView(exercise)
   }
 
-  private showHubView(): void {
+  private showHubView(keepRoll = false): void {
     if (!this.hubHost || !this.exerciseHost) return
-    this.hubHost.classList.remove('learn-host--hidden')
+    this.hubHost.classList.remove('learn-host--hidden', 'mode-view--leave')
+    this.hubHost.removeAttribute('inert')
     this.exerciseHost.classList.add('learn-host--hidden')
     this.view.set('hub')
-    // The hub never shows the rolling piano — flush any MIDI + live notes an
-    // exiting exercise (or a prior Play-mode session) left on the renderer so
-    // the background stays quiet behind the hub chrome.
-    this.ctx.services.renderer.clearMidi()
-    // Hide the Pixi stage (notes lane + keyboard strip) while the catalog is
-    // showing — exercise mount restores it. stage.visible=false also skips
-    // per-frame draw work, not just compositing.
+    // A header switch may keep the clock and the loaded piece. The hub is
+    // still its own view: the roll and the keyboard belong to Play and Live,
+    // so they stay hidden for as long as the catalog is the current surface.
+    if (!keepRoll) this.ctx.services.renderer.clearMidi()
     this.ctx.services.renderer.setVisible(false)
   }
 

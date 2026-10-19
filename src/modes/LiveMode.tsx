@@ -1,7 +1,9 @@
 import { createSignal, onMount } from 'solid-js'
+import { APP_NAME } from '../brand'
 import { t } from '../i18n'
 import { useApp } from '../store/AppCtx'
 import { trackEvent } from '../telemetry'
+import { consumePreserveRoll } from '../ui/viewTransition'
 import type { EnterOptions } from './ModeController'
 
 // Transient options for the next Live-mode entry. Populated by the caller
@@ -29,13 +31,14 @@ export function LiveMode() {
   onMount(() => {
     const { primeAudio = true } = pendingOpts()
     setPendingOpts({ primeAudio: true })
-    resetInteractionState()
-    services.store.enterLive()
-    services.renderer.clearMidi()
+    const keep = consumePreserveRoll()
+    if (!keep) resetInteractionState()
+    services.store.enterLive(!keep)
+    if (!keep) services.renderer.clearMidi()
     trackPanel.close()
     dropzone.hide()
     keyboardInput.enable()
-    document.title = t('doc.title.live')
+    document.title = t('doc.title.live', { name: APP_NAME })
     if (primeAudio) primeInteractiveAudio()
     // LiveMode only mounts on transition into live, so every mount is a
     // real entry — fire analytics unconditionally.

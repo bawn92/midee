@@ -1,16 +1,14 @@
 import { defineConfig, devices } from '@playwright/test'
 
-// E2E config for midee (Tier 3 of docs/TESTING_STRATEGY_2026-06-21.md).
+// E2E config (Tier 3 of docs/TESTING_STRATEGY_2026-06-21.md).
 //
-// midee is a static Vite SPA whose flagship feature — MP4 export — runs entirely
+// The app is a static Vite SPA whose flagship feature — MP4 export — runs entirely
 // in the browser via WebCodecs (`VideoEncoder`/`AudioEncoder`) + Mediabunny. jsdom
 // cannot exercise that, so these tests drive a real headless Chromium.
 //
 // webServer: `vite build && vite preview` — NOT `npm run build`. We deliberately
-//   skip `tsc` (a separate CI step) and the whole postbuild chain (build-content,
-//   build-og, stamp-sitemap, check-links, upload-sourcemaps) — none of it is needed
-//   to serve `/`, and check-links/upload-sourcemaps do network I/O + need secrets.
-//   A bare `vite build` is ~1.4s and produces a fully functional bundle.
+//   skip `tsc` (a separate CI step). A bare `vite build` is ~1.4s and produces
+//   a fully functional bundle.
 //
 // Speed: the default suite runs in ~28s serial (lean build + 6 light specs). We run
 //   workers: 1 ON PURPOSE — playback.spec asserts the real-time clock advances at
@@ -36,6 +34,17 @@ export default defineConfig({
     headless: true,
     trace: 'retain-on-failure',
     video: 'off',
+    // Existing specs open Home at /start. `/` is always the hero
+    // (see e2e/landing.spec.ts), whether or not midee.started is set.
+    storageState: {
+      cookies: [],
+      origins: [
+        {
+          origin: BASE_URL,
+          localStorage: [{ name: 'midee.started', value: '1' }],
+        },
+      ],
+    },
   },
   projects: [
     {

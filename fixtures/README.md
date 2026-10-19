@@ -20,6 +20,7 @@ fully known and deterministic.
 | `multi-track.mid` | 2 (ch 0 "Right Hand", ch 1 "Left Hand") | 100 BPM. RH melody C5→F5; LH bass alternating C3/G2. Exercises multi-track parsing.  |
 | `drum-track.mid`  | 2 (ch 0 "Lead", ch 9 "Drums")     | 120 BPM. A melodic lead track plus a channel-9 drum groove (kick 36 / snare 38 / hat 42) → parser flags the drum track `isDrum: true`. |
 | `sync-note.mid`   | 1 ("sync")                        | 120 BPM. One C4 at exactly t=1.000 s for 0.5 s, silence before it. The A/V sync e2e compares when it is heard with when its key lights up. |
+| `Interstellar_Main_Theme_Pietschmann_Piano_RH_LH.mid` | 3, one of them note-less | Real file. 100 BPM, 3/4. Track 0 is tempo and meter only. Right Hand is channel 0 (1328 notes). Left Hand is channel 1 (726 notes). |
 
 To regenerate, build with `@tonejs/midi`'s writer (`midi.addTrack()` /
 `track.addNote(...)` / `midi.toArray()`). Channel 9 marks a track as drums in

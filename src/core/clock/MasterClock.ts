@@ -8,6 +8,7 @@
 // dropouts under main-thread pressure.
 
 import { getContext, start as toneStart } from 'tone'
+import { finishRangeAdjust } from '../../renderer/rangeOverlay'
 
 type ClockListener = (time: number) => void
 
@@ -17,6 +18,7 @@ export class MasterClock {
   private _playing = false
   private _speed = 1
   private listeners = new Set<ClockListener>()
+  private transportListeners = new Set<() => void>()
   private rafId: number | null = null
 
   // Time source seam. Defaults to Tone's AudioContext clock (real runtime
@@ -54,6 +56,7 @@ export class MasterClock {
       this._startContextTime = this.contextTime
     }
     this._speed = s
+    this.emitTransport()
   }
 
   prime(): void {
@@ -79,18 +82,21 @@ export class MasterClock {
   }
 
   play(): void {
+    finishRangeAdjust()
     if (this._playing) return
     // AudioContext may be suspended (browser autoplay policy)
     this.prime()
     this._startContextTime = this.contextTime
     this._playing = true
     this.tick()
+    this.emitTransport()
   }
 
   pause(): void {
     if (!this._playing) return
     this._startOffset = this.currentTime
     this._playing = false
+    this.emitTransport()
     if (this.rafId !== null) {
       cancelAnimationFrame(this.rafId)
       this.rafId = null
@@ -103,11 +109,23 @@ export class MasterClock {
       this._startContextTime = this.contextTime
     }
     this.emit()
+    this.emitTransport()
   }
 
   subscribe(listener: ClockListener): () => void {
     this.listeners.add(listener)
     return () => this.listeners.delete(listener)
+  }
+
+  subscribeTransport(listener: () => void): () => void {
+    this.transportListeners.add(listener)
+    return () => this.transportListeners.delete(listener)
+  }
+
+  private emitTransport(): void {
+    this.transportListeners.forEach((listener) => {
+      listener()
+    })
   }
 
   private tick = (): void => {
@@ -127,5 +145,6 @@ export class MasterClock {
   dispose(): void {
     this.pause()
     this.listeners.clear()
+    this.transportListeners.clear()
   }
 }

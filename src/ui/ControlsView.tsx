@@ -1,10 +1,16 @@
-import { createEffect, onCleanup, onMount } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { APP_NAME } from '../brand'
 import { t } from '../i18n'
 import type { LiveLooperState } from '../midi/LiveLooper'
 import type { MidiDeviceStatus } from '../midi/MidiInputManager'
 import { type AppMode, TRANSPOSE_LIMIT } from '../store/state'
+import { AppMark } from './AppMark'
 import { FloatingHud } from './FloatingHud'
+import { HandPracticeButtons } from './HandPracticeControl'
 import { icons } from './icons'
+import { overlayRoot } from './overlayRoot'
+import { placeLayer } from './placeFloating'
+import { prefersReducedMotion } from './viewTransition'
 
 export const ZOOM_MIN = 80
 export const ZOOM_MAX = 600
@@ -52,6 +58,7 @@ export interface HudProps {
   loopUndoVisible: () => boolean
   metroRunning: () => boolean
   metroBpm: () => number
+  registerPieceBpm: (el: HTMLElement) => void
   onPlay: () => void
   onSkipBack: () => void
   onSkipFwd: () => void
@@ -90,6 +97,7 @@ export interface HudProps {
   closed: () => boolean
   onClose: () => void
   onReopen: () => void
+  context?: () => { kicker: string; title: string }
 }
 
 export interface KeyHintProps {
@@ -146,17 +154,73 @@ export function TopStripView(props: TopStripProps) {
   let primed = false
   createEffect(() => {
     activeMode()
-    positionThumb(primed)
+    positionThumb(primed && !prefersReducedMotion())
     primed = true
+  })
+
+  const [moreOpen, setMoreOpen] = createSignal(false)
+  let endHome: HTMLElement | null = null
+
+  // The overflow cluster lives in the header, which has a backdrop-filter.
+  // While it is open on a phone, move that node onto the overlay root so the
+  // transport cannot cover it, then put it back for the desktop row.
+  const parkMenu = (open: boolean): void => {
+    const end = document.getElementById('ts-end')
+    if (!end) return
+    if (end.parentElement?.classList.contains('ts-end-wrap')) endHome = end.parentElement
+    const home = endHome
+    const narrow = window.matchMedia?.('(max-width: 760px)').matches ?? false
+    if (open && narrow && home) {
+      overlayRoot().appendChild(end)
+      end.classList.add('ts-end--floating')
+      const rect = document.getElementById('ts-more')?.getBoundingClientRect()
+      if (!rect) return
+      const placed = placeLayer(rect, {
+        width: Math.max(end.offsetWidth, 180),
+        height: Math.max(end.offsetHeight, 48),
+      })
+      end.style.top = `${Math.round(placed.top)}px`
+      end.style.left = `${Math.round(placed.left)}px`
+      end.style.maxHeight = `${Math.max(120, Math.floor(placed.maxHeight))}px`
+      return
+    }
+    end.classList.remove('ts-end--floating')
+    end.style.top = ''
+    end.style.left = ''
+    end.style.maxHeight = ''
+    if (home && end.parentElement !== home) home.appendChild(end)
+  }
+
+  createEffect(() => {
+    parkMenu(moreOpen())
   })
 
   onMount(() => {
     // Web-font swap can change label metrics after first paint.
     if (document.fonts?.ready) void document.fonts.ready.then(() => positionThumb(false))
     // Breakpoints toggle labels / padding, changing segment widths.
-    const onResize = (): void => positionThumb(false)
+    const onResize = (): void => {
+      positionThumb(false)
+      parkMenu(moreOpen())
+    }
+    const onClick = (e: MouseEvent): void => {
+      const target = e.target
+      if (!(target instanceof Node)) return
+      const more = document.getElementById('ts-more')
+      if (more?.contains(target)) return
+      const end = document.getElementById('ts-end')
+      if (target instanceof Element && end?.contains(target)) {
+        setMoreOpen(false)
+        return
+      }
+      setMoreOpen(false)
+    }
     window.addEventListener('resize', onResize)
-    onCleanup(() => window.removeEventListener('resize', onResize))
+    document.addEventListener('click', onClick)
+    onCleanup(() => {
+      window.removeEventListener('resize', onResize)
+      document.removeEventListener('click', onClick)
+    })
   })
 
   return (
@@ -173,15 +237,21 @@ export function TopStripView(props: TopStripProps) {
       data-has-file={props.hasFile() ? 'true' : 'false'}
       data-midi-status={props.midiStatus()}
     >
-      <button
-        class="ts-home"
-        id="ts-home"
-        type="button"
-        aria-label={t('home.aria')}
-        data-tip={t('topStrip.home')}
-        onClick={() => props.onHome()}
-        innerHTML={`${icons.wordmark()}<span class="ts-home-name">midee</span>`}
-      />
+      <div class="ts-home">
+        <a class="ts-brand-link" id="ts-brand" href="/" aria-label={APP_NAME}>
+          <AppMark />
+          <span class="ts-home-name">{APP_NAME}</span>
+        </a>
+        <button
+          class="ts-home-icon"
+          id="ts-home"
+          type="button"
+          aria-label={t('home.aria', { name: APP_NAME })}
+          data-tip={t('topStrip.home')}
+          onClick={() => props.onHome()}
+          innerHTML={icons.home(18)}
+        />
+      </div>
 
       <div
         class="ts-mode-switch"
@@ -240,7 +310,7 @@ export function TopStripView(props: TopStripProps) {
           <span class="ts-status-kicker" id="ts-context-kicker">
             {props.context().kicker}
           </span>
-          <span class="ts-status-title" id="ts-context-title" title={props.context().title}>
+          <span class="ts-status-title" id="ts-context-title" data-tip={props.context().title}>
             {props.context().title}
           </span>
         </span>
@@ -268,83 +338,95 @@ export function TopStripView(props: TopStripProps) {
         <span id="ts-chord-slot" class="ts-chord-slot" />
       </div>
 
-      <div class="ts-end">
+      <div class="ts-end-wrap">
         <button
-          class="ts-pill"
-          id="ts-open"
+          class="ts-more"
+          id="ts-more"
           type="button"
-          aria-label={t('topStrip.openMidi')}
-          data-tip={t('topStrip.openMidi')}
-          onClick={() => props.onOpenFile()}
-        >
-          <span innerHTML={icons.upload()} />
-          <span>{t('home.cta.openMidi')}</span>
-        </button>
-        {/* Appearance/Customize is pinned near the start of the right cluster
+          aria-label={t('topStrip.more')}
+          aria-expanded={moreOpen()}
+          aria-controls="ts-end"
+          data-tip={t('topStrip.more')}
+          onClick={() => setMoreOpen((open) => !open)}
+          innerHTML={icons.more()}
+        />
+        <div class="ts-end" id="ts-end" classList={{ 'is-open': moreOpen() }}>
+          <button
+            class="ts-pill"
+            id="ts-open"
+            type="button"
+            aria-label={t('topStrip.openMidi')}
+            data-tip={t('topStrip.openMidi')}
+            onClick={() => props.onOpenFile()}
+          >
+            <span innerHTML={icons.upload()} />
+            <span>{t('home.cta.openMidi')}</span>
+          </button>
+          {/* Appearance/Customize is pinned near the start of the right cluster
             so the strip's right-edge overflow (the grid never shrinks .ts-end —
             see #top-strip in main.css) clips the contextual pills (export,
             MIDI, tracks) before it ever reaches Appearance. */}
-        <span id="ts-customize-slot" />
-        <button
-          ref={(el) => props.registerTracksBtn(el)}
-          class="ts-pill ts-pill--file"
-          classList={{
-            hidden: !(props.mode() === 'play' && props.hasFile() && !props.isLoadingFile()),
-          }}
-          id="ts-tracks"
-          type="button"
-          aria-label={t('topStrip.tracks')}
-          data-tip={t('topStrip.tracks')}
-          onClick={() => props.onTracks()}
-        >
-          <span innerHTML={icons.tracks()} />
-          <span>{t('topStrip.tracks')}</span>
-        </button>
-        <button
-          class="ts-pill ts-pill--file"
-          classList={{
-            hidden: !(props.mode() === 'play' && props.hasFile() && !props.isLoadingFile()),
-          }}
-          id="ts-learn-this"
-          type="button"
-          aria-label={t('topStrip.learnThis.aria')}
-          data-tip={t('topStrip.learnThis.tip')}
-          onClick={() => props.onLearnThis()}
-        >
-          <span innerHTML={icons.practice()} />
-          <span>{t('topStrip.learnThis.label')}</span>
-        </button>
-        <span id="ts-instrument-slot" />
-        <div class="ts-sep" aria-hidden="true" />
-        <button
-          class="ts-pill ts-pill--midi"
-          classList={{ 'ts-pill--on': props.midiStatus() === 'connected' }}
-          id="ts-midi"
-          type="button"
-          aria-label={props.midiMenuLabel()}
-          title={props.midiMenuLabel()}
-          data-tip={t('topStrip.midi')}
-          onClick={() => props.onMidi()}
-        >
-          <span innerHTML={icons.midi()} />
-          <span id="ts-menu-midi-label" class="ts-midi-label">
-            {props.midiPillLabel()}
-          </span>
-        </button>
-        <button
-          class="ts-record-btn"
-          classList={{
-            hidden: !(props.mode() === 'play' && props.hasFile() && !props.isLoadingFile()),
-          }}
-          id="ts-record"
-          type="button"
-          aria-label={t('topStrip.export')}
-          data-tip={t('topStrip.export')}
-          onClick={() => props.onRecord()}
-        >
-          <span innerHTML={icons.export()} />
-          <span>{t('topStrip.export.label')}</span>
-        </button>
+          <span id="ts-customize-slot" />
+          <button
+            ref={(el) => props.registerTracksBtn(el)}
+            class="ts-pill ts-pill--file"
+            classList={{
+              hidden: !(props.mode() === 'play' && props.hasFile() && !props.isLoadingFile()),
+            }}
+            id="ts-tracks"
+            type="button"
+            aria-label={t('topStrip.tracks')}
+            data-tip={t('topStrip.tracks')}
+            onClick={() => props.onTracks()}
+          >
+            <span innerHTML={icons.tracks()} />
+            <span>{t('topStrip.tracks')}</span>
+          </button>
+          <button
+            class="ts-pill ts-pill--file"
+            classList={{
+              hidden: !(props.mode() === 'play' && props.hasFile() && !props.isLoadingFile()),
+            }}
+            id="ts-learn-this"
+            type="button"
+            aria-label={t('topStrip.learnThis.aria')}
+            data-tip={t('topStrip.learnThis.tip')}
+            onClick={() => props.onLearnThis()}
+          >
+            <span innerHTML={icons.practice()} />
+            <span>{t('topStrip.learnThis.label')}</span>
+          </button>
+          <span id="ts-instrument-slot" />
+          <div class="ts-sep" aria-hidden="true" />
+          <button
+            class="ts-pill ts-pill--midi"
+            classList={{ 'ts-pill--on': props.midiStatus() === 'connected' }}
+            id="ts-midi"
+            type="button"
+            aria-label={props.midiMenuLabel()}
+            data-tip={t('topStrip.midi')}
+            onClick={() => props.onMidi()}
+          >
+            <span innerHTML={icons.midi()} />
+            <span id="ts-menu-midi-label" class="ts-midi-label">
+              {props.midiPillLabel()}
+            </span>
+          </button>
+          <button
+            class="ts-record-btn"
+            classList={{
+              hidden: !(props.mode() === 'play' && props.hasFile() && !props.isLoadingFile()),
+            }}
+            id="ts-record"
+            type="button"
+            aria-label={t('topStrip.export')}
+            data-tip={t('topStrip.export')}
+            onClick={() => props.onRecord()}
+          >
+            <span innerHTML={icons.export()} />
+            <span>{t('topStrip.export.label')}</span>
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -373,6 +455,7 @@ export function HudView(props: HudProps) {
         'hud--live': props.showLiveHud(),
         'hud--play': props.showPlayHud(),
       })}
+      idleMs={4000}
       idleEnabled={() => (props.showPlayHud() && props.playing()) || props.showLiveHud()}
       locked={() => props.sessionRecording() || props.loopActive() || props.metroRunning()}
       wakeRef={props.wakeRef}
@@ -405,6 +488,18 @@ export function HudView(props: HudProps) {
             onClick={() => props.onPlay()}
             innerHTML={props.playing() ? icons.pause() : icons.play()}
           />
+          <Show when={props.context?.().title}>
+            <div class="hud-piece">
+              <span class="hud-piece-title" id="hud-piece-title" data-tip={props.context?.().title}>
+                {humaniseTitle(props.context?.().title ?? '')}
+              </span>
+              <span
+                class="hud-piece-bpm"
+                id="hud-piece-bpm"
+                ref={(el) => props.registerPieceBpm(el)}
+              />
+            </div>
+          </Show>
           <button
             type="button"
             class="btn-skip"
@@ -531,6 +626,10 @@ export function HudView(props: HudProps) {
             +
           </button>
         </div>
+
+        <div class="hud-divider" />
+
+        <HandPracticeButtons variant="transport" />
 
         <div class="hud-divider" />
 
@@ -864,6 +963,11 @@ export function snapTo(value: number, target: number, tolerance: number): number
 
 // "0" / "+2" / "−3". U+2212 MINUS SIGN, not a hyphen — it matches the metronome
 // stepper's glyph and lines up in the tabular-numerals font.
+/** File names use underscores. The transport title reads as words. */
+export function humaniseTitle(title: string): string {
+  return title.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
 export function formatTranspose(semitones: number): string {
   if (semitones === 0) return '0'
   return semitones > 0 ? `+${semitones}` : `−${-semitones}`

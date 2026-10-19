@@ -16,7 +16,11 @@ import { fileURLToPath } from 'node:url'
 const FIXTURES_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../../fixtures')
 
 /** Available fixture filenames (see fixtures/README.md). */
-export type FixtureName = 'single-track.mid' | 'multi-track.mid' | 'drum-track.mid'
+export type FixtureName =
+  | 'single-track.mid'
+  | 'multi-track.mid'
+  | 'drum-track.mid'
+  | 'Interstellar_Main_Theme_Pietschmann_Piano_RH_LH.mid'
 
 /**
  * Read a fixture `.mid` as an `ArrayBuffer`. The buffer is a fresh slice so it

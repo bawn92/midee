@@ -1,0 +1,49 @@
+/* Scene floating cards are rounded rectangles, about 24px, with enough
+   padding that type sits outside the corner curve. A full pill is reserved
+   for a single-row chip. */
+
+html[data-scene] .song-guide-card,
+html[data-scene] .kh-body,
+html[data-scene] .ts-popover,
+html[data-scene] .coachmark,
+html[data-scene] .toast,
+html[data-scene] .float-hud.pa-hud,
+html[data-scene] .float-hud.sr-hud {
+  border-radius: 24px;
+}
+
+html[data-scene] .song-guide-card,
+html[data-scene] .kh-body {
+  padding: 24px;
+}
+
+html[data-scene] .song-guide-tab {
+  padding-inline: 16px;
+}
+
+html[data-scene] .ts-popover:not(.ts-customize-menu) .panel-header {
+  padding: 20px 20px 12px;
+}
+
+html[data-scene] .panel-items,
+html[data-scene] .instrument-items {
+  padding: 8px 12px 16px;
+}
+
+html[data-scene] .panel-footer {
+  padding: 12px 20px 20px;
+}
+
+html[data-scene] .coachmark {
+  padding: 16px 32px 16px 20px;
+}
+
+html[data-scene] .toast {
+  padding: 14px 20px;
+}
+
+@media (min-width: 641px) {
+  html[data-scene] .ts-customize-menu.ts-popover--open {
+    border-radius: 24px;
+  }
+}

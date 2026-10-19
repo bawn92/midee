@@ -1222,7 +1222,7 @@ async function suiteExportReal(
 // against the frames the renderer drew, frame/timestamp/keyframe structure,
 // A/V sync — through the REAL VideoExporter. One page load per browser × res:
 //
-//   1. Deterministic frames. The look is pinned (exportstages 'base': sunset,
+//   1. Deterministic frames. The look is pinned (exportstages 'base': golden-hour,
 //      embers, glow, no labels) and Math.random is swapped for a seeded PRNG
 //      around each renderManualFrame call only (classic particle styles draw
 //      from it at emission; the offline audio render running alongside never
@@ -1551,7 +1551,7 @@ async function suiteExportQuality(
 //          exposed (`gpuQuery`, -1 elsewhere).
 //
 // Configs price each effect against the new-visitor look — app.ts's store
-// defaults, theme 'sunset' + particles 'embers' + labels off — pinned so
+// defaults, theme 'golden-hour' + particles 'embers' + labels off — pinned so
 // browser profiles with different saved settings measure the same scene.
 // `filterglow` is `base` with the old GlowFilter note glow (the shipped glow
 // is baked since 2026-09-28); the other glow configs use the page's `&glow=`
@@ -1571,21 +1571,20 @@ interface StageConfig {
 }
 
 const STAGE_CONFIGS: readonly StageConfig[] = [
-  { name: 'base', theme: 'sunset', particles: 'embers', glow: true, labels: false },
+  { name: 'base', theme: 'golden-hour', particles: 'embers', glow: true, labels: false },
   {
     name: 'filterglow',
-    theme: 'sunset',
+    theme: 'golden-hour',
     particles: 'embers',
     glow: true,
     glowMode: 'filter',
     labels: false,
   },
-  { name: 'noparticles', theme: 'sunset', particles: 'none', glow: true, labels: false },
-  { name: 'noglow', theme: 'sunset', particles: 'embers', glow: false, labels: false },
-  { name: 'labels', theme: 'sunset', particles: 'embers', glow: true, labels: true },
-  { name: 'bare', theme: 'sunset', particles: 'none', glow: false, labels: false },
-  // A shipping material theme: textured layers per note, no glow filter.
-  { name: 'glass', theme: 'liquid-glass', particles: 'embers', glow: true, labels: false },
+  { name: 'noparticles', theme: 'golden-hour', particles: 'none', glow: true, labels: false },
+  { name: 'noglow', theme: 'golden-hour', particles: 'embers', glow: false, labels: false },
+  { name: 'labels', theme: 'golden-hour', particles: 'embers', glow: true, labels: true },
+  { name: 'bare', theme: 'golden-hour', particles: 'none', glow: false, labels: false },
+  { name: 'rain', theme: 'rainy-study', particles: 'embers', glow: true, labels: false },
 ]
 const STAGE_LOOP_FRAMES = 240
 const STAGE_SYNC_FRAMES = 120
@@ -2407,14 +2406,14 @@ async function suiteVoiceload(
 // two paths per moment. Particles and labels off, so the glow is the only
 // difference. Moments: `dense` (most notes sounding), `lone` (exactly one),
 // `ending` (the dense chord's first note 40 ms before it ends — slivers at the
-// strike line). `&themes=a,b` (default sunset, the new-visitor theme).
+// strike line). `&themes=a,b` (default golden-hour, the new-visitor theme).
 async function suiteGlowShots(
   ctx: AppCtxValue,
   fixtureId: string,
 ): Promise<Record<string, number>> {
   const params = new URLSearchParams(window.location.search)
   const res = exportParams().res ?? '1080p'
-  const themes = (params.get('themes') ?? 'sunset').split(',') as ThemeId[]
+  const themes = (params.get('themes') ?? 'golden-hour').split(',') as ThemeId[]
   const midi = await loadFixture(ctx, fixtureId)
   const notes = midi.tracks.flatMap((t) => t.notes)
   const sounding = (t: number) => notes.filter((n) => n.time <= t && n.time + n.duration >= t)

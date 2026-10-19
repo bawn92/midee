@@ -42,12 +42,12 @@ describe('HomeMode', () => {
 
   it('sets the document title to the home title', () => {
     renderWithApp(() => <HomeMode />)
-    expect(document.title).toBe('midee - Free Online MIDI Player & Synthesia Alternative')
+    expect(document.title).toBe('Piano Club, see them bloom')
   })
   it('updates the descriptive title when the home locale changes', async () => {
     renderWithApp(() => <HomeMode />)
     await setLocale('fr')
     expect(document.title).toBe(t('doc.title.home'))
-    expect(document.title).toContain('Lecteur MIDI gratuit')
+    expect(document.title).toContain('voyez-les éclore')
   })
 })

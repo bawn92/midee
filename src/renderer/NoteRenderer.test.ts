@@ -1,10 +1,12 @@
 import { Container, type Renderer } from 'pixi.js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MidiTrack } from '../core/midi/types'
+import { setPaintPrefs } from '../ui/paint'
 import { setGlowMode } from './bakedGlow'
 import { createNoteMaterial } from './createNoteMaterial'
 import { NoteRenderer } from './NoteRenderer'
-import { sunsetTheme, THEMES } from './theme'
+import { goldenHourTheme } from './scenes/goldenHour'
+import { THEMES } from './theme'
 import { Viewport } from './viewport'
 
 vi.mock('pixi.js', () => {
@@ -31,7 +33,13 @@ vi.mock('pixi.js', () => {
     }
     rect = vi.fn(() => this)
     roundRect = vi.fn(() => this)
+    circle = vi.fn(() => this)
+    ellipse = vi.fn(() => this)
+    poly = vi.fn(() => this)
     fill() {
+      return this
+    }
+    stroke() {
       return this
     }
   }
@@ -85,6 +93,7 @@ const track: MidiTrack = {
 }
 
 beforeEach(() => {
+  setPaintPrefs({ noteStyle: 'classic', noteLook: 'soft', colorBy: 'hand' })
   vi.mocked(createNoteMaterial).mockImplementation(() => ({
     container: new Container(),
     setViewport: vi.fn(),
@@ -97,7 +106,11 @@ beforeEach(() => {
 })
 
 describe('material note consumption', () => {
-  for (const theme of THEMES.filter((theme) => theme.noteMaterial)) {
+  const materials = THEMES.filter((theme) => theme.noteMaterial)
+  it('shipping scenes draw with scene colours, without a note material', () => {
+    expect(materials).toEqual([])
+  })
+  for (const theme of materials) {
     it(`${theme.name} keeps its texture dimensions while crossing the keyboard`, () => {
       const viewport = new Viewport({
         canvasWidth: 800,
@@ -146,6 +159,72 @@ interface MockNode {
   tint?: number
 }
 
+describe('notes outside the keyboard range', () => {
+  it('draws them as slim edge markers instead of dropping them', () => {
+    const viewport = new Viewport({
+      canvasWidth: 800,
+      canvasHeight: 500,
+      keyboardHeight: 100,
+      pixelsPerSecond: 100,
+      pitchMin: 60,
+      pitchMax: 72,
+    })
+    const spanned: MidiTrack = {
+      ...track,
+      id: 'span',
+      notes: [
+        { pitch: 48, time: 2, duration: 1, velocity: 1 },
+        { pitch: 64, time: 2, duration: 1, velocity: 1 },
+        { pitch: 96, time: 2, duration: 1, velocity: 1 },
+      ],
+    }
+    const renderer = new NoteRenderer(goldenHourTheme, pixiRenderer)
+    renderer.setTracks([spanned])
+    renderer.draw([spanned], 2.2, viewport, new Set(['span']), null)
+    const g = (
+      renderer.container as unknown as {
+        children: Array<{ label: string; roundRect: ReturnType<typeof vi.fn> }>
+      }
+    ).children.find((c) => c.label === 'notes-span')!
+    const widths = g.roundRect.mock.calls.map((call) => call[2] as number)
+    const xs = g.roundRect.mock.calls.map((call) => call[0] as number)
+    // In-range C (64) is a full key. 48 hugs the left edge, 96 the right.
+    expect(widths.some((w) => w > 40)).toBe(true)
+    expect(xs.some((x) => x < 20)).toBe(true)
+    expect(xs.some((x) => x > 760)).toBe(true)
+    renderer.destroy()
+  })
+})
+
+describe('continuous classic bodies', () => {
+  it('draws abutting same-pitch notes as one tall bar', () => {
+    const viewport = new Viewport({
+      canvasWidth: 800,
+      canvasHeight: 500,
+      keyboardHeight: 100,
+      pixelsPerSecond: 100,
+    })
+    const spanned: MidiTrack = {
+      ...track,
+      notes: [
+        { pitch: 60, time: 2, duration: 0.5, velocity: 1 },
+        { pitch: 60, time: 2.501, duration: 0.5, velocity: 1 },
+      ],
+    }
+    const renderer = new NoteRenderer(goldenHourTheme, pixiRenderer)
+    renderer.setTracks([spanned])
+    renderer.draw([spanned], 1, viewport, new Set([track.id]), null)
+    const g = (
+      renderer.container as unknown as {
+        children: Array<{ label: string; roundRect: ReturnType<typeof vi.fn> }>
+      }
+    ).children.find((c) => c.label === 'notes-held-note')!
+    const heights = g.roundRect.mock.calls.map((call) => call[3] as number)
+    expect(Math.max(...heights)).toBeGreaterThan(90)
+    renderer.destroy()
+  })
+})
+
 describe('glow mode switch', () => {
   afterEach(() => setGlowMode('baked', 'average'))
 
@@ -157,7 +236,9 @@ describe('glow mode switch', () => {
       keyboardHeight: 100,
       pixelsPerSecond: 100,
     })
-    const renderer = new NoteRenderer(sunsetTheme, pixiRenderer)
+    // Scene pills skip the glow. This checks the filter path on a plain theme.
+    const { noteStyle: _scenePill, ...glowTheme } = goldenHourTheme
+    const renderer = new NoteRenderer(glowTheme, pixiRenderer)
     renderer.setTracks([track])
     const notes = renderer.container as unknown as MockNode
     // The bench toggles glowContainer.renderable: both paths must live in it.
@@ -175,7 +256,7 @@ describe('glow mode switch', () => {
     draw(3)
     expect(glow).toMatchObject({ filters: null, visible: true })
     expect(baked.visible).toBe(true)
-    expect(halos().map((s) => s.tint)).toEqual([sunsetTheme.trackColors[0]])
+    expect(halos().map((s) => s.tint)).toEqual([goldenHourTheme.trackColors[0]])
     draw(6.5) // past the note's end: nothing sounds
     expect(glow.visible).toBe(false)
     expect(halos()).toHaveLength(0)

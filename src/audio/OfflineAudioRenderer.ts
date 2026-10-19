@@ -24,9 +24,9 @@ import {
   setMasterBusRouting,
   setMasterVolume,
 } from './masterBus'
-import { buildOfflineEvents, type OfflineNoteEvent } from './offlineEvents'
+import { buildOfflineEvents, type OfflineAudibility, type OfflineNoteEvent } from './offlineEvents'
 
-export { buildOfflineEvents, type OfflineNoteEvent } from './offlineEvents'
+export { buildOfflineEvents, type OfflineAudibility, type OfflineNoteEvent } from './offlineEvents'
 
 export interface OfflineRenderOptions {
   midi: MidiFile
@@ -35,6 +35,8 @@ export interface OfflineRenderOptions {
   // Tracks the user has muted; their notes are excluded from the render so the
   // exported audio matches what was audible during interactive playback.
   disabledTrackIds?: ReadonlySet<string>
+  // Fit-to-range and hand practice, so the file matches what was audible.
+  audibility?: OfflineAudibility
   sampleRate?: number
   // Progress in [0, 1] — how far through the render we are. Called ~20 times
   // across the render, driven by OfflineAudioContext.suspend() checkpoints.
@@ -67,7 +69,7 @@ const TAIL_SECONDS = 1.5
 const PROGRESS_STEPS = 20
 
 export async function renderAudioOffline(opts: OfflineRenderOptions): Promise<AudioBuffer> {
-  const { midi, instrumentId, volume, disabledTrackIds, onProgress } = opts
+  const { midi, instrumentId, volume, disabledTrackIds, audibility, onProgress } = opts
   const sampleRate = opts.sampleRate ?? DEFAULT_SAMPLE_RATE
 
   // Pre-decode sample buffers against the online context BEFORE building the
@@ -80,7 +82,7 @@ export async function renderAudioOffline(opts: OfflineRenderOptions): Promise<Au
   // Flatten all tracks into one time-ordered event list up-front. Avoids N×M
   // nested scheduling inside the offline context and lets Tone.Part slot the
   // whole batch into a single transport entry instead of 2×notes entries.
-  const events = buildOfflineEvents(midi, disabledTrackIds)
+  const events = buildOfflineEvents(midi, disabledTrackIds, audibility)
 
   const renderDuration = Math.max(0.1, midi.duration + TAIL_SECONDS)
 

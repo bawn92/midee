@@ -3,7 +3,7 @@ import { isChunkLoadError, reloadForStaleChunk } from './staleChunk'
 
 const chunkErr = () =>
   new TypeError(
-    'Failed to fetch dynamically imported module: https://midee.app/assets/ExportModal-BuPMcbdd.js',
+    'Failed to fetch dynamically imported module: https://example.com/assets/ExportModal-BuPMcbdd.js',
   )
 
 describe('staleChunk', () => {

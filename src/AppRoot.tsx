@@ -1,5 +1,6 @@
 import { Show } from 'solid-js'
 import { SHOW_FPS } from './env'
+import { LandingGate } from './landing/LandingGate'
 import { ModeSwitch } from './modes/ModeSwitch'
 import { FpsOverlay } from './ui/FpsOverlay'
 
@@ -9,6 +10,7 @@ export function AppRoot() {
   return (
     <>
       <ModeSwitch />
+      <LandingGate />
       <Show when={SHOW_FPS}>
         <FpsOverlay />
       </Show>
