@@ -143,12 +143,12 @@
 <rect x="668" y="436" width="470" height="1" fill="#fff" opacity="0.12"/>
 <rect width="1200" height="630" fill="url(#vignette)"/>
 
-<text x="80" y="168" font-family="Inter" font-size="13" font-weight="600" fill="#5e3b24" letter-spacing="3.2">PIANO TRAINER</text>
+<text x="80" y="168" font-family="Figtree" font-size="13" font-weight="600" fill="#5e3b24" letter-spacing="3.2">PIANO TRAINER</text>
 <rect x="80" y="180" width="26" height="1.5" fill="#e6a94f" opacity="0.9"/>
-<text x="80" y="268" font-family="Instrument Serif" font-size="78" fill="#4a2f1e" letter-spacing="-1.5">Piano Club,</text>
-<text x="80" y="352" font-family="Instrument Serif" font-size="78" fill="#4a2f1e" letter-spacing="-1.5">see them bloom.</text>
-<text x="80" y="418" font-family="Inter" font-size="22" font-weight="500" fill="#7a5a44">A piano trainer for your MIDI keyboard,</text>
-<text x="80" y="450" font-family="Inter" font-size="22" font-weight="500" fill="#7a5a44">with learn mode, a range for small</text>
-<text x="80" y="482" font-family="Inter" font-size="22" font-weight="500" fill="#7a5a44">keyboards, and cozy scenes.</text>
+<text x="80" y="268" font-family="Young Serif" font-size="78" fill="#4a2f1e" letter-spacing="-1.5">Piano Club,</text>
+<text x="80" y="352" font-family="Young Serif" font-size="78" fill="#4a2f1e" letter-spacing="-1.5">see them bloom.</text>
+<text x="80" y="418" font-family="Figtree" font-size="22" font-weight="500" fill="#7a5a44">A piano trainer for your MIDI keyboard,</text>
+<text x="80" y="450" font-family="Figtree" font-size="22" font-weight="500" fill="#7a5a44">with learn mode, a range for small</text>
+<text x="80" y="482" font-family="Figtree" font-size="22" font-weight="500" fill="#7a5a44">keyboards, and cozy scenes.</text>
 
 </svg>

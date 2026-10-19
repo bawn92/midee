@@ -1,0 +1,88 @@
+/* Pairing 4 tracking and numerals. The font shorthand cannot carry
+   letter-spacing, so these follow the type tokens.
+   Hero serif is -2.5%. Titles (17–32px) are -1%. Figtree at 15px and
+   above is -0.5%. Caption keeps its +4%. */
+
+html[data-scene] :is(
+  .hud-piece-title,
+  .song-guide-kicker,
+  .panel-header,
+  .mode-error-title,
+  .gh-display,
+  .gh-title
+),
+.gh-display,
+.gh-title {
+  letter-spacing: var(--track-serif-title);
+}
+
+html[data-scene] .song-guide-kicker {
+  text-transform: none;
+}
+
+html[data-scene] .home-title,
+.learn-soon__title {
+  font-weight: 400;
+  letter-spacing: var(--track-serif-hero);
+  font-variation-settings: normal;
+}
+
+html[data-scene] .home-title {
+  font-size: clamp(38.72px, 4.576vw, 63.36px);
+}
+
+.learn-soon__title {
+  font-size: clamp(42.24px, 7.04vw, 77.44px);
+}
+
+html[data-scene] :is(
+  .song-guide-name,
+  .song-guide-chord-name,
+  .home-sub,
+  .ts-home-name,
+  .kbd-range-kicker,
+  .kbd-range-summary,
+  .kbd-range-minimise,
+  .sample-card-title,
+  .ex-card__title,
+  .session-summary__value,
+  .mode-error-message,
+  .gh-heading,
+  .gh-body,
+  .gh-number
+),
+.gh-heading,
+.gh-body,
+.gh-number {
+  letter-spacing: var(--track-sans-ui);
+}
+
+html[data-scene] #hud .scrubber-wrap .time-display {
+  font-family: var(--font-ui);
+  /* The font shorthand on this rule resets the numeric variant, and it
+     outranks the grouped selector below. */
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-scene] :is(
+  .time-display,
+  .hud-piece-bpm,
+  .hud-metro-bpm,
+  .song-guide-tempo button,
+  .kbd-range-notes,
+  .kbd-range-count,
+  .kbd-range-value,
+  .kbd-range-summary,
+  .kbd-range-face-note,
+  .session-summary__value,
+  .streak-row,
+  .pa-hud__stat-num,
+  .pa-hud__mini-streak,
+  .club-score-big,
+  .club-board-rank,
+  .club-board-score,
+  .gh-number,
+  .gh-display
+) {
+  font-variant-numeric: tabular-nums;
+}

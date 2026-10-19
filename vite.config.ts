@@ -2,10 +2,10 @@
 import { defineConfig, type Plugin } from 'vite'
 import solid from 'vite-plugin-solid'
 
-// Preload the body font (Inter 400) so the woff2 fetch starts in parallel
+// Preload the body font (Figtree 400) so the woff2 fetch starts in parallel
 // with HTML parse, not after CSS is parsed. Saves ~100-200 ms on LCP for
-// first-time visitors. Other weights / Instrument Serif / JetBrains Mono
-// load lazily via @font-face when the CSS resolves — fine, they're not
+// first-time visitors. Other weights / Young Serif / JetBrains Mono load
+// lazily via @font-face when the CSS resolves — fine, they're not
 // above-the-fold.
 const preloadBodyFont = (): Plugin => ({
   name: 'preload-body-font',
@@ -15,11 +15,11 @@ const preloadBodyFont = (): Plugin => ({
     handler(html, ctx) {
       const bundle = ctx.bundle
       if (!bundle) return html
-      const inter400 = Object.values(bundle).find(
-        (c) => c.type === 'asset' && /(^|\/)inter-latin-400-normal-[^/]+\.woff2$/.test(c.fileName),
+      const figtree400 = Object.values(bundle).find(
+        (c) => c.type === 'asset' && /(^|\/)figtree-latin-400-normal-[^/]+\.woff2$/.test(c.fileName),
       )
-      if (!inter400) return html
-      const tag = `    <link rel="preload" as="font" type="font/woff2" crossorigin href="/${inter400.fileName}">\n`
+      if (!figtree400) return html
+      const tag = `    <link rel="preload" as="font" type="font/woff2" crossorigin href="/${figtree400.fileName}">\n`
       return html.replace('</head>', `${tag}</head>`)
     },
   },

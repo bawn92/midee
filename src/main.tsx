@@ -13,26 +13,23 @@ import './styles/particles.css'
 import './styles/rangeCard.css'
 import './styles/transportPill.css'
 import './styles/floatingCards.css'
-import '@fontsource/nunito-sans/latin-500.css'
-import '@fontsource/nunito-sans/latin-600.css'
-import '@fontsource/nunito-sans/latin-700.css'
-import '@fontsource/nunito-sans/latin-800.css'
-import '@fontsource-variable/fraunces/full.css'
+import '@fontsource/figtree/latin-400.css'
+import '@fontsource/figtree/latin-500.css'
+import '@fontsource/figtree/latin-600.css'
+import '@fontsource/figtree/latin-700.css'
+import '@fontsource/figtree/latin-800.css'
+import '@fontsource/young-serif/latin-400.css'
+import './styles/type.css'
 import './styles/overlay.css'
 import './ui/paint'
 // Self-hosted fonts via @fontsource. Each CSS import emits a `@font-face`
-// rule into the main stylesheet bundle and ships its woff2 file to
-// `dist/assets/` as a long-cacheable hashed asset. Compared to
-// fonts.googleapis.com + fonts.gstatic.com, this saves the cross-origin
-// DNS+TLS chain Lighthouse measures as ~360 ms render-blocking on first
-// load. The bundled `latin-` subsets cover the Latin-script locales we ship;
-// `zh-CN` and `ja` fall back to system CJK fonts via CSS.
-import '@fontsource/inter/latin-400.css'
-import '@fontsource/inter/latin-500.css'
-import '@fontsource/inter/latin-600.css'
-import '@fontsource/inter/latin-700.css'
-import '@fontsource/instrument-serif/latin-400.css'
-import '@fontsource/instrument-serif/latin-400-italic.css'
+// rule (font-display: swap, latin subset) into the main stylesheet bundle
+// and ships its woff2 file to `dist/assets/` as a long-cacheable hashed
+// asset. Compared to fonts.googleapis.com + fonts.gstatic.com, this saves
+// the cross-origin DNS+TLS chain Lighthouse measures as ~360 ms
+// render-blocking on first load. Young Serif is the heading face and
+// Figtree is everything else. `zh-CN` and `ja` fall back to system CJK
+// fonts via CSS.
 import '@fontsource/jetbrains-mono/latin-400.css'
 import '@fontsource/jetbrains-mono/latin-500.css'
 import '@fontsource/jetbrains-mono/latin-600.css'
