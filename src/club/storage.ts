@@ -84,7 +84,7 @@ export function createClubStorage(storage: Storage): ClubStorage {
       const all = readList<LeaderboardEntry>(storage, CLUB_BOARD_KEY).filter(
         (item) => item.id !== entry.id,
       )
-      all.push({ ...entry, local: true })
+      all.push({ ...entry, local: true, avatarUrl: entry.avatarUrl ?? null })
       writeList(storage, CLUB_BOARD_KEY, all)
       return sortBoard(all.filter((item) => item.monthId === entry.monthId))
     },

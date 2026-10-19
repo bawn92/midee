@@ -129,3 +129,60 @@ test('club records one local take and keeps the mode routes apart', async ({ pag
 
   expect(errors).toEqual([])
 })
+
+test('club shared states render without a Clerk key', async ({ page }, info) => {
+  test.setTimeout(90_000)
+  await mkdir('/opt/cursor/artifacts/club-shared', { recursive: true })
+  const errors: string[] = []
+  page.on('pageerror', (err) => errors.push(err.message))
+  await page.addInitScript(() => {
+    localStorage.setItem('midee.started', '1')
+    localStorage.setItem('midee.kbdRangeExpanded', '0')
+  })
+  await page.setViewportSize({ width: 1440, height: 900 })
+
+  await page.goto('/club')
+  await expect(page.locator('[data-screen="landing"]')).toBeVisible()
+  await expect(page.locator('[data-auth="local"]')).toBeVisible()
+  await expect(page.locator('#club-sign-in-google')).toHaveCount(0)
+
+  await page.goto('/club?view=signed-out')
+  await expect(page.locator('[data-screen="signed-out"]')).toBeVisible()
+  await expect(page.locator('#club-sign-in-google')).toBeVisible()
+  await expect(page.locator('#club-sign-in-apple')).toBeVisible()
+  await expect(page.locator('#club-name')).toHaveCount(0)
+  await page.screenshot({ path: '/opt/cursor/artifacts/club-shared/signed-out.png' })
+  await info.attach('signed-out', {
+    path: '/opt/cursor/artifacts/club-shared/signed-out.png',
+    contentType: 'image/png',
+  })
+
+  await page.goto('/club?view=signed-in')
+  await expect(page.locator('[data-screen="signed-in"]')).toBeVisible()
+  await expect(page.locator('[data-auth="signed-in"]')).toBeVisible()
+  await expect(page.getByText('Signed in as Mara Chen')).toBeVisible()
+  await expect(page.locator('#club-post')).toBeVisible()
+  await page.screenshot({ path: '/opt/cursor/artifacts/club-shared/signed-in.png' })
+  await info.attach('signed-in', {
+    path: '/opt/cursor/artifacts/club-shared/signed-in.png',
+    contentType: 'image/png',
+  })
+
+  await page.goto('/club?view=leaderboard')
+  await expect(page.locator('[data-screen="leaderboard"]')).toBeVisible()
+  await expect(page.locator('.club-board--shared li')).toHaveCount(3)
+  await expect(page.locator('.club-replay')).toHaveCount(3)
+  await expect(page.locator('.club-avatar')).toHaveCount(3)
+  await page.screenshot({ path: '/opt/cursor/artifacts/club-shared/leaderboard.png' })
+  await info.attach('leaderboard', {
+    path: '/opt/cursor/artifacts/club-shared/leaderboard.png',
+    contentType: 'image/png',
+  })
+
+  await page.locator('#club-tab-friends').click()
+  await expect(page.getByText('Friends are coming later.')).toBeVisible()
+  await expect(page.locator('.club-board--shared')).toHaveCount(0)
+  await page.screenshot({ path: '/opt/cursor/artifacts/club-shared/friends-empty.png' })
+
+  expect(errors).toEqual([])
+})

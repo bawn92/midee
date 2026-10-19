@@ -41,6 +41,11 @@ describe('landing routes', () => {
     expect(parseRoute('/live/', '?x=1', false)).toEqual({ kind: 'mode', mode: 'live', song: null })
     expect(parseRoute('/learn', '', true)).toEqual({ kind: 'mode', mode: 'learn', song: null })
     expect(parseRoute('/club', '', true)).toEqual({ kind: 'mode', mode: 'club', song: null })
+    expect(parseRoute('/club/sso-callback', '', true)).toEqual({
+      kind: 'mode',
+      mode: 'club',
+      song: null,
+    })
     expect(parseRoute('/club/', '?song=bach-prelude-c', false)).toEqual({
       kind: 'mode',
       mode: 'club',

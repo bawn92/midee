@@ -151,6 +151,8 @@ export function parseRoute(pathname: string, search: string, _started: boolean):
     return { kind: 'mode', mode, song }
   }
 
+  if (path === '/club/sso-callback') return { kind: 'mode', mode: 'club', song: null }
+
   if (path.startsWith('/learn/')) {
     const rest = path.slice('/learn/'.length)
     if (rest && !rest.includes('/')) {

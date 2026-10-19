@@ -31,6 +31,7 @@ function entry(score: number, createdAt: number, id = `e-${score}-${createdAt}`)
     score,
     createdAt,
     local: true,
+    avatarUrl: null,
   }
 }
 
