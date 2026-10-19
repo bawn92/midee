@@ -25,6 +25,16 @@ vi.mock('tone', () => ({
   start: () => Promise.resolve(),
 }))
 
+function midiMessages(send: { mock: { calls: unknown[][] } }): number[][] {
+  const out: number[][] = []
+  for (const call of send.mock.calls) {
+    const bytes = call[0]
+    if (!Array.isArray(bytes)) continue
+    for (let i = 0; i + 2 < bytes.length; i += 3) out.push(bytes.slice(i, i + 3))
+  }
+  return out
+}
+
 function file(): MidiFile {
   return {
     name: 'lights.mid',
@@ -97,7 +107,7 @@ describe('Key Lights MIDI output', () => {
 
   function advance(time: number): void {
     now = time
-    vi.advanceTimersByTime(25)
+    vi.advanceTimersByTime(100)
   }
 
   it('keeps output opt-in, including when a device is already connected', () => {
@@ -115,7 +125,7 @@ describe('Key Lights MIDI output', () => {
     advance(0.05)
     advance(0.06)
     advance(0.08)
-    expect(send.mock.calls.map(([data]) => data)).toEqual([
+    expect(midiMessages(send)).toEqual([
       [0x92, 60, 64],
       [0x94, 48, 127],
       [0x84, 48, 0],
@@ -131,7 +141,7 @@ describe('Key Lights MIDI output', () => {
     advance(0.065)
     send.mockClear()
     clock.pause()
-    expect(send.mock.calls.map(([data]) => data)).toEqual([
+    expect(midiMessages(send)).toEqual([
       [0x82, 60, 0],
       [0x84, 48, 0],
     ])
@@ -145,10 +155,10 @@ describe('Key Lights MIDI output', () => {
     clock.play()
     send.mockClear()
     clock.seek(0.1)
-    expect(send).toHaveBeenCalledWith([0x92, 60, 64])
+    expect(midiMessages(send)).toContainEqual([0x92, 60, 64])
     send.mockClear()
     clock.seek(2)
-    expect(send.mock.calls.every(([data]) => (data[0] & 0xf0) === 0x80)).toBe(true)
+    expect(midiMessages(send).every((data) => (data[0]! & 0xf0) === 0x80)).toBe(true)
   })
 
   it('assigns one channel per track or a single channel from 1–16', () => {
@@ -156,10 +166,10 @@ describe('Key Lights MIDI output', () => {
     lights.configure({ channelMode: 'track' })
     clock.play()
     advance(0.065)
-    expect(send).toHaveBeenCalledWith([0x90, 60, 64])
-    expect(send).toHaveBeenCalledWith([0x91, 48, 127])
+    expect(midiMessages(send)).toContainEqual([0x90, 60, 64])
+    expect(midiMessages(send)).toContainEqual([0x91, 48, 127])
     lights.configure({ channelMode: 'single', channel: 16 })
-    expect(send).toHaveBeenCalledWith([0x9f, 60, 64])
+    expect(midiMessages(send)).toContainEqual([0x9f, 60, 64])
   })
 
   it('follows playback speed without submitting future timestamps', () => {
@@ -170,7 +180,15 @@ describe('Key Lights MIDI output', () => {
     advance(0.05)
     expect(send).not.toHaveBeenCalled()
     advance(0.101)
-    expect(send).toHaveBeenCalledWith([0x92, 60, 64])
+    expect(midiMessages(send)).toContainEqual([0x92, 60, 64])
+  })
+
+  it('sends every note due in one poll as a single MIDI buffer', () => {
+    enable()
+    clock.play()
+    advance(0.065)
+    expect(send).toHaveBeenCalledTimes(1)
+    expect(send).toHaveBeenCalledWith([0x92, 60, 64, 0x94, 48, 127])
   })
 
   it('uses Synthesia unknown-finger channels 12/13 for inferred left/right tracks', () => {
@@ -178,10 +196,10 @@ describe('Key Lights MIDI output', () => {
     lights.configure({ channelMode: 'synthesia' })
     clock.play()
     advance(0.065)
-    expect(send).toHaveBeenCalledWith([0x9c, 60, 64])
-    expect(send).toHaveBeenCalledWith([0x9b, 48, 127])
+    expect(midiMessages(send)).toContainEqual([0x9c, 60, 64])
+    expect(midiMessages(send)).toContainEqual([0x9b, 48, 127])
     advance(0.151)
-    expect(send).toHaveBeenCalledWith([0x8c, 60, 0])
+    expect(midiMessages(send)).toContainEqual([0x8c, 60, 0])
   })
 
   it('splits a single-track file at middle C for the Synthesia hand preset', () => {
@@ -193,8 +211,8 @@ describe('Key Lights MIDI output', () => {
     lights.configure({ channelMode: 'synthesia' })
     clock.play()
     advance(0.065)
-    expect(send).toHaveBeenCalledWith([0x9c, 60, 64])
-    expect(send).toHaveBeenCalledWith([0x9b, 48, 127])
+    expect(midiMessages(send)).toContainEqual([0x9c, 60, 64])
+    expect(midiMessages(send)).toContainEqual([0x9b, 48, 127])
   })
 
   it('keeps overlapping notes lit until their final note-off', () => {
@@ -206,10 +224,10 @@ describe('Key Lights MIDI output', () => {
     clock.play()
     advance(0.1)
     advance(0.16)
-    expect(send.mock.calls.filter(([data]) => data[0] === 0x92)).toHaveLength(1)
-    expect(send.mock.calls.filter(([data]) => data[0] === 0x82)).toHaveLength(0)
+    expect(midiMessages(send).filter((data) => data[0] === 0x92)).toHaveLength(1)
+    expect(midiMessages(send).filter((data) => data[0] === 0x82)).toHaveLength(0)
     advance(0.31)
-    expect(send).toHaveBeenLastCalledWith([0x82, 60, 0])
+    expect(midiMessages(send).at(-1)).toEqual([0x82, 60, 0])
   })
 
   it('clears muted tracks immediately and skips drums', () => {
@@ -219,11 +237,11 @@ describe('Key Lights MIDI output', () => {
     enable()
     clock.play()
     advance(0.065)
-    expect(send).not.toHaveBeenCalledWith([0x94, 48, 127])
+    expect(midiMessages(send)).not.toContainEqual([0x94, 48, 127])
     send.mockClear()
     lights.setTrackEnabled('right', false)
-    expect(send).toHaveBeenCalledWith([0x82, 60, 0])
-    expect(send.mock.calls.every(([data]) => (data[0] & 0xf0) === 0x80)).toBe(true)
+    expect(midiMessages(send)).toContainEqual([0x82, 60, 0])
+    expect(midiMessages(send).every((data) => (data[0]! & 0xf0) === 0x80)).toBe(true)
   })
 
   it('updates guidance incrementally and keeps it stable during transport transitions', () => {
@@ -268,7 +286,7 @@ describe('Key Lights MIDI output', () => {
     advance(0.065)
     send.mockClear()
     window.dispatchEvent(new Event('pagehide'))
-    expect(send).toHaveBeenCalledWith([0x82, 60, 0])
+    expect(midiMessages(send)).toContainEqual([0x82, 60, 0])
     lights.dispose()
     send.mockClear()
     clock.seek(0)
@@ -287,11 +305,11 @@ describe('Key Lights MIDI output', () => {
     clock.play()
     advance(0.065)
     expect(lights.status.value).toBe('connected')
-    expect(send.mock.calls).toHaveLength(1)
-    expect(send.mock.calls[0]![0][1]).toBe(transpose > 0 ? 60 : 67)
+    expect(midiMessages(send)).toHaveLength(1)
+    expect(midiMessages(send)[0]![1]).toBe(transpose > 0 ? 60 : 67)
   })
 
-  it('continues releasing other keys if one cleanup message fails', () => {
+  it('keeps a failed release batch from escaping playback', () => {
     enable()
     clock.play()
     advance(0.065)
@@ -299,8 +317,12 @@ describe('Key Lights MIDI output', () => {
     send.mockImplementationOnce(() => {
       throw new Error('Failed release')
     })
-    clock.pause()
-    expect(send).toHaveBeenCalledWith([0x84, 48, 0])
+    expect(() => clock.pause()).not.toThrow()
+    expect(send).toHaveBeenCalledTimes(1)
+    expect(midiMessages(send)).toEqual([
+      [0x82, 60, 0],
+      [0x84, 48, 0],
+    ])
   })
 
   it('restores playback and practice lights after returning from the page cache', () => {
@@ -310,7 +332,7 @@ describe('Key Lights MIDI output', () => {
     window.dispatchEvent(new Event('pagehide'))
     send.mockClear()
     window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }))
-    expect(send).toHaveBeenCalledWith([0x92, 60, 64])
+    expect(midiMessages(send)).toContainEqual([0x92, 60, 64])
     clock.pause()
     lights.setPracticeMode(true)
     lights.setGuidance([{ pitch: 64, velocity: 1, channel: 0, trackIndex: 0 }])
@@ -364,7 +386,7 @@ describe('ROLI Piano M key lights', () => {
     lights.load(midi)
     clock.play()
     now = 0.1
-    vi.advanceTimersByTime(25)
+    vi.advanceTimersByTime(100)
   }
 
   function song(pitches: number[]): MidiFile {
@@ -456,7 +478,7 @@ describe('ROLI Piano M key lights', () => {
     expect(send.mock.calls.map(([data]) => data)).toEqual([[0x9b, 60, 127]])
     send.mockClear()
     setHandPractice({ hand: 'both' })
-    expect(send.mock.calls.map(([data]) => data)).toEqual([
+    expect(midiMessages(send)).toEqual([
       [0x8b, 60, 0],
       [0x9b, 60, 127],
       [0x9c, 72, 127],
@@ -505,13 +527,13 @@ describe('ROLI Piano M key lights', () => {
       { pitch: 48, sourcePitch: 48, velocity: 1, channel: 0, trackIndex: 0 },
       { pitch: 60, sourcePitch: 84, velocity: 1, channel: 0, trackIndex: 0 },
     ])
-    expect(send.mock.calls.map(([data]) => data).sort()).toEqual([
+    expect(midiMessages(send).sort()).toEqual([
       [0x9b, 60, 127],
       [0x9c, 72, 127],
     ])
     send.mockClear()
     setHandPractice({ hand: 'left' })
-    expect(send.mock.calls.map(([data]) => data)).toEqual([
+    expect(midiMessages(send)).toEqual([
       [0x8b, 60, 0],
       [0x8c, 72, 0],
       [0x9b, 60, 127],
@@ -520,12 +542,12 @@ describe('ROLI Piano M key lights', () => {
 
   it('sends Golden Hour hand colours, then replaces them when the scene changes', () => {
     lights.setTheme(goldenHourTheme)
-    expect(send.mock.calls.map(([data]) => data)).toEqual(
+    expect(midiMessages(send)).toEqual(
       pianoMPaletteMessages(themeHandLights(goldenHourTheme), getKeyboardRange()),
     )
     send.mockClear()
     lights.setTheme(rainyStudyTheme)
-    expect(send.mock.calls.map(([data]) => data)).toEqual(
+    expect(midiMessages(send)).toEqual(
       pianoMPaletteMessages(themeHandLights(rainyStudyTheme), getKeyboardRange()),
     )
 
@@ -544,7 +566,7 @@ describe('ROLI Piano M key lights', () => {
       controllerLow: null,
       fitToRange: true,
     })
-    expect(send.mock.calls.map(([data]) => data)).toEqual(
+    expect(midiMessages(send)).toEqual(
       pianoMPaletteMessages(themeHandLights(goldenHourTheme), getKeyboardRange()),
     )
     send.mockClear()

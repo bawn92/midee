@@ -76,7 +76,7 @@ export class KeyLights {
   private guidance: readonly LightNote[] | null = null
   private shownGuidance = new Map<number, LightNote>()
   private practiceMode = false
-  private timer: ReturnType<typeof setInterval> | null = null
+  private timer: ReturnType<typeof setTimeout> | null = null
   private readonly unsubscribe: () => void
   private readonly unsubscribeRange: () => void
   private readonly unsubscribeHand: () => void
@@ -269,14 +269,15 @@ export class KeyLights {
   private sendPalette(): void {
     if (this.disposed || !this.output || !this.theme) return
     if (this.settings.value.channelMode !== 'pianoM') return
+    const batch: number[] = []
     for (const message of pianoMPaletteMessages(themeHandLights(this.theme), getKeyboardRange())) {
-      this.send(message)
-      if (!this.output) return
+      batch.push(...message)
     }
+    this.send(batch)
   }
 
   private send(data: number[]): void {
-    if (!this.output) return
+    if (!this.output || data.length === 0) return
     try {
       this.output.send(data)
     } catch {
@@ -287,7 +288,9 @@ export class KeyLights {
     }
   }
 
-  private emit(event: LightNote, on: boolean): void {
+  // One Web MIDI send per poll. A chord used to be one IPC per note, and on a
+  // Piano M that hitch landed on the same frame as the attack.
+  private queue(batch: number[], event: LightNote, on: boolean): void {
     const channel = this.channel(event)
     const key = channel * 128 + event.pitch
     const count = this.counts.get(key) ?? 0
@@ -295,11 +298,11 @@ export class KeyLights {
       this.counts.set(key, count + 1)
       if (count === 0) {
         const velocity = Math.max(1, Math.min(127, Math.round(event.velocity * 127)))
-        this.send([0x90 | channel, event.pitch, velocity])
+        batch.push(0x90 | channel, event.pitch, velocity)
       }
     } else if (count > 0) {
       if (count === 1) {
-        this.send([0x80 | channel, event.pitch, 0])
+        batch.push(0x80 | channel, event.pitch, 0)
         this.counts.delete(key)
       } else this.counts.set(key, count - 1)
     }
@@ -327,37 +330,59 @@ export class KeyLights {
       } else if (count <= 1) this.counts.delete(key)
       else this.counts.set(key, count - 1)
     }
+    const batch: number[] = []
     for (const [key] of this.counts) {
       const velocity = Math.max(1, Math.min(127, Math.round(held.get(key)!.velocity * 127)))
-      this.send([0x90 | Math.floor(key / 128), key % 128, velocity])
-      if (!this.output) return
+      batch.push(0x90 | Math.floor(key / 128), key % 128, velocity)
     }
+    this.send(batch)
+    if (!this.output) return
     // Chromium cannot cancel timestamped MIDI messages (no output.clear()).
-    // Poll due events locally so pause/seek can cancel all future work.
-    this.timer = setInterval(() => this.schedule(), 10)
+    // A local timer can be cleared on pause, so nothing is left queued in the
+    // browser. The wait matches the next note instead of polling every 10ms.
     this.schedule()
   }
 
   private schedule(): void {
+    if (this.timer !== null) {
+      clearTimeout(this.timer)
+      this.timer = null
+    }
     if (!this.output || !this.clock.playing) return
     const time = this.clock.currentTime
+    const batch: number[] = []
     while (this.cursor < this.events.length && this.events[this.cursor]!.time <= time) {
       const event = this.events[this.cursor++]!
-      this.emit(event, event.on)
-      if (!this.output) break
+      this.queue(batch, event, event.on)
     }
+    this.send(batch)
+    this.armTimer()
+  }
+
+  private armTimer(): void {
+    if (this.disposed || !this.output || !this.clock.playing || this.guidance) return
+    const next = this.events[this.cursor]
+    if (!next) return
+    const until = (next.time - this.clock.currentTime) * 1000
+    const delay = until > 40 ? Math.min(until, 250) : 10
+    this.timer = setTimeout(() => {
+      this.timer = null
+      this.schedule()
+    }, delay)
   }
 
   private stop(): void {
-    if (this.timer !== null) clearInterval(this.timer)
+    if (this.timer !== null) clearTimeout(this.timer)
     this.timer = null
     if (this.output) {
       const active = new Set([...this.counts.keys(), ...this.shownGuidance.keys()])
-      for (const key of active) {
+      const batch: number[] = []
+      for (const key of active) batch.push(0x80 | Math.floor(key / 128), key % 128, 0)
+      if (batch.length > 0) {
         try {
-          this.output.send([0x80 | Math.floor(key / 128), key % 128, 0])
+          this.output.send(batch)
         } catch {
-          // A failed release must not prevent releasing the remaining keys.
+          // The port is already gone. Per-key retries would fail the same way.
         }
       }
     }

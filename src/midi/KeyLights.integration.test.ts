@@ -50,21 +50,24 @@ function midiDevice() {
     name: 'KEENEKT',
     state: 'connected',
     send(data: number[], timestamp = performance.now()) {
-      messages.push([...data])
-      const deliver = () => {
-        delivered.push([...data])
-        const key = (data[0]! & 15) * 128 + data[1]!
-        if ((data[0]! & 0xf0) === 0x90 && data[2]! > 0) lit.add(key)
-        else lit.delete(key)
-      }
-      const delay = timestamp - performance.now()
-      if (delay <= 0) deliver()
-      else {
-        const timer = setTimeout(() => {
-          queue.delete(timer)
-          deliver()
-        }, delay)
-        queue.add(timer)
+      for (let i = 0; i + 2 < data.length; i += 3) {
+        const message = data.slice(i, i + 3)
+        messages.push(message)
+        const deliver = () => {
+          delivered.push([...message])
+          const key = (message[0]! & 15) * 128 + message[1]!
+          if ((message[0]! & 0xf0) === 0x90 && message[2]! > 0) lit.add(key)
+          else lit.delete(key)
+        }
+        const delay = timestamp - performance.now()
+        if (delay <= 0) deliver()
+        else {
+          const timer = setTimeout(() => {
+            queue.delete(timer)
+            deliver()
+          }, delay)
+          queue.add(timer)
+        }
       }
     },
   } as unknown as MIDIOutput

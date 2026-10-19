@@ -55,6 +55,11 @@ export class NoteRenderer {
   private fingerStamp = ''
   private fingerLabels: Text[] = []
   private fingerUsed = 0
+  private sceneLists = new Map<string, SceneNoteInput[]>()
+  private sceneInputs: SceneNoteInput[] = []
+  private sceneInputUsed = 0
+  private onsetTimes: number[] = []
+  private foldRaised = false
   private landing = new Graphics()
   private badgeGraphics = new Graphics()
   private bpm = 120
@@ -183,7 +188,8 @@ export class NoteRenderer {
 
     const visStart = currentTime - viewport.trailSeconds - 0.5
     const visEnd = currentTime + viewport.lookaheadSeconds + 0.5
-    const sceneBatches = new Map<string, SceneNoteInput[]>()
+    this.sceneInputUsed = 0
+    for (const list of this.sceneLists.values()) list.length = 0
 
     for (const track of tracks) {
       const g = this.trackGraphics.get(track.id)
@@ -273,24 +279,22 @@ export class NoteRenderer {
             active,
           )
         } else if (pill) {
-          let batch = sceneBatches.get(track.id)
+          let batch = this.sceneLists.get(track.id)
           if (!batch) {
             batch = []
-            sceneBatches.set(track.id, batch)
+            this.sceneLists.set(track.id, batch)
           }
-          batch.push({
-            pitch: note.pitch,
-            drawPitch,
-            time: note.time,
-            duration: note.duration,
-            velocity: note.velocity,
-            shifted,
-            octaves: placement?.octaves ?? 0,
-            dimmed,
-            color: noteColor,
-            hand,
-            note,
-          })
+          batch.push(
+            this.claimSceneInput(
+              note,
+              drawPitch,
+              shifted,
+              placement?.octaves ?? 0,
+              dimmed,
+              noteColor,
+              hand,
+            ),
+          )
         } else {
           g.roundRect(drawX, y, w, h, noteRadius)
           g.fill({ color: noteColor, alpha })
@@ -321,14 +325,17 @@ export class NoteRenderer {
       }
     }
 
-    this.paintSceneBatches(sceneBatches, viewport, nowLineY, currentTime, labels)
+    this.paintSceneBatches(viewport, nowLineY, currentTime, labels)
 
     labels?.end()
     for (let i = this.fingerUsed; i < this.fingerLabels.length; i++) {
       this.fingerLabels[i]!.visible = false
     }
     this.material?.end()
-    this.raiseFoldMarks()
+    if (!this.foldRaised) {
+      this.raiseFoldMarks()
+      this.foldRaised = true
+    }
 
     if (activeCount > 0) {
       const avgColor =
@@ -344,22 +351,66 @@ export class NoteRenderer {
     }
   }
 
+  private claimSceneInput(
+    note: MidiNote,
+    drawPitch: number,
+    shifted: boolean,
+    octaves: number,
+    dimmed: boolean,
+    color: number,
+    hand: 'left' | 'right',
+  ): SceneNoteInput {
+    let input = this.sceneInputs[this.sceneInputUsed]
+    if (!input) {
+      input = {
+        pitch: note.pitch,
+        drawPitch,
+        time: note.time,
+        duration: note.duration,
+        velocity: note.velocity,
+        shifted,
+        octaves,
+        dimmed,
+        color,
+        hand,
+        note,
+      }
+      this.sceneInputs.push(input)
+    } else {
+      input.pitch = note.pitch
+      input.drawPitch = drawPitch
+      input.time = note.time
+      input.duration = note.duration
+      input.velocity = note.velocity
+      input.shifted = shifted
+      input.octaves = octaves
+      input.dimmed = dimmed
+      input.color = color
+      input.hand = hand
+      input.note = note
+    }
+    this.sceneInputUsed++
+    return input
+  }
+
   private paintSceneBatches(
-    batches: Map<string, SceneNoteInput[]>,
     viewport: Viewport,
     nowLineY: number,
     currentTime: number,
     labels: NoteLabelLayer | null,
   ): void {
-    if (batches.size === 0) return
-    const times: number[] = []
-    for (const list of batches.values()) for (const note of list) times.push(note.time)
-    const onset = earliestFutureOnset(times, currentTime)
-    const dense = this.bpm > 160 || countOnsets(times, currentTime) > 10
+    this.onsetTimes.length = 0
+    for (const list of this.sceneLists.values()) {
+      for (const note of list) this.onsetTimes.push(note.time)
+    }
+    if (this.onsetTimes.length === 0) return
+    const onset = earliestFutureOnset(this.onsetTimes, currentTime)
+    const dense = this.bpm > 160 || countOnsets(this.onsetTimes, currentTime) > 10
     const pools = { used: 0 }
     const prefs = paintPrefs()
     const reduced = prefersReducedMotion()
-    for (const [id, notes] of batches) {
+    for (const [id, notes] of this.sceneLists) {
+      if (notes.length === 0) continue
       const g = this.trackGraphics.get(id)
       if (!g) continue
       paintSceneNotes({
@@ -576,6 +627,7 @@ export class NoteRenderer {
     }
     this.glowFilter.outerStrength = theme.noteGlowStrength
     // Baked halos re-bake themselves when the glow params change (begin()).
+    this.foldRaised = false
   }
 
   clear(): void {

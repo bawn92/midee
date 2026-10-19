@@ -92,6 +92,55 @@ export function plantShadowsActive(themeId: string, id: PlantShadowId = current)
   return themeId === 'golden-hour' && id !== 'off'
 }
 
+// The sway is a fraction of a pixel per display frame, so the shadow layer
+// repaints at 30Hz. When a frame already missed the 60Hz budget, the layer
+// waits longer and the buffer shrinks until frames recover.
+export const PLANT_CADENCE_MS = 32
+export const PLANT_STRESSED_CADENCE_MS = 80
+const PLANT_STRESS_FRAME_MS = 28
+const PLANT_RECOVER_FRAME_MS = 16
+const PLANT_RECOVER_AFTER_MS = 2000
+
+export interface PlantFrameState {
+  nowMs: number
+  lastPaintMs: number
+  frameMs: number
+  stressed: boolean
+  calmMs: number
+}
+
+export function stepPlantBudget(
+  state: PlantFrameState,
+  base: PlantShadowBudget,
+): {
+  paint: boolean
+  stressed: boolean
+  calmMs: number
+  budget: PlantShadowBudget
+} {
+  let stressed = state.stressed
+  let calmMs = state.calmMs
+  if (state.frameMs > PLANT_STRESS_FRAME_MS) {
+    stressed = true
+    calmMs = 0
+  } else if (stressed) {
+    calmMs = state.frameMs < PLANT_RECOVER_FRAME_MS ? calmMs + state.frameMs : 0
+    if (calmMs >= PLANT_RECOVER_AFTER_MS) {
+      stressed = false
+      calmMs = 0
+    }
+  }
+  const cadence = stressed ? PLANT_STRESSED_CADENCE_MS : PLANT_CADENCE_MS
+  const paint = state.lastPaintMs < 0 || state.nowMs - state.lastPaintMs >= cadence
+  const budget = stressed
+    ? {
+        scale: Math.round(base.scale * 0.7 * 100) / 100,
+        density: Math.round(base.density * 0.7 * 100) / 100,
+      }
+    : base
+  return { paint, stressed, calmMs, budget }
+}
+
 // Half-resolution shadow buffer on a full desktop. Phone and low-power
 // machines drop the buffer scale and the leaf count (README levers).
 export function plantShadowBudget(input: {

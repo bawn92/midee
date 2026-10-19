@@ -148,10 +148,14 @@ function PlayAlongHudView(props: PlayAlongHudOptions) {
     if (scrubberEl) scrubberEl.max = String(d || 1)
   })
 
-  // Scrubber value + time label driven by 60 Hz MasterClock directly.
+  // Scrubber value + time label driven by MasterClock. The clock still ticks
+  // every frame; the thumb moves at 20Hz and the mm:ss label once a second.
   // @reactive-scrubber-forbidden — see docs/done/SOLID_MIGRATION_PLAN.md §2 rule 4
+  let scrubWritten = -1
+  let timeSec = -1
   const tickUnsub = engine.services.clock.subscribe((t) => {
-    if (!scrubbing && scrubberEl) {
+    if (!scrubbing && scrubberEl && (t < scrubWritten || t - scrubWritten >= 0.05)) {
+      scrubWritten = t
       scrubberEl.value = String(t)
       const pct = (t / (Number(scrubberEl.max) || 1)) * 100
       // Set --pct on the WRAP, not the input: custom properties inherit
@@ -160,7 +164,11 @@ function PlayAlongHudView(props: PlayAlongHudOptions) {
       // pending B edge track the playhead live while you hunt for the end.
       wrapEl?.style.setProperty('--pct', `${Math.max(0, Math.min(100, pct)).toFixed(1)}%`)
     }
-    if (timeEl) timeEl.textContent = fmtTime(t)
+    const sec = Math.floor(t)
+    if (timeEl && sec !== timeSec) {
+      timeSec = sec
+      timeEl.textContent = fmtTime(t)
+    }
   })
   onCleanup(tickUnsub)
 

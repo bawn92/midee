@@ -101,6 +101,7 @@ export class Controls {
   private learnFileName: string | null = null
   private lastDisplaySec = -1
   private lastFillPct = -1
+  private lastScrubTime = -1
   private unsubs: Array<() => void> = []
 
   // Escape hatches into FloatingHud's reactive state.
@@ -469,8 +470,20 @@ export class Controls {
         if (store.state.status === 'exporting') return
         const dur = store.state.duration
 
+        // The clock still fires every frame. The thumb and fill only need a
+        // fresh DOM write about 20 times a second; the seconds label changes
+        // once a second. A seek backwards always paints immediately.
         // @reactive-scrubber-forbidden — see docs/done/SOLID_MIGRATION_PLAN.md §2 rule 4
-        this.scrubber.value = String(t)
+        if (t < this.lastScrubTime || t - this.lastScrubTime >= 0.05) {
+          this.scrubber.value = String(t)
+          this.lastScrubTime = t
+          const pct = dur > 0 ? Math.min((t / dur) * 100, 100) : 0
+          if (Math.abs(pct - this.lastFillPct) >= 0.1) {
+            this.scrubber.style.setProperty('--pct', `${pct.toFixed(1)}%`)
+            this.lastFillPct = pct
+          }
+        }
+
         this.paintPieceBpm(t)
 
         const sec = Math.floor(t)
@@ -478,13 +491,6 @@ export class Controls {
           // @reactive-scrubber-forbidden — see docs/done/SOLID_MIGRATION_PLAN.md §2 rule 4
           this.timeDisplay.textContent = formatTime(t)
           this.lastDisplaySec = sec
-        }
-
-        const pct = dur > 0 ? Math.min((t / dur) * 100, 100) : 0
-        if (Math.abs(pct - this.lastFillPct) >= 0.1) {
-          // @reactive-scrubber-forbidden — see docs/done/SOLID_MIGRATION_PLAN.md §2 rule 4
-          this.scrubber.style.setProperty('--pct', `${pct.toFixed(1)}%`)
-          this.lastFillPct = pct
         }
 
         if (dur > 0 && t >= dur) {
@@ -866,6 +872,7 @@ export class Controls {
   }
 
   // The piece subtitle is the file's tempo map, not the metronome click.
+  // A single tempo writes once; a later change writes again when the label moves.
   private paintPieceBpm(time: number): void {
     const el = this.pieceBpmEl
     if (!el) return
@@ -888,5 +895,6 @@ export class Controls {
   private invalidateTimeCache(): void {
     this.lastDisplaySec = -1
     this.lastFillPct = -1
+    this.lastScrubTime = -1
   }
 }

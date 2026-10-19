@@ -21,9 +21,11 @@ import { NoteRenderer } from './NoteRenderer'
 import { type ParticleStyle, ParticleSystem } from './ParticleSystem'
 import { PlantShadowField } from './plantShadowField'
 import {
+  type PlantShadowBudget,
   plantShadowId,
   plantShadowsActive,
   readPlantShadowBudget,
+  stepPlantBudget,
   subscribePlantShadow,
 } from './plantShadows'
 import { layersAnimating, type RenderContext, type RenderLayer } from './RenderLayer'
@@ -141,6 +143,11 @@ export class PianoRollRenderer {
   private plantUnsub: (() => void) | null = null
   private plantMotionQuery: MediaQueryList | null = null
   private plantReduced = false
+  private plantLastPaint = -1
+  private plantStressed = false
+  private plantCalmMs = 0
+  private plantPaintNow = true
+  private plantBudgetNow: PlantShadowBudget | null = null
 
   private midi: MidiFile | null = null
   private liveNoteStore: LiveNoteStore | null = null
@@ -724,6 +731,7 @@ export class PianoRollRenderer {
       this.liveClock.active
     if (animating) {
       this.idleFrames = 0
+      this.applyFrameBudget(ticker.deltaMS)
       this.renderFrame(clock.currentTime, ticker.deltaMS / 1000, clock.playing)
       return
     }
@@ -731,11 +739,13 @@ export class PianoRollRenderer {
     // The ticker still presents the stage, so the updated texture shows.
     if (this.plantMoving()) {
       this.idleFrames = 0
+      this.applyFrameBudget(ticker.deltaMS)
       this.stepPlantShadows()
       return
     }
     if (this.afterHoursLive()) {
       this.idleFrames = 0
+      this.applyFrameBudget(ticker.deltaMS)
       this.stepAfterHoursRoom(ticker.deltaMS / 1000, clock.currentTime, false)
       return
     }
@@ -752,6 +762,9 @@ export class PianoRollRenderer {
       return
     }
     this.app.ticker.stop()
+    if (document.documentElement.dataset.frameBudget) {
+      delete document.documentElement.dataset.frameBudget
+    }
   }
 
   // Drives rendering during video export. `emitParticles: true` so note-on
@@ -782,7 +795,7 @@ export class PianoRollRenderer {
 
   private renderFrame(currentTime: number, dt: number, emitParticles: boolean): void {
     this.stepLiveMotion()
-    this.stepPlantShadows()
+    this.stepPlantShadows(this.exportMode)
     this.lastRenderTime = currentTime
     const curr = this.currActive
     const activeColors = this.activeKeyColors
@@ -1480,16 +1493,18 @@ export class PianoRollRenderer {
   private onPlantSetting = (): void => {
     const id = plantShadowId()
     if (id !== 'off') this.plantField?.setPlant(id)
+    this.plantLastPaint = -1
     this.layoutPlantShadows()
-    this.stepPlantShadows()
+    this.stepPlantShadows(true)
     if (!this.exportMode) this.presentFrame()
     if (this.plantMoving()) this.wake()
   }
 
   private onPlantMotion = (event: MediaQueryListEvent): void => {
     this.plantReduced = event.matches
+    this.plantLastPaint = -1
     this.plantField?.setReducedMotion(event.matches)
-    this.stepPlantShadows()
+    this.stepPlantShadows(true)
     if (this.plantMoving()) this.wake()
     else if (!this.exportMode) this.presentFrame()
   }
@@ -1542,19 +1557,61 @@ export class PianoRollRenderer {
     stage.addChildAt(glow, stage.getChildIndex(shadow) + 1)
   }
 
-  private stepPlantShadows(): void {
+  // A moving roll drops the frosted blur immediately. Frame time still
+  // decides whether the plant layer waits and shrinks. Notes are unchanged.
+  private applyFrameBudget(frameMs: number): void {
+    const base = readPlantShadowBudget()
+    const decision = stepPlantBudget(
+      {
+        nowMs: performance.now(),
+        lastPaintMs: this.plantLastPaint,
+        frameMs: Number.isFinite(frameMs) && frameMs > 0 ? frameMs : 16,
+        stressed: this.plantStressed,
+        calmMs: this.plantCalmMs,
+      },
+      base,
+    )
+    this.plantStressed = decision.stressed
+    this.plantCalmMs = decision.calmMs
+    this.plantPaintNow = decision.paint
+    this.plantBudgetNow = decision.budget
+    // The frosted cards sample this canvas. Leave the blur off for the whole
+    // moving frame: waiting until a frame is already late means the upload
+    // that stalls has already started.
+    if (document.documentElement.dataset.frameBudget !== 'low') {
+      document.documentElement.dataset.frameBudget = 'low'
+    }
+  }
+
+  private stepPlantShadows(force = false): void {
     if (document.hidden && !this.exportMode) return
     const field = this.plantField
     const shadow = this.plantSprite
     const glow = this.plantGlowSprite
     if (!field || !shadow?.visible || !glow) return
+    // A paused reduced-motion wall, and a healthy frame between shadow
+    // paints, keeps the texture it already uploaded.
+    if (!force && !this.exportMode && !this.plantPaintNow && this.plantLastPaint >= 0) return
+    const budget = this.plantBudgetNow ?? readPlantShadowBudget()
+    field.setBudget(budget)
+    const w = Math.max(1, this.viewport.config.canvasWidth)
+    const h = Math.max(1, this.viewport.rollHeight)
+    const resized = field.resize(w, h)
+    if (resized) {
+      shadow.width = w
+      glow.width = w
+      shadow.height = h
+      glow.height = h
+    }
     // Matching the texture to the buffer clears the canvas, so resize first
     // and paint once into the final bitmap. Export frames stay on the parked pose.
     this.preparePlantTexture(shadow, field.shadow)
     this.preparePlantTexture(glow, field.glow)
-    field.paint(performance.now(), this.exportMode)
+    const now = performance.now()
+    field.paint(now, this.exportMode || this.plantReduced)
     shadow.texture.source.update()
     glow.texture.source.update()
+    this.plantLastPaint = now
     if (field.ready) document.documentElement.dataset.plantReady = '1'
   }
 

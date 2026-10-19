@@ -8,6 +8,7 @@ import {
   plantShadowId,
   plantShadowsActive,
   setPlantShadow,
+  stepPlantBudget,
   storedPlantShadow,
 } from './plantShadows'
 
@@ -71,6 +72,61 @@ describe('plant shadows', () => {
     const moving = leafPose(leaf, 4, 1, 6, 1440)
     const again = leafPose(leaf, 4, 1, 6, 1440)
     expect(moving).toEqual(again)
+  })
+
+  it('repaints the shadow layer on a cadence, and eases off when frames run long', () => {
+    const base = { scale: 0.5, density: 1 }
+    const first = stepPlantBudget(
+      { nowMs: 0, lastPaintMs: -1, frameMs: 16, stressed: false, calmMs: 0 },
+      base,
+    )
+    expect(first.paint).toBe(true)
+    expect(first.stressed).toBe(false)
+    expect(first.budget).toEqual(base)
+
+    const soon = stepPlantBudget(
+      { nowMs: 20, lastPaintMs: 0, frameMs: 16, stressed: false, calmMs: 0 },
+      base,
+    )
+    expect(soon.paint).toBe(false)
+
+    const due = stepPlantBudget(
+      { nowMs: 32, lastPaintMs: 0, frameMs: 16, stressed: false, calmMs: 0 },
+      base,
+    )
+    expect(due.paint).toBe(true)
+
+    const stressed = stepPlantBudget(
+      { nowMs: 100, lastPaintMs: 0, frameMs: 40, stressed: false, calmMs: 0 },
+      base,
+    )
+    expect(stressed.stressed).toBe(true)
+    expect(stressed.calmMs).toBe(0)
+    expect(stressed.budget).toEqual({ scale: 0.35, density: 0.7 })
+    const held = stepPlantBudget(
+      { nowMs: 150, lastPaintMs: 100, frameMs: 16, stressed: true, calmMs: 0 },
+      base,
+    )
+    expect(held.paint).toBe(false)
+    expect(held.stressed).toBe(true)
+    const eased = stepPlantBudget(
+      { nowMs: 180, lastPaintMs: 100, frameMs: 16, stressed: true, calmMs: 0 },
+      base,
+    )
+    expect(eased.paint).toBe(true)
+
+    let calmMs = 0
+    let still = true
+    for (let i = 0; i < 140; i++) {
+      const step = stepPlantBudget(
+        { nowMs: 1000 + i * 16, lastPaintMs: 0, frameMs: 15, stressed: still, calmMs },
+        base,
+      )
+      still = step.stressed
+      calmMs = step.calmMs
+    }
+    expect(still).toBe(false)
+    expect(calmMs).toBe(0)
   })
 
   it('uses fewer leaves when density drops', () => {
