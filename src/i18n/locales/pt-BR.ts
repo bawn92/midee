@@ -211,6 +211,9 @@ const ptBR: Messages = {
   'customize.keyLabels': 'Nomes das teclas',
   'customize.motion': 'Movimento',
   'customize.calm': 'Animações calmas',
+  'customize.strobe': 'Pulso estroboscópico',
+  'customize.strobe.note':
+    'Fotossensibilidade? Os flashes ficam abaixo de 3 por segundo. Desligue se incomodarem.',
   'customize.rollSpeed': 'Velocidade do rolo',
   'customize.sound': 'Som',
   'customize.volume': 'Volume',

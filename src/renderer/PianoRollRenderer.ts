@@ -30,6 +30,15 @@ import {
 import { layersAnimating, type RenderContext, type RenderLayer } from './RenderLayer'
 import { rangeLayerAlpha, rangePhaseAnimating, subscribeRangeOverlay } from './rangeOverlay'
 import { sceneForTheme } from './scenes'
+import {
+  type AfterHoursState,
+  createAfterHoursState,
+  exciteAfterHours,
+  halfBarIndex,
+  paintAfterHours,
+  stepAfterHours,
+  subscribeStrobe,
+} from './scenes/afterHoursShow'
 import { paintSceneBackdrop } from './scenes/backdrop'
 import { goldenHourTheme } from './scenes/goldenHour'
 import { getTrackColor, liveNoteColor, type Theme } from './theme'
@@ -122,6 +131,11 @@ export class PianoRollRenderer {
   private atmosphereThemeId: string | null = null
   private sceneBackdrop: Sprite | null = null
   private sceneBackdropKey = ''
+  private afterCanvas: HTMLCanvasElement | null = null
+  private afterState: AfterHoursState | null = null
+  private afterHeld = new Set<number>()
+  private afterLastPaint = -1
+  private afterUnsub: (() => void) | null = null
   private plantField: PlantShadowField | null = null
   private plantSprite: Sprite | null = null
   private plantGlowSprite: Sprite | null = null
@@ -229,6 +243,7 @@ export class PianoRollRenderer {
 
     this.buildScene()
     this.mountPlantShadows()
+    this.afterUnsub = subscribeStrobe(() => this.wake())
     // handleResize calls resize() → rebuildStaticLayers() + renderStaticFrame(0),
     // so buildScene must not call rebuildStaticLayers itself.
     this.handleResize()
@@ -314,7 +329,7 @@ export class PianoRollRenderer {
 
     const scene = sceneForTheme(this.theme.id)
     if (scene) {
-      this.syncSceneBackdrop(scene.themeId, canvasWidth, canvasHeight)
+      this.syncSceneBackdrop(scene.themeId, canvasWidth, canvasHeight, rollHeight)
       const { pitchMin, pitchMax } = this.viewport.config
       const frame = keyFrame(
         canvasWidth,
@@ -363,7 +378,12 @@ export class PianoRollRenderer {
     g.fill({ color: scene ? 0x000000 : this.theme.keyBorder, alpha: scene ? 0.08 : 1 })
   }
 
-  private syncSceneBackdrop(themeId: string, width: number, height: number): void {
+  private syncSceneBackdrop(
+    themeId: string,
+    width: number,
+    height: number,
+    rollHeight: number,
+  ): void {
     const scene = sceneForTheme(themeId)
     if (!scene) return
     const key = `${scene.id}:${width}x${height}`
@@ -374,10 +394,30 @@ export class PianoRollRenderer {
     }
     this.clearSceneBackdrop()
     const canvas = document.createElement('canvas')
-    paintSceneBackdrop(canvas, scene, Math.min(width, 1400), Math.min(height, 900))
+    if (scene.token === 'after-hours') {
+      canvas.width = Math.max(2, Math.min(width, 1100))
+      canvas.height = Math.max(2, Math.min(height, 700))
+      this.afterCanvas = canvas
+      this.afterState = createAfterHoursState(canvas.width)
+      this.afterHeld.clear()
+      const ctx = canvas.getContext('2d')
+      if (ctx && this.afterState) {
+        paintAfterHours(
+          ctx,
+          canvas.width,
+          canvas.height,
+          this.afterState,
+          rollHeight / Math.max(1, height),
+          this.plantReduced,
+        )
+      }
+    } else {
+      paintSceneBackdrop(canvas, scene, Math.min(width, 1400), Math.min(height, 900))
+    }
     const texture = Texture.from(canvas)
     this.sceneBackdrop = new Sprite(texture)
     this.sceneBackdrop.label = 'scene-backdrop'
+    this.sceneBackdrop.eventMode = 'none'
     this.sceneBackdrop.width = width
     this.sceneBackdrop.height = height
     this.sceneBackdropKey = key
@@ -388,6 +428,65 @@ export class PianoRollRenderer {
     this.sceneBackdrop?.destroy({ texture: true, textureSource: true })
     this.sceneBackdrop = null
     this.sceneBackdropKey = ''
+    this.afterCanvas = null
+    this.afterState = null
+    this.afterHeld.clear()
+  }
+
+  private afterHoursLive(): boolean {
+    return (
+      this.theme.id === 'after-hours' &&
+      this.afterCanvas !== null &&
+      !this.plantReduced &&
+      !document.hidden &&
+      !this.exportMode
+    )
+  }
+
+  private stepAfterHoursRoom(dt: number, time: number, playing: boolean): void {
+    const canvas = this.afterCanvas
+    const state = this.afterState
+    const sprite = this.sceneBackdrop
+    if (!canvas || !state || !sprite || this.theme.id !== 'after-hours') return
+    const now = performance.now()
+    const bpm = this.midi?.bpm && this.midi.bpm > 0 ? this.midi.bpm : 120
+    let beat = false
+    if (playing) {
+      const index = halfBarIndex(time, bpm)
+      if (state.halfBar < 0) state.halfBar = index
+      else if (index !== state.halfBar) {
+        state.halfBar = index
+        beat = true
+      }
+    }
+    const width = Math.max(1, this.viewport.config.canvasWidth)
+    const held = new Set<number>()
+    const hits = []
+    for (const pitch of this.activeKeyColors.keys()) {
+      held.add(pitch)
+      const fresh = !this.afterHeld.has(pitch)
+      hits.push({
+        u: this.viewport.pitchToX(pitch) / width,
+        hand: pitch < 60 ? ('L' as const) : ('R' as const),
+        v: fresh ? 1 : Math.min(0.35, dt * 4),
+      })
+    }
+    this.afterHeld = held
+    exciteAfterHours(state, hits)
+    stepAfterHours(state, dt, now, { reduced: this.plantReduced, beat })
+    if (!this.exportMode && now - this.afterLastPaint < 32 && state.flash < 0.05) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    paintAfterHours(
+      ctx,
+      canvas.width,
+      canvas.height,
+      state,
+      this.viewport.rollHeight / Math.max(1, this.viewport.config.canvasHeight),
+      this.plantReduced,
+    )
+    sprite.texture.source.update()
+    this.afterLastPaint = now
   }
 
   private drawNowLine(): void {
@@ -636,6 +735,11 @@ export class PianoRollRenderer {
       this.stepPlantShadows()
       return
     }
+    if (this.afterHoursLive()) {
+      this.idleFrames = 0
+      this.stepAfterHoursRoom(ticker.deltaMS / 1000, clock.currentTime, false)
+      return
+    }
     // Static scene. Render through a short grace window so the settled state
     // is definitely presented, then stop the ticker entirely — a static
     // screen otherwise redraws identical pixels at display refresh rate
@@ -868,6 +972,7 @@ export class PianoRollRenderer {
       if (this.liveEmitNext.size > 0) this.liveEmitNext.clear()
     }
 
+    this.stepAfterHoursRoom(dt, currentTime, emitParticles)
     this.keyboardRenderer.drawActiveKeys(activeColors, this.viewport)
     this.keyboardRenderer.drawShimmer(this.viewport)
     this.keyboardRenderer.drawRange(this.viewport)
@@ -1463,6 +1568,7 @@ export class PianoRollRenderer {
   destroy(): void {
     window.removeEventListener('resize', this.handleResize)
     this.plantUnsub?.()
+    this.afterUnsub?.()
     this.plantMotionQuery?.removeEventListener('change', this.onPlantMotion)
     document.removeEventListener('visibilitychange', this.onPlantVisibility)
     this.clockUnsub?.()

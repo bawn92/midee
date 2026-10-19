@@ -215,6 +215,9 @@ const pl: Messages & Record<PolishPluralKey, string> = {
   'customize.keyLabels': 'Nazwy klawiszy',
   'customize.motion': 'Ruch',
   'customize.calm': 'Spokojne animacje',
+  'customize.strobe': 'Impuls stroboskopowy',
+  'customize.strobe.note':
+    'Wrażliwość na światło? Błyski zostają poniżej 3 na sekundę. Wyłącz, jeśli Ci przeszkadzają.',
   'customize.rollSpeed': 'Prędkość rolki',
   'customize.sound': 'Dźwięk',
   'customize.volume': 'Głośność',

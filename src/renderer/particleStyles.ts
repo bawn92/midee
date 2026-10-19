@@ -50,7 +50,7 @@ export function isRainyParticle(id: string): boolean {
   return id === 'rain' || id === 'mist'
 }
 
-/** Rain and Mist stay stored on Golden Hour and display as Sparkle. */
+/** Rain and Mist stay on Rainy Study. Other scenes display them as Sparkle. */
 export function displayParticle(id: ParticleStyle, themeId: string): ParticleStyle {
   if (themeId !== 'rainy-study' && isRainyParticle(id)) return 'sparkle'
   return id

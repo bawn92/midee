@@ -227,6 +227,9 @@ export const en = {
   'customize.keyLabels': 'Show key labels',
   'customize.motion': 'Motion',
   'customize.calm': 'Calm animations',
+  'customize.strobe': 'Strobe pulse',
+  'customize.strobe.note':
+    'Photosensitive? Flashes stay under 3 per second. Turn this off if light flashes bother you.',
   'customize.rollSpeed': 'Roll speed',
   'customize.sound': 'Sound',
   'customize.volume': 'Volume',

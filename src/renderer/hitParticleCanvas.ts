@@ -32,7 +32,7 @@ export function hitLayerBlend(scene: HitPalette['scene'], fx: HitFx): 'normal' |
   if (fx === 'off') return 'normal'
   const blend = HIT_PARAMS[fx].blend
   if (blend === 'screen') return 'screen'
-  if (blend === 'lighter' && scene === 'rainy') return 'add'
+  if (blend === 'lighter' && scene !== 'golden') return 'add'
   return 'normal'
 }
 
@@ -55,6 +55,20 @@ const GOLDEN: HitPalette = {
   opal: [hex('f6c2da'), hex('d9c9f5'), hex('c4e3f7'), hex('c6eedd'), hex('fbd8be')],
 }
 
+const AFTER: HitPalette = {
+  scene: 'after',
+  rh: hex('22e8ff'),
+  rhEdge: hex('0aa3c2'),
+  lh: hex('ff3fa4'),
+  lhEdge: hex('c41e7c'),
+  hot: hex('f2ffff'),
+  glint: hex('ffffff'),
+  rain: hex('8fe9ff'),
+  mist: hex('b9a8ff'),
+  glassRim: hex('9af7ff'),
+  opal: [hex('ff7ad9'), hex('9d7bff'), hex('5ce1ff'), hex('7dffb2'), hex('ffe45c')],
+}
+
 const RAINY: HitPalette = {
   scene: 'rainy',
   rh: hex('7ba3b0'),
@@ -70,7 +84,7 @@ const RAINY: HitPalette = {
 }
 
 export function readHitPalette(scene: HitPalette['scene']): HitPalette {
-  const fallback = scene === 'rainy' ? RAINY : GOLDEN
+  const fallback = scene === 'rainy' ? RAINY : scene === 'after' ? AFTER : GOLDEN
   return {
     scene,
     rh: readRgb('--note-rh', fallback.rh),

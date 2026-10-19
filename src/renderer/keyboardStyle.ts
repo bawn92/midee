@@ -202,6 +202,25 @@ const ROLES: Record<KeyboardStyleId, Record<SceneKey, Role>> = {
   },
 }
 
+const AFTER_SYNTH: Role = {
+  caseLight: hex('23252D'),
+  caseDark: hex('0E0F13'),
+  ivory: hex('E3E6EE'),
+  ivorySide: hex('A3A8B5'),
+  ebony: hex('17181D'),
+  ebonySide: hex('0A0A0D'),
+  felt: hex('1A1221'),
+  strip: hex('22E8FF'),
+  highlight: hex('F2FFFF'),
+}
+
+const AFTER_PRESS = {
+  rh: hex('0AA3C2'),
+  lh: hex('C41E7C'),
+  noteRh: hex('22E8FF'),
+  noteLh: hex('FF3FA4'),
+}
+
 const PRESS: Record<SceneKey, { rh: number; lh: number; noteRh: number; noteLh: number }> = {
   'golden-hour': {
     rh: hex('A86A1E'),
@@ -287,10 +306,12 @@ export function subscribeKeyboardStyle(fn: (id: KeyboardStyleId) => void): () =>
 }
 
 export function keyboardPalette(themeId: string, id: KeyboardStyleId = current): KeyboardPalette {
+  const after = themeId === 'after-hours'
   const scene: SceneKey = themeId === 'rainy-study' ? 'rainy-study' : 'golden-hour'
-  const role = ROLES[id][scene]
+  const rainy = ROLES[id]['rainy-study']
+  const role = after ? (id === 'synth' ? AFTER_SYNTH : rainy) : ROLES[id][scene]
   const decor = DECOR[id]
-  const press = PRESS[scene]
+  const press = after ? AFTER_PRESS : PRESS[scene]
   return {
     id,
     name: NAMES[id],

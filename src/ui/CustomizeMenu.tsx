@@ -201,6 +201,7 @@ function MenuView(props: MenuProps) {
                     type="button"
                     aria-label={`${scene.name} scene`}
                     aria-pressed={on()}
+                    data-scene={scene.token}
                     disabled={index() < 0}
                     onClick={() => props.onSelectTheme(index())}
                   >

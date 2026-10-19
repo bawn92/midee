@@ -205,6 +205,8 @@ const zhCN: Messages = {
   'customize.keyLabels': '显示音名',
   'customize.motion': '动效',
   'customize.calm': '平静动画',
+  'customize.strobe': '频闪',
+  'customize.strobe.note': '对光敏感？闪光不超过每秒 3 次。如果闪光让你不适，请关闭。',
   'customize.rollSpeed': '卷帘速度',
   'customize.sound': '声音',
   'customize.volume': '音量',
