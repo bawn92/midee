@@ -8,6 +8,7 @@ import {
   KEYBOARD_RISE_PX,
   prefersReducedMotion,
   ROLL_RISE_PX,
+  retireModeView,
   SLIDE_PX,
   STAGGER_MS,
   settleSongIntoPlay,
@@ -204,5 +205,29 @@ describe('crossfadeModes', () => {
     })
     expect(kept).toBe(true)
     expect(consumePreserveRoll()).toBe(false)
+  })
+
+  it('retires the outgoing view after the fade and drops it if the switch retargets', () => {
+    const hub = document.createElement('div')
+    hub.className = 'learn-host learn-host--hub'
+    document.body.appendChild(hub)
+    crossfadeModes(() => {
+      retireModeView(hub)
+    })
+    expect(hub.isConnected).toBe(true)
+    expect(hub.classList.contains('mode-view--leave')).toBe(true)
+    expect(hub.getAttribute('inert')).not.toBeNull()
+    vi.advanceTimersByTime(VIEW_MS + 80)
+    expect(hub.isConnected).toBe(false)
+
+    const again = document.createElement('div')
+    again.className = 'learn-host learn-host--hub'
+    document.body.appendChild(again)
+    crossfadeModes(() => {
+      retireModeView(again)
+    })
+    expect(again.isConnected).toBe(true)
+    crossfadeModes(() => {})
+    expect(again.isConnected).toBe(false)
   })
 })

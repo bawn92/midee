@@ -99,6 +99,7 @@ function clearMotionNodes(): void {
 let clearTimer = 0
 let motionGen = 0
 let preserveRoll = false
+const leaving = new Map<HTMLElement, number>()
 
 // Header switches among Play, Live, and Learn keep the clock and the roll.
 // The mode shell consumes this once while it mounts.
@@ -108,10 +109,46 @@ export function consumePreserveRoll(): boolean {
   return keep
 }
 
+function dropLeavingViews(): void {
+  for (const [el, timer] of leaving) {
+    window.clearTimeout(timer)
+    el.remove()
+  }
+  leaving.clear()
+}
+
 function beginMotion(): number {
   window.clearTimeout(clearTimer)
+  // A newer transition replaces whatever was still fading out.
+  dropLeavingViews()
   motionGen += 1
   return motionGen
+}
+
+// The outgoing surface fades, ignores pointers immediately, and leaves the
+// document when that fade ends. A newer transition removes it first.
+export function retireModeView(el: HTMLElement): void {
+  el.classList.add('mode-view--leave')
+  el.setAttribute('inert', '')
+  el.setAttribute('aria-hidden', 'true')
+  const previous = leaving.get(el)
+  if (previous) window.clearTimeout(previous)
+  const ms = (prefersReducedMotion() ? VIEW_REDUCED_MS : VIEW_MS) + 80
+  const timer = window.setTimeout(() => {
+    leaving.delete(el)
+    if (el.isConnected && el.classList.contains('mode-view--leave')) el.remove()
+  }, ms)
+  leaving.set(el, timer)
+  el.addEventListener(
+    'animationend',
+    (event) => {
+      if (event.target !== el) return
+      window.clearTimeout(leaving.get(el))
+      leaving.delete(el)
+      if (el.isConnected && el.classList.contains('mode-view--leave')) el.remove()
+    },
+    { once: true },
+  )
 }
 
 function scheduleClear(gen: number, ms: number, finish: () => void): void {

@@ -23,7 +23,7 @@ import {
   trackMidiLoaded,
   trackMidiLoadFailed,
 } from '../telemetry'
-import { consumePreserveRoll } from '../ui/viewTransition'
+import { consumePreserveRoll, retireModeView } from '../ui/viewTransition'
 import type { ModeContext } from './ModeController'
 
 // Learn mode host. Owns all Learn-scoped state (loaded MIDI, transport,
@@ -400,7 +400,15 @@ export class LearnController {
   // ── Host element management ────────────────────────────────────────────
 
   private mountHostElements(overlay: HTMLElement): void {
-    if (this.hubHost && this.exerciseHost) return
+    // A switch that landed mid-fade may have left the previous hosts in the
+    // overlay. Drop them before mounting so two hubs cannot stack.
+    for (const el of overlay.querySelectorAll('.learn-host')) {
+      if (el === this.hubHost || el === this.exerciseHost) continue
+      el.remove()
+    }
+    if (this.hubHost?.isConnected && this.exerciseHost?.isConnected) return
+    this.hubHost = null
+    this.exerciseHost = null
     const hub = document.createElement('div')
     hub.className = 'learn-host learn-host--hub'
     const ex = document.createElement('div')
@@ -412,25 +420,26 @@ export class LearnController {
   }
 
   private unmountHostElements(): void {
-    this.hubHost?.remove()
-    this.exerciseHost?.remove()
+    const hub = this.hubHost
+    const exercise = this.exerciseHost
     this.hubHost = null
     this.exerciseHost = null
+    // Forget the nodes first so a re-entry during the fade mounts a new pair
+    // instead of reviving the one that is on its way out.
+    if (hub) retireModeView(hub)
+    if (exercise) retireModeView(exercise)
   }
 
   private showHubView(keepRoll = false): void {
     if (!this.hubHost || !this.exerciseHost) return
-    this.hubHost.classList.remove('learn-host--hidden')
+    this.hubHost.classList.remove('learn-host--hidden', 'mode-view--leave')
+    this.hubHost.removeAttribute('inert')
     this.exerciseHost.classList.add('learn-host--hidden')
     this.view.set('hub')
-    if (keepRoll) return
-    // The hub never shows the rolling piano — flush any MIDI + live notes an
-    // exiting exercise (or a prior Play-mode session) left on the renderer so
-    // the background stays quiet behind the hub chrome.
-    this.ctx.services.renderer.clearMidi()
-    // Hide the Pixi stage (notes lane + keyboard strip) while the catalog is
-    // showing — exercise mount restores it. stage.visible=false also skips
-    // per-frame draw work, not just compositing.
+    // A header switch may keep the clock and the loaded piece. The hub is
+    // still its own view: the roll and the keyboard belong to Play and Live,
+    // so they stay hidden for as long as the catalog is the current surface.
+    if (!keepRoll) this.ctx.services.renderer.clearMidi()
     this.ctx.services.renderer.setVisible(false)
   }
 

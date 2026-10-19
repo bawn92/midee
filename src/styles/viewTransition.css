@@ -208,12 +208,19 @@ html[data-vt="mode"] .song-guide {
   animation: vt-panel-in var(--vt-ms) var(--vt-ease) both;
 }
 
-html[data-vt="mode"] .learn-host--hub:not(.learn-host--hidden) {
+html[data-vt="mode"] .learn-host--hub:not(.learn-host--hidden):not(.mode-view--leave) {
   view-transition-name: vt-learn-hub;
   animation: vt-panel-in var(--vt-ms) var(--vt-ease) both;
 }
 
-html[data-vt="mode"] .learn-host--exercise:not(.learn-host--hidden) {
+/* Outgoing mode surface. Pointers drop immediately; the node leaves when the
+   fade ends, or sooner when another switch retargets the transition. */
+.learn-host.mode-view--leave {
+  pointer-events: none;
+  animation: vt-fade-out var(--vt-ms) var(--vt-ease) forwards;
+}
+
+html[data-vt="mode"] .learn-host--exercise:not(.learn-host--hidden):not(.mode-view--leave) {
   view-transition-name: vt-learn-ex;
   animation: vt-panel-in var(--vt-ms) var(--vt-ease) both;
 }
@@ -260,12 +267,16 @@ html[data-vt-api="on"][data-vt="mode"]
   html[data-vt="reduced"] .song-guide,
   html[data-vt="reduced"] .kbd-range-bar,
   html[data-vt="reduced"] .kbd-range-panel,
-  html[data-vt="reduced"] .learn-host--hub:not(.learn-host--hidden),
-  html[data-vt="reduced"] .learn-host--exercise:not(.learn-host--hidden),
+  html[data-vt="reduced"] .learn-host--hub:not(.learn-host--hidden):not(.mode-view--leave),
+  html[data-vt="reduced"] .learn-host--exercise:not(.learn-host--hidden):not(.mode-view--leave),
   html[data-vt="reduced"] .pa-hud,
   html[data-vt="reduced"] .sr-hud,
   html[data-vt="reduced"] #key-hint.kh--visible {
     animation: vt-fade-in var(--vt-reduced) linear both;
+  }
+
+  .learn-host.mode-view--leave {
+    animation: vt-fade-out var(--vt-reduced) linear forwards;
   }
 
   html[data-vt="enter"] #pianoroll,

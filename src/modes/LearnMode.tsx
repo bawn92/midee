@@ -8,19 +8,26 @@ import type { LearnController } from './LearnController'
 // against a controller no one's watching, and onCleanup is a no-op since
 // `controller` is still null.
 export function LearnMode() {
-  const { ensureLearnController } = useApp()
+  const { ensureLearnController, services } = useApp()
   let controller: LearnController | null = null
   let cancelled = false
   onMount(() => {
+    // Hide the shared roll before the Learn chunk arrives. Otherwise Live's
+    // keyboard stays painted under the hub for the whole download.
+    services.renderer.setVisible(false)
     void ensureLearnController().then((c) => {
-      if (cancelled) return
+      if (cancelled) {
+        services.renderer.setVisible(true)
+        return
+      }
       controller = c
       controller.enter()
     })
   })
   onCleanup(() => {
     cancelled = true
-    controller?.exit()
+    if (controller) controller.exit()
+    else services.renderer.setVisible(true)
   })
   return null
 }

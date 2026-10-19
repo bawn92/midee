@@ -49,6 +49,7 @@ import {
 import type { AppStore } from '../store/state'
 import { icons } from './icons'
 import { Stepper, Toggle } from './kit/kit'
+import { CLOSE_MODE_POPOVERS } from './modeChrome'
 
 const RANGE_OPEN_KEY = 'midee.kbdRangeExpanded'
 
@@ -148,6 +149,9 @@ function KeyboardRangeView(props: { store: AppStore }) {
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape' && open()) setDock('chip')
     }
+    const onModeChange = (): void => {
+      if (open()) setDock('chip')
+    }
     // The detail panel opens upward. Keep it between the bar and the top
     // strip when the shortcuts card has already pushed the bar up.
     // A wide scene pins the card itself (top-right, panel below). Toggling
@@ -181,6 +185,7 @@ function KeyboardRangeView(props: { store: AppStore }) {
     window.addEventListener('resize', fitPanel)
     document.addEventListener('pointerdown', onDoc, true)
     document.addEventListener('keydown', onKey)
+    window.addEventListener(CLOSE_MODE_POPOVERS, onModeChange)
     onCleanup(() => {
       off()
       offArm()
@@ -191,6 +196,7 @@ function KeyboardRangeView(props: { store: AppStore }) {
       window.removeEventListener('resize', fitPanel)
       document.removeEventListener('pointerdown', onDoc, true)
       document.removeEventListener('keydown', onKey)
+      window.removeEventListener(CLOSE_MODE_POPOVERS, onModeChange)
       endDrag()
     })
   })

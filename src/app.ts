@@ -50,7 +50,7 @@ import {
 import type { ExportStage, VideoExporter } from './export/VideoExporter'
 import { audioBufferToWav } from './export/wav'
 import { setLocale, t } from './i18n'
-import { markStarted } from './landing/route'
+import { markStarted, modePath, normalizePath, parseRoute, readStarted } from './landing/route'
 import { bindPlayKeyLights } from './midi/bindPlayKeyLights'
 import { CaptureFanout } from './midi/CaptureFanout'
 import { ComputerKeyboardInput } from './midi/ComputerKeyboardInput'
@@ -109,6 +109,7 @@ import { THROUGHPUT_KEY, throughputFrom } from './ui/exportSettings'
 import { InstrumentMenu } from './ui/InstrumentMenu'
 import { KeyboardRangeBand, KeyboardRangeControl } from './ui/KeyboardRangeControl'
 import { KeyboardResizer } from './ui/KeyboardResizer'
+import { closeModePopovers } from './ui/modeChrome'
 import { mountPhoneDock } from './ui/PhoneDock'
 import type { SessionAction } from './ui/PostSessionModal'
 import { PEDAL_HIDDEN, type PedalIndicatorState, pedalIndicatorState } from './ui/pedalIndicator'
@@ -854,8 +855,61 @@ export class App {
     }
 
     // Start in home. <HomeMode/>'s onMount handles the side effects.
+    // A deep link to /play, /live, or /learn replaces that before Solid paints.
     this.services.store.enterHome()
+    this.installModeRoutes()
     void this.autoConnectMidi()
+  }
+
+  // The address bar follows the mode. Popstate applies the URL without
+  // pushing a second entry on top of the one the browser just restored.
+  private urlQuiet = false
+
+  private installModeRoutes(): void {
+    this.unsubs.push(
+      watch(
+        () => this.store.state.mode,
+        (mode) => this.pushModeUrl(mode),
+      ),
+    )
+    window.addEventListener('popstate', this.onModePopState)
+    this.unsubs.push(() => window.removeEventListener('popstate', this.onModePopState))
+    this.applyLocationMode()
+  }
+
+  private pushModeUrl(mode: AppMode): void {
+    if (this.urlQuiet) return
+    const path = normalizePath(location.pathname)
+    if (mode === 'home') {
+      if (path === '/' || path === '/welcome' || path === '/start') return
+      history.pushState({ mode: 'home' }, '', `/start${location.search}${location.hash}`)
+      return
+    }
+    const next = modePath(mode)
+    if (path === next) return
+    history.pushState({ mode }, '', `${next}${location.search}${location.hash}`)
+  }
+
+  private onModePopState = (): void => {
+    this.urlQuiet = true
+    try {
+      this.applyLocationMode()
+    } finally {
+      queueMicrotask(() => {
+        this.urlQuiet = false
+      })
+    }
+  }
+
+  private applyLocationMode(): void {
+    const route = parseRoute(location.pathname, location.search, readStarted())
+    if (route.kind === 'hero' || route.kind === 'home') {
+      if (this.store.state.mode !== 'home') this.enterHomeMode()
+      return
+    }
+    if (route.mode === 'learn') this.renderer.setVisible(false)
+    if (this.store.state.mode === route.mode) return
+    this.requestMode(route.mode, true)
   }
 
   private releaseAllLiveNotes(): void {
@@ -1863,15 +1917,19 @@ export class App {
     }, 250)
   }
 
-  private requestMode(mode: Exclude<AppMode, 'home'>): void {
+  private requestMode(mode: Exclude<AppMode, 'home'>, fromHistory = false): void {
     // Play with nothing loaded opens the picker and stays in the current mode.
     // That is not a view change, so it must not arm the roll-preserving flag.
-    if (mode === 'play' && !this.store.state.loadedMidi) {
+    // A back/forward visit to /play still enters Play so the URL and the
+    // surface agree; the picker is the empty Play state.
+    if (mode === 'play' && !this.store.state.loadedMidi && !fromHistory) {
       this.openFilePicker('play')
       return
     }
-    const cross = isModeCrossfade(this.store.state.mode, mode)
+    const from = this.store.state.mode
+    const cross = isModeCrossfade(from, mode)
     const run = (): void => {
+      if (from !== 'home' && from !== mode) this.closeTransientOverlays()
       if (mode === 'live') {
         this.enterLiveMode(true, !cross)
         return
@@ -1890,6 +1948,10 @@ export class App {
       }
       if (this.store.state.loadedMidi) {
         this.enterPlayMode(!cross)
+        return
+      }
+      if (fromHistory) {
+        this.store.setState('mode', 'play')
         return
       }
       // Pin the target — without it, the picker would read `state.mode` at
@@ -1913,6 +1975,7 @@ export class App {
     void this.ensureLearnController().then((c) => {
       c.queueMidi(midi)
       crossfadeModes(() => {
+        this.closeTransientOverlays()
         this.store.setState('mode', 'learn')
       })
     })
@@ -1921,6 +1984,7 @@ export class App {
   // Thin delegators: each flips the store and lets Solid's mode shell run
   // the side effects (onMount in HomeMode/PlayMode/LiveMode/LearnMode).
   private enterHomeMode(): void {
+    if (this.store.state.mode !== 'home') this.closeTransientOverlays()
     this.store.enterHome()
   }
 
@@ -2152,15 +2216,15 @@ export class App {
     this.closeTransientOverlays()
   }
 
-  // Dismiss every modal-style overlay so mode switches and fresh-load flows
-  // don't leave a stale picker / export / post-session card floating over the
-  // new surface. Idempotent — `.close()` is a no-op when the modal is already
-  // hidden. Popovers (instrument menu, customize) close themselves on the
-  // outside click that triggered the transition.
+  // Dismiss every modal and popover so a mode switch cannot keep the previous
+  // surface's chrome. The range card ignores outside clicks while it is pinned,
+  // so the mode change itself has to close it. Idempotent.
   private closeTransientOverlays(): void {
     this.exportHandle.peek()?.close()
     this.postSessionHandle.peek()?.close()
     this.midiPickerHandle.peek()?.close()
+    this.trackPanel?.close()
+    closeModePopovers()
   }
 
   primeInteractiveAudio(): void {

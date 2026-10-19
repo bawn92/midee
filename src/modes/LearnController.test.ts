@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { type MidiFile, nominalTempoMap } from '../core/midi/types'
+import { crossfadeModes } from '../ui/viewTransition'
 import { LearnController } from './LearnController'
 
 // LearnOverlay pulls in PixiJS (Container / Graphics) which needs a real
@@ -178,6 +179,19 @@ describe('LearnController.queueMidi', () => {
     expect(ctrl.learnState.state.loadedMidi).toBeNull()
     // First midi was genuinely loaded during the first session.
     expect(firstMidi).not.toBeNull()
+  })
+
+  it('hides the roll when the hub opens from a header switch', () => {
+    vi.useFakeTimers()
+    try {
+      const ctx = makeFakeCtx()
+      const ctrl = new LearnController(ctx as never)
+      crossfadeModes(() => ctrl.enter())
+      expect(ctx.services.renderer.setVisible).toHaveBeenCalledWith(false)
+      expect(ctx.resetInteractionState).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('enter() without a queued MIDI leaves learnState empty', async () => {

@@ -25,6 +25,13 @@ describe('landing routes', () => {
     expect(parseRoute('/start/', '', true)).toEqual({ kind: 'home', connectMidi: false })
   })
 
+  it('maps /play, /live, and /learn onto those modes', () => {
+    expect(parseRoute('/play', '', true)).toEqual({ kind: 'mode', mode: 'play' })
+    expect(parseRoute('/live/', '?x=1', false)).toEqual({ kind: 'mode', mode: 'live' })
+    expect(parseRoute('/learn', '', true)).toEqual({ kind: 'mode', mode: 'learn' })
+    expect(parseRoute('/library', '', true)).toEqual({ kind: 'home', connectMidi: false })
+  })
+
   it('stores the flag under midee.started', () => {
     expect(readStarted()).toBe(false)
     markStarted()
@@ -46,5 +53,11 @@ describe('landing routes', () => {
       route: { kind: 'home', connectMidi: true },
       replace: null,
     })
+    expect(bootRoute('/play', '', '', true)).toEqual({
+      route: { kind: 'mode', mode: 'play' },
+      replace: null,
+    })
+    expect(bootRoute('/live', '', '', false).replace).toBeNull()
+    expect(bootRoute('/learn/', '', '', true).route).toEqual({ kind: 'mode', mode: 'learn' })
   })
 })

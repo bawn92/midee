@@ -11,6 +11,7 @@ import type { FingerMark, GuideSnapshot, SongGuide } from '../songGuide/types'
 import type { AppStore } from '../store/state'
 import { watch } from '../store/watch'
 import { Chip, Dropdown } from './kit/kit'
+import { CLOSE_MODE_POPOVERS } from './modeChrome'
 import { paintPrefs, subscribePaint } from './paint'
 
 const CLEAN_GOAL = 3
@@ -400,12 +401,23 @@ export class SongGuideController {
         this.renderBadges()
       }),
     )
+    window.addEventListener(CLOSE_MODE_POPOVERS, this.onClosePopovers)
     this.syncSong()
   }
 
+  private onClosePopovers = (): void => {
+    if (!this.guide || !this.saved.open) return
+    this.saved = { ...this.saved, open: false }
+    saveGuide(this.guide.id, this.saved)
+    this.restoreSpeed()
+    this.viewKey = ''
+    this.publish()
+  }
+
   private visible(): boolean {
-    const mode = this.store.state.mode
-    return mode === 'play' || mode === 'live' || mode === 'learn'
+    // The guide belongs to the piece in Play. Live and Learn have their own
+    // chrome, so a guide left open in Play must not ride along.
+    return this.store.state.mode === 'play'
   }
 
   private syncSong(): void {
@@ -599,6 +611,7 @@ export class SongGuideController {
   }
 
   dispose(): void {
+    window.removeEventListener(CLOSE_MODE_POPOVERS, this.onClosePopovers)
     this.restoreSpeed()
     for (const off of this.unsubs) off()
     this.unsubs = []

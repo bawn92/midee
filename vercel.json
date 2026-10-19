@@ -31,6 +31,12 @@
     { "source": "/start", "destination": "/index.html" },
     { "source": "/start/", "destination": "/index.html" },
     { "source": "/welcome", "destination": "/index.html" },
-    { "source": "/welcome/", "destination": "/index.html" }
+    { "source": "/welcome/", "destination": "/index.html" },
+    { "source": "/play", "destination": "/index.html" },
+    { "source": "/play/", "destination": "/index.html" },
+    { "source": "/live", "destination": "/index.html" },
+    { "source": "/live/", "destination": "/index.html" },
+    { "source": "/learn", "destination": "/index.html" },
+    { "source": "/learn/", "destination": "/index.html" }
   ]
 }

@@ -1,11 +1,20 @@
 // Landing routes. `/` always shows the hero, including for a returning
-// visitor. `/welcome` is the same hero. `/start` is Home. `midee.started`
-// is still written when a CTA is pressed, a note is played, or a file is
-// opened, and it no longer changes the route.
+// visitor. `/welcome` is the same hero. `/start` is Home. Play, Live, and
+// Learn are `/play`, `/live`, and `/learn`. `midee.started` is still written
+// when a CTA is pressed, a note is played, or a file is opened, and it no
+// longer changes the route.
 
 export const STARTED_KEY = 'midee.started'
 
 export type LandingKind = 'desktop' | 'phone'
+
+export type ModePath = 'play' | 'live' | 'learn'
+
+const MODE_BY_PATH: Record<string, ModePath> = {
+  '/play': 'play',
+  '/live': 'live',
+  '/learn': 'learn',
+}
 
 export interface HeroRoute {
   kind: 'hero'
@@ -16,7 +25,16 @@ export interface HomeRoute {
   connectMidi: boolean
 }
 
-export type LandingRoute = HeroRoute | HomeRoute
+export interface ModeRoute {
+  kind: 'mode'
+  mode: ModePath
+}
+
+export type LandingRoute = HeroRoute | HomeRoute | ModeRoute
+
+export function modePath(mode: ModePath): string {
+  return `/${mode}`
+}
 
 export function normalizePath(pathname: string): string {
   if (!pathname) return '/'
@@ -51,6 +69,8 @@ export function markStarted(): void {
 export function parseRoute(pathname: string, search: string, _started: boolean): LandingRoute {
   const path = normalizePath(pathname)
   if (path === '/' || path === '/welcome') return { kind: 'hero' }
+  const mode = MODE_BY_PATH[path]
+  if (mode) return { kind: 'mode', mode }
   return { kind: 'home', connectMidi: new URLSearchParams(search).get('connect') === 'midi' }
 }
 

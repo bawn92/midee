@@ -15,6 +15,7 @@ import { accentCSS, type Theme } from '../renderer/theme'
 import { AppearanceStudio } from './AppearanceStudio'
 import { icons } from './icons'
 import { KeyLightsSettings } from './KeyLightsSettings'
+import { CLOSE_MODE_POPOVERS } from './modeChrome'
 import { isNarrowViewport } from './utils'
 
 // Aesthetics popover — collapses theme, particles, and chord overlay (three
@@ -355,6 +356,9 @@ export class CustomizeMenu {
   private onOpenAppearance = (): void => {
     this.openRangeStyle()
   }
+  private onClosePopovers = (): void => {
+    this.close()
+  }
 
   private onResize = (): void => {
     if (!this.isOpen) return
@@ -474,6 +478,7 @@ export class CustomizeMenu {
       menuWrapper,
     )
     window.addEventListener('midee-open-appearance', this.onOpenAppearance)
+    window.addEventListener(CLOSE_MODE_POPOVERS, this.onClosePopovers)
   }
 
   // ── Public state setters (App pushes the active selection in) ──────────
@@ -579,6 +584,7 @@ export class CustomizeMenu {
 
   dispose(): void {
     window.removeEventListener('midee-open-appearance', this.onOpenAppearance)
+    window.removeEventListener(CLOSE_MODE_POPOVERS, this.onClosePopovers)
     this.close()
     this.disposeTrigger?.()
     this.disposeMenu?.()
