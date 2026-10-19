@@ -20,7 +20,12 @@ test('song guide follows the untitled piece and can loop a section', async ({ pa
     fullPage: true,
   })
   await card.click()
+  await expect(page.locator('#top-strip')).toHaveAttribute('data-mode', 'play', { timeout: 30_000 })
+  await expect(page.locator('[data-song-guide]')).toHaveCount(0)
 
+  // The guide stays on the section-loop page. A full-song span keeps the
+  // scrubber free to move through the melody and the climax.
+  await page.goto('/deadmau5?section=intro&bars=1-241')
   const guide = page.locator('[data-song-guide]')
   await expect(guide).toBeVisible({ timeout: 30_000 })
   await expect(guide.locator('.song-guide-name')).toHaveText('Untitled in G# minor')
@@ -54,6 +59,11 @@ test('song guide follows the untitled piece and can loop a section', async ({ pa
   await expect(guide.locator('.song-guide-looping')).toContainText('189')
   await expect(guide).toHaveAttribute('data-section', 'climax')
   await expect(guide.locator('.song-guide-chord-name')).toHaveText('E')
+  // The jump starts playback. Hold the playhead so the clean-run count stays
+  // on this step.
+  await play.evaluate((el) => {
+    if (el.getAttribute('data-playing') === 'true') (el as HTMLButtonElement).click()
+  })
 
   await guide.locator('[data-tempo="80"]').click()
   await expect(guide.locator('[data-tempo="80"]')).toHaveClass(/song-guide-tempo--on/)

@@ -112,7 +112,7 @@ export const en = {
   'topStrip.home': 'Home',
   'topStrip.modePlay': 'Play a MIDI file',
   'topStrip.modeLive': 'Play live',
-  'topStrip.modeLearn': 'Learn · exercises, ear training, sight reading',
+  'topStrip.modeLearn': 'Learn · drop a MIDI file',
   'topStrip.openMidi': 'Open MIDI file',
   'topStrip.more': 'More',
   'topStrip.tracks': 'Tracks',
@@ -140,7 +140,7 @@ export const en = {
   'topStrip.context.play.fallback': 'Open MIDI',
   'topStrip.context.learning.kicker': 'Learning',
   'topStrip.context.learn.kicker': 'Learn',
-  'topStrip.context.learn.title': 'Exercises, ear training, sight reading',
+  'topStrip.context.learn.title': 'Drop a MIDI file',
   // MIDI pill + menu labels (status-driven). `{name}` is the device name.
   'topStrip.midi.connectedMenu': 'MIDI: {name}',
   'topStrip.midi.connectedDefault': 'connected',
@@ -407,6 +407,9 @@ export const en = {
   'learn.hub.startWith': 'Start · {name}',
   'learn.hub.explore': 'Explore',
   'learn.hub.comingSoon': 'Coming soon',
+  'learn.drop.title': 'Drop a MIDI file to learn it',
+  'learn.drop.hint': '.mid or .midi',
+  'learn.drop.browse': 'Browse',
 
   // Catalog category labels.
   'learn.category.playAlong': 'Play along',

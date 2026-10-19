@@ -19,11 +19,10 @@ test('Golden Hour play view shows the living-room scene with a song loaded', asy
   await page.goto('/start')
   await page.locator('[data-card-id="untitled-g-sharp-minor"]').click()
 
-  const guide = page.locator('[data-song-guide]')
-  await expect(guide).toBeVisible({ timeout: 30_000 })
+  await expect(page.locator('[data-song-guide]')).toHaveCount(0)
   await expect(page.locator('html')).toHaveClass(/scene-golden-hour/)
   const play = page.locator('#hud-play')
-  await expect(play).toBeVisible()
+  await expect(play).toBeVisible({ timeout: 30_000 })
   if ((await play.getAttribute('data-playing')) === 'true') await play.click()
 
   const scrubber = page.locator('#hud-scrubber')
@@ -33,7 +32,6 @@ test('Golden Hour play view shows the living-room scene with a song loaded', asy
     input.dispatchEvent(new Event('input', { bubbles: true }))
     input.dispatchEvent(new Event('change', { bubbles: true }))
   })
-  await expect(guide).toHaveAttribute('data-bar', '20')
 
   const rangePanel = page.locator('#kbd-range-panel')
   if (!(await rangePanel.isVisible())) await page.locator('#kbd-range-label').click()

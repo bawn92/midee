@@ -1,0 +1,159 @@
+/* Learn hub, when the exercise catalog is unlinked: one centred drop zone. */
+
+.learn-host--hub > div:has(.learn-drop-stage) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.learn-hub:has(.learn-drop-stage) {
+  height: 100%;
+  min-height: 0;
+}
+
+.learn-hub:has(.learn-drop-stage) .learn-hub__scroll {
+  display: flex;
+  flex-direction: column;
+}
+
+.learn-drop-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100%;
+  padding: var(--space-6) var(--gutter) calc(var(--space-12) + env(safe-area-inset-bottom));
+  gap: var(--space-6);
+  box-sizing: border-box;
+}
+
+.learn-drop {
+  margin: 0;
+  width: min(680px, 100%);
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-12) var(--space-8);
+  border-radius: var(--radius-xl);
+  border: 1.5px dashed var(--border-strong);
+  background: var(--surface);
+  box-shadow: var(--elev-1);
+  color: var(--text-1);
+  text-align: center;
+  transition:
+    background var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+
+.learn-drop.is-over {
+  border-style: solid;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 55%, var(--surface-solid));
+  box-shadow: var(--elev-2);
+  transform: translateY(-2px);
+}
+
+.learn-drop.is-reject {
+  border-style: solid;
+  border-color: var(--note-lh);
+  background: color-mix(in srgb, var(--note-lh) 12%, var(--surface-solid));
+}
+
+.learn-drop__title {
+  margin: 0;
+  max-width: 16ch;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(28px, 4vw, 40px);
+  font-variation-settings: var(--font-display-axes);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: var(--text-1);
+}
+
+.learn-drop.is-over .learn-drop__title {
+  color: var(--accent-press, var(--accent));
+}
+
+.learn-drop__hint {
+  margin: 0;
+  font: var(--type-body);
+  color: var(--text-2);
+}
+
+.learn-drop__browse {
+  margin-top: var(--space-3);
+  min-height: 44px;
+  padding: 0 var(--space-6);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font: var(--type-label);
+  cursor: pointer;
+  box-shadow: var(--elev-1);
+}
+
+.learn-drop__browse:hover {
+  background: var(--accent-hover);
+}
+
+.learn-drop__browse:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.learn-drop__file {
+  display: none;
+}
+
+.learn-drop__recents {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  width: min(680px, 100%);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.learn-drop__recent {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  font: var(--type-caption);
+  cursor: pointer;
+  box-shadow: var(--elev-1);
+}
+
+.learn-drop__recent:hover {
+  background: var(--surface-hover);
+  color: var(--text-1);
+}
+
+.learn-drop__recent:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+  .learn-drop {
+    min-height: 260px;
+    padding: var(--space-8) var(--space-5);
+  }
+}

@@ -1,5 +1,7 @@
-import { createMemo, For, Show } from 'solid-js'
+import { createMemo, createSignal, For, onMount, Show } from 'solid-js'
+import { listRecents, type RecentMidi } from '../../core/recentMidi'
 import { t } from '../../i18n'
+import '../../styles/learn-drop.css'
 import type { ExerciseCategory, ExerciseDescriptor } from '../core/Exercise'
 import type { LearnState } from '../core/LearnState'
 import type { LearnProgressStore } from '../core/progress'
@@ -7,6 +9,7 @@ import { ComingSoonCardView, ExerciseCardView } from '../ui/ExerciseCard'
 import { createMountHandle } from '../ui/mountComponent'
 import { StreakRowView } from '../ui/StreakRow'
 import { CATALOG } from './catalog'
+import { SHOW_LEARN_EXERCISES } from './flags'
 
 // Looked up by ExerciseDescriptor.category. Returns the localised label —
 // callers read it inline so locale flips swap labels without remount.
@@ -40,6 +43,9 @@ export interface LearnHubOptions {
   // routes through the picker → LearnController.loadSample, which auto-launches
   // Play-Along, so the hub doesn't need a separate sample handler anymore.
   onOpenFilePicker: () => void
+  // The drop zone loads a file straight into wait-mode play-along.
+  onOpenFile: (file: File, source: 'drag' | 'picker') => void
+  onOpenRecent: (recentId: string) => void
 }
 
 // Catalog ordering. Play-along is the Hero up top so it's NOT repeated in
@@ -168,9 +174,124 @@ function Grid(props: { launchExercise: (d: ExerciseDescriptor) => void }) {
   )
 }
 
+function isMidiFile(name: string): boolean {
+  const lower = name.toLowerCase()
+  return lower.endsWith('.mid') || lower.endsWith('.midi')
+}
+
+function hasFiles(e: DragEvent): boolean {
+  return Array.from(e.dataTransfer?.types ?? []).includes('Files')
+}
+
+function LearnDrop(props: LearnHubOptions) {
+  let input!: HTMLInputElement
+  let depth = 0
+  let rejectTimer = 0
+  const [over, setOver] = createSignal(false)
+  const [reject, setReject] = createSignal(false)
+  const [recents, setRecents] = createSignal<RecentMidi[]>([])
+
+  onMount(() => {
+    void listRecents().then(setRecents)
+  })
+
+  const clearReject = (): void => {
+    window.clearTimeout(rejectTimer)
+    setReject(false)
+  }
+
+  const onDragEnter = (e: DragEvent): void => {
+    if (!hasFiles(e)) return
+    e.preventDefault()
+    depth += 1
+    clearReject()
+    setOver(true)
+  }
+  const onDragOver = (e: DragEvent): void => {
+    if (!hasFiles(e)) return
+    e.preventDefault()
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
+  }
+  const onDragLeave = (e: DragEvent): void => {
+    if (!hasFiles(e)) return
+    depth = Math.max(0, depth - 1)
+    if (depth === 0) setOver(false)
+  }
+  const onDrop = (e: DragEvent): void => {
+    e.preventDefault()
+    e.stopPropagation()
+    depth = 0
+    setOver(false)
+    const file = e.dataTransfer?.files[0]
+    if (file && isMidiFile(file.name)) {
+      props.onOpenFile(file, 'drag')
+      return
+    }
+    setReject(true)
+    rejectTimer = window.setTimeout(() => setReject(false), 700)
+  }
+
+  return (
+    <div class="learn-drop-stage">
+      <section
+        class="learn-drop"
+        classList={{ 'is-over': over(), 'is-reject': reject() }}
+        aria-label={t('learn.drop.title')}
+        data-learn-drop
+        data-drag-over={over() ? 'true' : 'false'}
+        onDragEnter={onDragEnter}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+      >
+        <p class="learn-drop__title">{t('learn.drop.title')}</p>
+        <p class="learn-drop__hint">{t('learn.drop.hint')}</p>
+        <button
+          type="button"
+          class="learn-drop__browse"
+          data-learn-browse
+          onClick={() => input.click()}
+        >
+          {t('learn.drop.browse')}
+        </button>
+        <input
+          ref={input}
+          class="learn-drop__file"
+          type="file"
+          accept=".mid,.midi,audio/midi,audio/mid"
+          data-learn-file
+          onChange={() => {
+            const file = input.files?.[0]
+            if (file && isMidiFile(file.name)) props.onOpenFile(file, 'picker')
+            input.value = ''
+          }}
+        />
+      </section>
+      <Show when={recents().length > 0}>
+        <ul class="learn-drop__recents" data-learn-recents>
+          <For each={recents()}>
+            {(recent) => (
+              <li>
+                <button
+                  type="button"
+                  class="learn-drop__recent"
+                  data-learn-recent={recent.id}
+                  onClick={() => props.onOpenRecent(recent.id)}
+                >
+                  {recent.displayName}
+                </button>
+              </li>
+            )}
+          </For>
+        </ul>
+      </Show>
+    </div>
+  )
+}
+
 function LearnHubView(props: LearnHubOptions) {
   return (
-    <div class="learn-hub">
+    <div class="learn-hub" data-learn-exercises={SHOW_LEARN_EXERCISES ? 'on' : 'off'}>
       <div class="learn-hub__glow" aria-hidden="true" />
       <header class="learn-hub__topbar">
         <div class="learn-hub__streak">
@@ -178,15 +299,17 @@ function LearnHubView(props: LearnHubOptions) {
         </div>
       </header>
       <div class="learn-hub__scroll">
-        <div class="learn-hub__inner">
-          <div class="learn-hub__hero">
-            <Hero {...props} />
+        <Show when={SHOW_LEARN_EXERCISES} fallback={<LearnDrop {...props} />}>
+          <div class="learn-hub__inner">
+            <div class="learn-hub__hero">
+              <Hero {...props} />
+            </div>
+            <div class="learn-hub__grid-label">{t('learn.hub.explore')}</div>
+            <div class="learn-hub__grid">
+              <Grid launchExercise={props.launchExercise} />
+            </div>
           </div>
-          <div class="learn-hub__grid-label">{t('learn.hub.explore')}</div>
-          <div class="learn-hub__grid">
-            <Grid launchExercise={props.launchExercise} />
-          </div>
-        </div>
+        </Show>
       </div>
     </div>
   )

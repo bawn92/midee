@@ -1,11 +1,11 @@
-import { createSignal, For, Show } from 'solid-js'
+import { createEffect, createSignal, For, Show } from 'solid-js'
 import { render } from 'solid-js/web'
 import type { MasterClock } from '../core/clock/MasterClock'
 import { getHandPractice, subscribeHandPractice } from '../core/handPractice'
 import { getKeyboardRange, subscribeKeyboardRange } from '../core/keyboardRange'
 import { pitchToNoteName } from '../core/midi/types'
-import { deadmau5Actions } from '../deadmau5/session'
 import { STROBE_SAMPLE_ID } from '../deadmau5/sections'
+import { deadmau5Actions, practicePick } from '../deadmau5/session'
 import { t } from '../i18n'
 import { GUIDE_TEMPOS, guideForMidi, guideSpeed } from '../songGuide'
 import { barAt, barStart, fingersAt, loopShouldWrap, snapshot } from '../songGuide/query'
@@ -379,8 +379,13 @@ export class SongGuideController {
 
     const [view, setView] = createSignal<GuideView | null>(null)
     this.setView = setView
-    this.disposeRoot = render(
-      () => (
+    this.disposeRoot = render(() => {
+      createEffect(() => {
+        practicePick()
+        this.renderBadges()
+        this.publish()
+      })
+      return (
         <SongGuideRoot
           view={view}
           onToggle={() => this.toggle()}
@@ -392,9 +397,8 @@ export class SongGuideController {
           onTempo={(tempo) => this.setTempo(tempo)}
           onClean={() => this.markClean(view()?.snap.step?.id ?? '')}
         />
-      ),
-      this.host,
-    )
+      )
+    }, this.host)
 
     this.unsubs.push(
       watch(
@@ -430,9 +434,9 @@ export class SongGuideController {
   }
 
   private visible(): boolean {
-    // The guide belongs to the piece in Play. Live and Learn have their own
-    // chrome, so a guide left open in Play must not ride along.
-    return this.store.state.mode === 'play'
+    // The floating guide stays with the Strobe section loop. Play, Live,
+    // Learn, and Home keep their own chrome.
+    return this.store.state.mode === 'play' && Boolean(practicePick()?.active)
   }
 
   private syncSong(): void {
