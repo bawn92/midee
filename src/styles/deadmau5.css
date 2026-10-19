@@ -1,0 +1,281 @@
+/* Section practice for /deadmau5. Colours, type, and elevation come from
+   the active scene's tokens, so Golden Hour and the other scenes all apply.
+   The home card sits at z-index 100, so the picker has to cover it. */
+
+html:has([data-deadmau5-picker]) #dropzone {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.dm-picker {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  overflow: auto;
+  pointer-events: auto;
+  color: var(--text-1, #4a2f1e);
+  background:
+    radial-gradient(900px 420px at 12% -10%, var(--accent-soft, #ebc99a), transparent 55%),
+    linear-gradient(180deg, var(--bg-top, #f8e3c8), var(--bg-bottom, #f2c9a0));
+}
+
+.dm-picker-inner {
+  width: min(1080px, calc(100% - var(--gutter, 24px) * 2));
+  margin: 0 auto;
+  padding: calc(var(--space-12, 48px) + env(safe-area-inset-top)) 0
+    calc(var(--space-10, 40px) + env(safe-area-inset-bottom));
+}
+
+.dm-kicker {
+  margin: 0 0 var(--space-2, 8px);
+  font: var(--type-caption, 600 12px/16px var(--font-ui, system-ui, sans-serif));
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent, #b9773a);
+}
+
+.dm-title {
+  margin: 0;
+  font: var(--type-display, 400 32px/40px var(--font-display, Georgia, serif));
+  letter-spacing: var(--track-serif-hero, -0.02em);
+  color: var(--text-1, #4a2f1e);
+}
+
+.dm-subtitle {
+  max-width: 42rem;
+  margin: var(--space-3, 12px) 0 0;
+  font: var(--type-body, 500 15px/22px var(--font-ui, system-ui, sans-serif));
+  color: var(--text-2, #7a5a44);
+}
+
+.dm-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--space-3, 12px);
+  margin: var(--space-8, 32px) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dm-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2, 8px);
+  width: 100%;
+  min-height: 132px;
+  padding: var(--space-4, 16px);
+  border: 1px solid var(--border, rgba(122, 78, 44, 0.14));
+  border-radius: var(--radius-lg, 20px);
+  background: var(--surface, rgba(255, 248, 238, 0.62));
+  box-shadow: var(--elev-1, 0 1px 2px rgba(94, 59, 36, 0.08));
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  backdrop-filter: blur(var(--blur-card, 18px));
+}
+
+.dm-card:hover {
+  background: var(--surface-hover, rgba(255, 248, 238, 0.78));
+}
+
+.dm-card:focus-visible {
+  outline: 2px solid var(--focus-ring, #8a5a2b);
+  outline-offset: 2px;
+}
+
+.dm-card.is-saved {
+  border-color: var(--accent, #b9773a);
+  box-shadow: var(--elev-2, 0 4px 12px rgba(94, 59, 36, 0.1));
+}
+
+.dm-swatch {
+  width: 28px;
+  height: 4px;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--dm-color, var(--accent, #b9773a));
+}
+
+.dm-card-name {
+  font: var(--type-title, 400 22px/28px var(--font-display, Georgia, serif));
+  letter-spacing: var(--track-serif-title, -0.01em);
+}
+
+.dm-card-meta {
+  font: var(--type-caption, 600 12px/16px var(--font-ui, system-ui, sans-serif));
+  color: var(--text-2, #7a5a44);
+}
+
+.dm-strip {
+  position: fixed;
+  z-index: 24;
+  left: 50%;
+  bottom: calc(148px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  width: min(980px, calc(100vw - 24px));
+  padding: var(--space-2, 8px);
+  border: 1px solid var(--border, rgba(122, 78, 44, 0.14));
+  border-radius: var(--radius-lg, 20px);
+  background: var(--surface-solid, #fbf3e8);
+  box-shadow: var(--elev-2, 0 4px 12px rgba(94, 59, 36, 0.1));
+  color: var(--text-1, #4a2f1e);
+  pointer-events: auto;
+}
+
+.dm-chips {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.dm-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.dm-chip,
+.dm-text-btn,
+.dm-step button {
+  border: 1px solid var(--border, rgba(122, 78, 44, 0.14));
+  background: var(--surface-sunken, rgba(122, 78, 44, 0.06));
+  color: inherit;
+  cursor: pointer;
+  font: var(--type-caption, 600 12px/16px var(--font-ui, system-ui, sans-serif));
+}
+
+.dm-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: var(--radius-pill, 999px);
+}
+
+.dm-chip.is-on {
+  background: var(--accent, #b9773a);
+  border-color: transparent;
+  color: var(--text-on-accent, #fff8ee);
+}
+
+.dm-chip i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dm-color, currentColor);
+}
+
+.dm-chip.is-on i {
+  background: var(--text-on-accent, #fff8ee);
+}
+
+.dm-chip:focus-visible,
+.dm-text-btn:focus-visible,
+.dm-step button:focus-visible {
+  outline: 2px solid var(--focus-ring, #8a5a2b);
+  outline-offset: 2px;
+}
+
+.dm-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.dm-pass,
+.dm-phase {
+  font: var(--type-label, 600 13px/18px var(--font-ui, system-ui, sans-serif));
+  color: var(--text-2, #7a5a44);
+  white-space: nowrap;
+}
+
+.dm-pass {
+  color: var(--text-1, #4a2f1e);
+}
+
+.dm-steps {
+  display: flex;
+  gap: 6px;
+}
+
+.dm-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-2, #7a5a44);
+  font: var(--type-caption, 600 12px/16px var(--font-ui, system-ui, sans-serif));
+}
+
+.dm-step button {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: var(--radius-xs, 6px);
+}
+
+.dm-step b {
+  min-width: 1.4em;
+  color: var(--text-1, #4a2f1e);
+  font-weight: 700;
+  text-align: center;
+}
+
+.dm-text-btn {
+  padding: 6px 10px;
+  border-radius: var(--radius-pill, 999px);
+  white-space: nowrap;
+}
+
+.dm-text-btn.is-accent {
+  background: var(--accent, #b9773a);
+  border-color: transparent;
+  color: var(--text-on-accent, #fff8ee);
+}
+
+.sample-card-practice,
+.song-guide-practice {
+  font: var(--type-caption, 600 12px/16px var(--font-ui, system-ui, sans-serif));
+  color: var(--accent, #b9773a);
+  text-decoration: none;
+}
+
+.sample-card-practice {
+  position: absolute;
+  z-index: 2;
+  top: 8px;
+  right: 8px;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill, 999px);
+  border: 1px solid var(--border-strong, rgba(122, 78, 44, 0.28));
+  background: var(--surface-solid, #fbf3e8);
+  box-shadow: var(--elev-1, none);
+}
+
+.sample-card-practice:hover,
+.song-guide-practice:hover {
+  color: var(--accent-hover, #a86a30);
+}
+
+.song-guide-practice {
+  display: inline-block;
+  margin-top: 4px;
+}
+
+@media (max-width: 720px) {
+  .dm-strip {
+    flex-wrap: wrap;
+    bottom: calc(112px + env(safe-area-inset-bottom));
+  }
+
+  .dm-meta {
+    width: 100%;
+    margin-left: 0;
+    overflow-x: auto;
+  }
+}

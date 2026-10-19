@@ -4,6 +4,8 @@ import type { MasterClock } from '../core/clock/MasterClock'
 import { getHandPractice, subscribeHandPractice } from '../core/handPractice'
 import { getKeyboardRange, subscribeKeyboardRange } from '../core/keyboardRange'
 import { pitchToNoteName } from '../core/midi/types'
+import { deadmau5Actions } from '../deadmau5/session'
+import { STROBE_SAMPLE_ID } from '../deadmau5/sections'
 import { t } from '../i18n'
 import { GUIDE_TEMPOS, guideForMidi, guideSpeed } from '../songGuide'
 import { barAt, barStart, fingersAt, loopShouldWrap, snapshot } from '../songGuide/query'
@@ -93,6 +95,19 @@ export function SongGuidePanel(props: {
             <div>
               <div class="song-guide-kicker">{t('songGuide.title')}</div>
               <div class="song-guide-name">{view().guide.title}</div>
+              <Show when={view().guide.id === STROBE_SAMPLE_ID}>
+                <a
+                  class="song-guide-practice"
+                  href="/deadmau5"
+                  data-deadmau5-guide
+                  onClick={(e) => {
+                    e.preventDefault()
+                    deadmau5Actions()?.openPicker()
+                  }}
+                >
+                  {t('deadmau5.guide')}
+                </a>
+              </Show>
             </div>
             <button type="button" class="song-guide-close" onClick={() => props.onToggle()}>
               {t('songGuide.hide')}

@@ -2,6 +2,7 @@ import { getContext, getTransport, immediate, Part, start as toneStart } from 't
 import { getHandPractice, type Hand } from '../core/handPractice'
 import { getKeyboardRange, placedPitch } from '../core/keyboardRange'
 import { noteHandOf } from '../core/midi/hands'
+import { notesForLoop } from '../deadmau5/loopNotes'
 import { audibleDuration, type MidiFile } from '../core/midi/types'
 import { createEventSignal } from '../store/eventSignal'
 import type { AudioEngine } from './AudioEngine'
@@ -52,6 +53,12 @@ export class SynthEngine implements AudioEngine {
   private scheduledPart: any | null = null
   private _speed = 1
   private scheduledFromTime = 0
+  // Practice loop. `seamless` repeats a Tone.Part on the audio clock so a
+  // wrap does not stop the transport. Learn leaves it off: wait mode has to
+  // pause, and `play()` only schedules onsets inside the window.
+  private practiceWindow: { start: number; end: number } | null = null
+  private practiceSeamless = false
+  private builtLoop: { start: number; end: number } | null = null
   private readyPromise: Promise<void> = Promise.resolve()
   private liveWarmupStarted = false
   // Latest-wins guard for `play()`. `play()` is async (awaits readyPromise +
@@ -152,8 +159,18 @@ export class SynthEngine implements AudioEngine {
     return promise
   }
 
+  setPracticeLoop(window: { start: number; end: number } | null, seamless: boolean): void {
+    this.practiceWindow = window && window.end > window.start ? window : null
+    this.practiceSeamless = this.practiceWindow !== null && seamless
+  }
+
   async play(fromTime: number): Promise<void> {
     if (!this.midi) return
+    if (this.practiceSeamless && this.practiceWindow) {
+      const window = this.practiceWindow
+      const from = Math.min(Math.max(fromTime, window.start), window.end - 0.001)
+      return this.playLoop(window.start, window.end, from)
+    }
     const gen = ++this.playGeneration
     await this.readyPromise
     await toneStart()
@@ -201,6 +218,11 @@ export class SynthEngine implements AudioEngine {
       }
       for (let i = lo; i < notes.length; i++) {
         const note = notes[i]!
+        // Learn's window is the same half-open rule as the practice loop:
+        // an onset at `end` belongs to the next pass, and a note that
+        // started before the window is not attacked again.
+        if (this.practiceWindow && note.time < this.practiceWindow.start) continue
+        if (this.practiceWindow && note.time >= this.practiceWindow.end) break
         const placed = track.isDrum ? null : placedPitch(note.pitch, getKeyboardRange())
         partEvents.push([
           note.time - fromTime,
@@ -244,6 +266,81 @@ export class SynthEngine implements AudioEngine {
     transport.start()
   }
 
+  // One Tone.Part for [start, end), looping on the audio clock. Event times
+  // are relative to `start` and durations are the notes' full audible length.
+  // The transport is not torn down when the part wraps.
+  private async playLoop(start: number, end: number, fromTime: number): Promise<void> {
+    if (!this.midi || !(end > start)) return
+    const gen = ++this.playGeneration
+    await this.readyPromise
+    await toneStart()
+    if (gen !== this.playGeneration) return
+
+    const transport = getTransport()
+    const nominalBpm = this.midi.bpm
+    if (
+      transport.state === 'paused' &&
+      this.scheduledPart &&
+      this.builtLoop &&
+      this.builtLoop.start === start &&
+      this.builtLoop.end === end
+    ) {
+      transport.bpm.value = nominalBpm * this._speed
+      transport.start()
+      return
+    }
+
+    this.clearScheduled()
+    transport.stop()
+    transport.position = 0
+    this.scheduledFromTime = fromTime
+    this.builtLoop = { start, end }
+    transport.bpm.value = nominalBpm
+
+    const partEvents: [number, NoteEvent][] = []
+    for (const track of this.midi.tracks) {
+      for (const note of notesForLoop(track.notes, start, end)) {
+        const placed = track.isDrum ? null : placedPitch(note.pitch, getKeyboardRange())
+        partEvents.push([
+          note.time - start,
+          {
+            note: midiToNoteName(placed?.pitch ?? note.pitch),
+            duration: audibleDuration(note),
+            velocity: note.velocity,
+            trackId: track.id,
+            pitch: note.pitch,
+            hand: track.isDrum ? null : noteHandOf(track, note.pitch),
+          },
+        ])
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const part = new (Part as any)((time: number, ev: NoteEvent) => {
+      if (this.disabledTrackIds.has(ev.trackId)) return
+      if (
+        ev.hand &&
+        this.practiceHand !== 'both' &&
+        !this.otherHandAudible &&
+        ev.hand !== this.practiceHand
+      ) {
+        return
+      }
+      const inst = this.instruments.get(this.currentId)
+      const speed = this._speed > 0 ? this._speed : 1
+      inst?.triggerAttackRelease(ev.note, ev.duration / speed, time, ev.velocity)
+    }, partEvents)
+    const span = end - start
+    part.loop = true
+    part.loopEnd = span
+    const offset = Math.max(0, Math.min(span - 0.001, fromTime - start))
+    part.start(0, offset)
+    this.scheduledPart = part
+
+    transport.bpm.value = nominalBpm * this._speed
+    transport.start()
+  }
+
   pause(): void {
     // Bump the generation so any in-flight `play()` aborts before it can
     // reach `transport.start()` and resurrect audio after the pause.
@@ -260,7 +357,14 @@ export class SynthEngine implements AudioEngine {
     getTransport().stop()
     this.clearScheduled()
     this.releaseAllInstruments()
-    if (wasPlaying) void this.play(time)
+    if (!wasPlaying) return
+    if (this.practiceSeamless && this.practiceWindow) {
+      const window = this.practiceWindow
+      const from = Math.min(Math.max(time, window.start), window.end - 0.001)
+      void this.playLoop(window.start, window.end, from)
+      return
+    }
+    void this.play(time)
   }
 
   setVolume(v: number): void {
@@ -322,6 +426,7 @@ export class SynthEngine implements AudioEngine {
   // ── Scheduled playback (internal) ──────────────────────────────────────
 
   private clearScheduled(): void {
+    this.builtLoop = null
     if (this.scheduledPart) {
       this.scheduledPart.stop(0)
       this.scheduledPart.clear()

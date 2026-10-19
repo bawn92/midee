@@ -48,6 +48,8 @@
     { "source": "/learn", "destination": "/index.html" },
     { "source": "/learn/", "destination": "/index.html" },
     { "source": "/learn/:song", "destination": "/index.html" },
-    { "source": "/learn/:song/", "destination": "/index.html" }
+    { "source": "/learn/:song/", "destination": "/index.html" },
+    { "source": "/deadmau5", "destination": "/index.html" },
+    { "source": "/deadmau5/", "destination": "/index.html" }
   ]
 }

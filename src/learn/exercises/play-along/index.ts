@@ -7,6 +7,8 @@
 
 import { getContext } from 'tone'
 import type { BusNoteEvent } from '../../../core/input/InputBus'
+import { practiceTimes } from '../../../deadmau5/sections'
+import { bumpPracticePass, practicePick, takeCountIn } from '../../../deadmau5/session'
 import { t } from '../../../i18n'
 import { watch } from '../../../store/watch'
 import type { Exercise, ExerciseDescriptor } from '../../core/Exercise'
@@ -50,6 +52,7 @@ export const playAlongDescriptor: ExerciseDescriptor = {
 class PlayAlongExercise implements Exercise {
   readonly descriptor = playAlongDescriptor
   private engine: PlayAlongEngine
+  private stopped = false
   private hud: ReturnType<typeof createPlayAlongHud>
   private readonly hudOpts: PlayAlongHudOptions
   private harness: ReturnType<typeof createExerciseHarness>
@@ -84,6 +87,7 @@ class PlayAlongExercise implements Exercise {
   }
 
   start(): void {
+    this.stopped = false
     try {
       const ctx = getContext()
       this.prevLookAhead = ctx.lookAhead
@@ -94,6 +98,9 @@ class PlayAlongExercise implements Exercise {
     const midi = this.ctx.learnState.state.loadedMidi
     this.engine.attach(midi)
     this.engine.setWaitEnabled(true)
+    const picked = practicePick()
+    const span = picked?.active ? practiceTimes(picked) : null
+    if (span) this.ctx.services.synth.setPracticeLoop(span, false)
     this.ctx.overlay.drawLoopBand(null)
     this.unsubs.push(
       watch(
@@ -117,12 +124,34 @@ class PlayAlongExercise implements Exercise {
         }
         this.ctx.services.renderer.setPracticeHints(status.pending, status.accepted)
       }),
+      watch(
+        () => {
+          const sel = practicePick()
+          return sel?.active ? `${sel.ids.join(',')}:${sel.startBar}-${sel.endBar}` : ''
+        },
+        () => {
+          const sel = practicePick()
+          if (!sel?.active) return
+          const next = practiceTimes(sel)
+          this.ctx.services.synth.setPracticeLoop(next, false)
+          this.engine.armSpan(next.start, next.end)
+        },
+      ),
     )
-    this.engine.play()
+    if (span) this.engine.armSpan(span.start, span.end)
+    const begin = (): void => {
+      if (this.stopped) return
+      this.engine.play()
+    }
+    if (span && takeCountIn()) {
+      const bpm = (midi?.bpm ?? 120) * (this.ctx.services.clock.speed || 1)
+      void this.ctx.services.metronome.countIn(4, bpm).then(begin)
+    } else begin()
     this.harness.attachKeys()
   }
 
   stop(): void {
+    this.stopped = true
     this.harness.detachKeys()
     for (const off of this.unsubs) off()
     this.unsubs = []
@@ -215,6 +244,7 @@ class PlayAlongExercise implements Exercise {
   }
 
   private onCleanPass(): void {
+    if (practicePick()?.active) bumpPracticePass()
     // Subtle swell at the now-line — no sound, just a breath.
     const viewport = this.ctx.services.renderer.currentViewport
     this.ctx.overlay.celebrationSwell(viewport.config.canvasWidth / 2, viewport.nowLineY, 0xfbd38d)

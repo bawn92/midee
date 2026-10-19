@@ -51,7 +51,31 @@ import type { ExportStage, VideoExporter } from './export/VideoExporter'
 import { audioBufferToWav } from './export/wav'
 import { setLocale, t } from './i18n'
 import {
+  pickForBars,
+  pickFromIds,
+  practiceTimes,
+  rememberDeadmau5,
+  resolvePractice,
+  selectionAfterClick,
+  STROBE_SAMPLE_ID,
+  type PracticePick,
+} from './deadmau5/sections'
+import {
+  armCountIn,
+  bindDeadmau5,
+  bumpPracticePass,
+  disarmCountIn,
+  notifyRoute,
+  practicePick,
+  setPasses,
+  setPhase,
+  setPractice,
+  takeCountIn,
+} from './deadmau5/session'
+import {
   bootRoute,
+  deadmau5Href,
+  type Deadmau5Route,
   type LandingRoute,
   markStarted,
   modeHref,
@@ -467,7 +491,10 @@ export class App {
       container: overlay,
       services: this.services,
       onSeek: (t) => {
-        this.synth.seek(t)
+        const span = this.practiceSpan()
+        const next = span ? Math.min(span.end - 0.001, Math.max(span.start, t)) : t
+        if (next !== t) this.clock.seek(next)
+        this.synth.seek(next)
         this.liveNotes.reset()
       },
       onZoom: (pps) => this.renderer.setZoom(pps),
@@ -723,6 +750,7 @@ export class App {
           }
         }
         this.maybeUpdateChordOverlay(t)
+        this.wrapPracticeLoop(t)
       }),
     )
     this.unsubs.push(
@@ -734,6 +762,8 @@ export class App {
           // so the two modes never race for control of the scheduler.
           const mode = this.store.state.mode
           if (mode === 'play' && status === 'playing') {
+            if (this.beginPracticeCountIn()) return
+            setPhase(practicePick()?.active ? 'playing' : 'idle')
             void this.synth.play(this.clock.currentTime)
             if (!this.firstPlayLogged) {
               this.firstPlayLogged = true
@@ -894,6 +924,8 @@ export class App {
   private urlQuiet = false
   private urlReplace = false
   private routeToken = 0
+  private practiceGen = 0
+  private practiceWrapping = false
   private watchedMode: AppMode = 'home'
   // Play and Learn remember their own piece so a header switch does not
   // copy one mode's song onto the other's URL, and coming back does not
@@ -925,10 +957,16 @@ export class App {
     window.addEventListener('popstate', this.onModePopState)
     this.unsubs.push(() => window.removeEventListener('popstate', this.onModePopState))
     this.urlReplace = true
+    this.bindPracticeActions()
     this.openInitialRoute(boot.route)
   }
 
   private openInitialRoute(route: LandingRoute): void {
+    if (route.kind === 'deadmau5') {
+      this.routeToken++
+      void this.openDeadmau5(route)
+      return
+    }
     if (route.kind === 'hero' || route.kind === 'home') {
       this.urlReplace = false
       return
@@ -955,8 +993,13 @@ export class App {
     if (this.urlQuiet) return
     const path = normalizePath(location.pathname)
     if (mode === 'home' && (path === '/' || path === '/welcome')) return
+    if ((mode === 'home' || mode === 'live') && practicePick()?.active) this.clearPractice()
     const song = mode === 'play' ? this.playSong : mode === 'learn' ? this.learnSong : null
-    const next = modeHref(mode, song, location.search, location.hash)
+    const pick = practicePick()
+    const next =
+      (mode === 'play' || mode === 'learn') && pick?.active
+        ? deadmau5Href(pick.ids.join(','), `${pick.startBar}-${pick.endBar}`, location.search, location.hash)
+        : modeHref(mode, song, location.search, location.hash)
     const current = `${path}${location.search}${location.hash}`
     if (current === next) return
     // A history write during an active view transition throws and cancels
@@ -979,6 +1022,157 @@ export class App {
         }
       })
     }
+    notifyRoute()
+  }
+
+  private bindPracticeActions(): void {
+    bindDeadmau5({
+      openPicker: () => this.showPracticePicker(),
+      playIds: (ids) => {
+        const pick = pickFromIds(ids)
+        if (pick) this.armPractice(pick, true)
+      },
+      toggleId: (id) => {
+        const ids = selectionAfterClick(practicePick()?.ids ?? [], id)
+        const pick = pickFromIds(ids)
+        if (pick) this.armPractice(pick, true)
+      },
+      setBars: (startBar, endBar) => this.armPractice(pickForBars(startBar, endBar), false),
+      enterLearn: () => this.enterLearnPractice(),
+    })
+  }
+
+  private practiceSpan(): { start: number; end: number } | null {
+    const pick = practicePick()
+    if (!pick?.active) return null
+    return practiceTimes(pick)
+  }
+
+  private publishPractice(section: string | null, bars: string | null): void {
+    const next = deadmau5Href(section, bars, location.search, location.hash)
+    const current = `${normalizePath(location.pathname)}${location.search}${location.hash}`
+    if (current !== next) {
+      releaseViewTransition()
+      const state = { mode: this.store.state.mode }
+      try {
+        if (this.urlReplace) history.replaceState(state, '', next)
+        else history.pushState(state, '', next)
+      } catch {
+        // The next section click publishes again.
+      }
+    }
+    notifyRoute()
+  }
+
+  private armPractice(pick: PracticePick, countIn: boolean): void {
+    this.practiceGen++
+    const next = { ...pick, active: true }
+    setPractice(next)
+    setPasses(1)
+    rememberDeadmau5(next)
+    const mode = this.store.state.mode
+    if (countIn && mode !== 'learn') armCountIn()
+    else disarmCountIn()
+    this.publishPractice(next.ids.join(','), `${next.startBar}-${next.endBar}`)
+    const span = practiceTimes(next)
+    if (mode === 'learn') {
+      this.synth.setPracticeLoop(span, false)
+      return
+    }
+    this.synth.setPracticeLoop(span, true)
+    if (this.playSong === STROBE_SAMPLE_ID && this.store.state.loadedMidi && mode === 'play') {
+      this.clock.seek(span.start)
+      this.kickPractice()
+      return
+    }
+    void this.loadSample(STROBE_SAMPLE_ID, this.routeToken)
+  }
+
+  private showPracticePicker(): void {
+    this.clearPractice()
+    this.synth.pause()
+    this.clock.pause()
+    if (this.store.state.status === 'playing') this.store.setState('status', 'paused')
+    this.publishPractice(null, null)
+  }
+
+  private clearPractice(): void {
+    this.practiceGen++
+    disarmCountIn()
+    this.synth.setPracticeLoop(null, false)
+    setPractice(null)
+    setPhase('idle')
+  }
+
+  private kickPractice(): void {
+    if (!this.practiceSpan()) return
+    if (this.clock.audioSuspended) {
+      if (this.store.state.status === 'playing') this.store.setState('status', 'paused')
+      return
+    }
+    if (this.store.state.status === 'playing') this.store.setState('status', 'paused')
+    this.store.setState('status', 'playing')
+  }
+
+  // The first pass of a section waits for one bar of clicks. Later passes
+  // and a pause/resume skip it. Returns true when this play was postponed.
+  private beginPracticeCountIn(): boolean {
+    if (!practicePick()?.active || !takeCountIn()) return false
+    const bpm = (this.store.state.loadedMidi?.bpm ?? 120) * (this.clock.speed || 1)
+    this.clock.pause()
+    this.store.setState('status', 'paused')
+    setPhase('count-in')
+    const gen = ++this.practiceGen
+    void this.metronome.countIn(4, bpm).then(() => {
+      if (gen !== this.practiceGen) return
+      if (!practicePick()?.active || this.store.state.mode !== 'play') return
+      const span = this.practiceSpan()
+      if (!span) return
+      this.clock.seek(span.start)
+      setPhase('playing')
+      this.clock.play()
+      this.store.setState('status', 'playing')
+    })
+    return true
+  }
+
+  private wrapPracticeLoop(t: number): void {
+    if (this.practiceWrapping) return
+    const span = this.practiceSpan()
+    if (!span) return
+    if (this.store.state.mode !== 'play' || this.store.state.status !== 'playing') return
+    if (t < span.end - 0.01) return
+    this.practiceWrapping = true
+    bumpPracticePass()
+    this.clock.seek(span.start)
+    this.practiceWrapping = false
+  }
+
+  private enterLearnPractice(): void {
+    const span = this.practiceSpan()
+    const midi = this.store.state.loadedMidi
+    if (!span || !midi) return
+    this.synth.setPracticeLoop(span, false)
+    this.synth.pause()
+    this.clock.pause()
+    armCountIn()
+    setPasses(1)
+    this.enterLearnWithCurrentMidi()
+  }
+
+  private async openDeadmau5(route: Deadmau5Route): Promise<void> {
+    const seq = this.routeToken
+    try {
+      const pick = resolvePractice(route.section, route.bars)
+      if (!pick) {
+        this.showPracticePicker()
+        return
+      }
+      if (seq !== this.routeToken) return
+      this.armPractice({ ...pick, active: true }, true)
+    } finally {
+      if (seq === this.routeToken) this.urlReplace = false
+    }
   }
 
   private onModePopState = (): void => {
@@ -998,6 +1192,11 @@ export class App {
 
   private applyLocationMode(): void {
     const route = parseRoute(location.pathname, location.search, readStarted())
+    if (route.kind === 'deadmau5') {
+      void this.openDeadmau5(route)
+      return
+    }
+    if (practicePick()?.active) this.clearPractice()
     if (route.kind === 'hero' || route.kind === 'home') {
       if (this.store.state.mode !== 'home') this.enterHomeMode()
       this.urlReplace = false
@@ -2144,6 +2343,14 @@ export class App {
       this.urlReplace = false
       this.routeToken++
     }
+    if (mode === 'learn' && practicePick()?.active && this.store.state.loadedMidi) {
+      this.enterLearnPractice()
+      return
+    }
+    if (mode === 'play' && practicePick()?.active) {
+      const span = this.practiceSpan()
+      if (span) this.synth.setPracticeLoop(span, true)
+    }
     // Play with nothing loaded opens the picker and stays in the current mode.
     // That is not a view change, so it must not arm the roll-preserving flag.
     // A back/forward visit to /play still enters Play so the URL and the
@@ -2347,6 +2554,15 @@ export class App {
     this.resetPlaybackTelemetry()
     // You just performed this and pressed Play — the strongest version of the
     // "you asked for it, so it plays" rule the other loaders follow.
+    if (practicePick()?.active && this.store.state.mode === 'play') {
+      const span = this.practiceSpan()
+      if (span) {
+        this.synth.setPracticeLoop(span, true)
+        this.clock.seek(span.start)
+        this.kickPractice()
+        return
+      }
+    }
     this.autoplayAfterLoad()
   }
 
