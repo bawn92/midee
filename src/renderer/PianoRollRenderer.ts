@@ -5,7 +5,6 @@ import { getKeyboardRange, placedPitch } from '../core/keyboardRange'
 import { noteHandOf, noteMatchesHandOf } from '../core/midi/hands'
 import type { MidiFile } from '../core/midi/types'
 import type { LiveNoteStore } from '../midi/LiveNoteStore'
-import { guideForMidi } from '../songGuide'
 import { glideRange, LiveMotionClock } from '../ui/liveEntrance'
 import { paintPrefs } from '../ui/paint'
 import { BeatGrid } from './BeatGrid'
@@ -540,7 +539,6 @@ export class PianoRollRenderer {
     this.visibleTrackIds = new Set(midi.tracks.map((t) => t.id))
     this.practiceFocusTrackIds = null
     this.noteRenderer.setTracks(midi.tracks)
-    this.noteRenderer.setFingerGuide(guideForMidi(midi))
     this.noteRenderer.setTempo(midi.bpm)
     if (atTime === undefined) {
       this.particles.clear()
@@ -555,7 +553,6 @@ export class PianoRollRenderer {
     this.visibleTrackIds.clear()
     this.practiceFocusTrackIds = null
     this.noteRenderer.setTracks([])
-    this.noteRenderer.setFingerGuide(null)
     this.noteRenderer.clear()
     this.liveNoteRenderer.clear()
     this.particles.clear()
