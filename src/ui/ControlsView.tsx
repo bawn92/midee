@@ -4,6 +4,7 @@ import { t } from '../i18n'
 import type { LiveLooperState } from '../midi/LiveLooper'
 import type { MidiDeviceStatus } from '../midi/MidiInputManager'
 import { type AppMode, TRANSPOSE_LIMIT } from '../store/state'
+import { AppMark } from './AppMark'
 import { FloatingHud } from './FloatingHud'
 import { HandPracticeButtons } from './HandPracticeControl'
 import { icons } from './icons'
@@ -238,7 +239,7 @@ export function TopStripView(props: TopStripProps) {
     >
       <div class="ts-home">
         <a class="ts-brand-link" id="ts-brand" href="/" aria-label={APP_NAME}>
-          <span innerHTML={icons.wordmark()} />
+          <AppMark />
           <span class="ts-home-name">{APP_NAME}</span>
         </a>
         <button

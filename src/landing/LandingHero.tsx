@@ -1,5 +1,6 @@
 import { APP_NAME } from '../brand'
 import { t } from '../i18n'
+import { AppMark } from '../ui/AppMark'
 import { icons } from '../ui/icons'
 import { HeroArt } from './HeroArt'
 
@@ -7,7 +8,7 @@ export function LandingHero(props: { rush: boolean; onStart: () => void; onPlug:
   return (
     <section class="landing" id="landing" aria-label={t('landing.kicker')}>
       <div class="landing-brand">
-        <span class="landing-mark" innerHTML={icons.wordmark()} />
+        <AppMark variant="landing" />
         <span class="landing-word">{APP_NAME}</span>
       </div>
       <div class="landing-copy">

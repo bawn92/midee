@@ -28,4 +28,34 @@ describe('scenes', () => {
     applySceneClass('sunset')
     expect(document.documentElement.dataset.scene).toBeUndefined()
   })
+
+  it('swaps favicon links with the scene and leaves the apple-touch icon', () => {
+    const svg = iconLink('icon', '/icons/favicon.svg', 'image/svg+xml')
+    const png16 = iconLink('icon', '/icons/favicon-16.png', 'image/png', '16x16')
+    const png32 = iconLink('icon', '/icons/favicon-32.png', 'image/png', '32x32')
+    const png96 = iconLink('icon', '/icons/favicon-96.png', 'image/png', '96x96')
+    const apple = iconLink('apple-touch-icon', '/icons/apple-touch-icon.png', '', '180x180')
+    applySceneClass('rainy-study')
+    expect(svg.getAttribute('href')).toBe('/icons/rainy/favicon.svg')
+    expect(png16.getAttribute('href')).toBe('/icons/rainy/favicon-16.png')
+    expect(png32.getAttribute('href')).toBe('/icons/rainy/favicon-32.png')
+    expect(png96.getAttribute('href')).toBe('/icons/rainy/favicon-96.png')
+    expect(apple.getAttribute('href')).toBe('/icons/apple-touch-icon.png')
+    applySceneClass('golden-hour')
+    expect(svg.getAttribute('href')).toBe('/icons/favicon.svg')
+    expect(png16.getAttribute('href')).toBe('/icons/favicon-16.png')
+    applySceneClass('sunset')
+    expect(svg.getAttribute('href')).toBe('/icons/favicon.svg')
+    for (const el of [svg, png16, png32, png96, apple]) el.remove()
+  })
 })
+
+function iconLink(rel: string, href: string, type: string, sizes?: string): HTMLLinkElement {
+  const link = document.createElement('link')
+  link.rel = rel
+  link.href = href
+  if (type) link.type = type
+  if (sizes) link.setAttribute('sizes', sizes)
+  document.head.appendChild(link)
+  return link
+}

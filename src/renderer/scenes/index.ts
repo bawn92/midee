@@ -1,3 +1,4 @@
+import { applySceneFavicon } from './favicon'
 import { goldenHourScene } from './goldenHour'
 import { rainyStudyScene } from './rainyStudy'
 import type { KeyboardMaterial, Scene } from './types'
@@ -31,4 +32,5 @@ export function applySceneClass(themeId: string): void {
   } else {
     delete root.dataset.scene
   }
+  applySceneFavicon(scene?.token)
 }
