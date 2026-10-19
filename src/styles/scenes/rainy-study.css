@@ -58,4 +58,8 @@
   --range-edge: #d9a066;
   --range-strip: #9fd6e6;
   --range-lane: #ddf0fa;
+  --tooltip-bg: rgba(36, 48, 56, 0.94);
+  --tooltip-fg: #f7f4ee;
+  --tooltip-border: rgba(247, 244, 238, 0.16);
+  --tooltip-shadow: 0 8px 22px rgba(24, 36, 44, 0.28);
 }

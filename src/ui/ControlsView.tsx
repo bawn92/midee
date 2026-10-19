@@ -7,6 +7,8 @@ import { type AppMode, TRANSPOSE_LIMIT } from '../store/state'
 import { FloatingHud } from './FloatingHud'
 import { HandPracticeButtons } from './HandPracticeControl'
 import { icons } from './icons'
+import { overlayRoot } from './overlayRoot'
+import { placeLayer } from './placeFloating'
 import { prefersReducedMotion } from './viewTransition'
 
 export const ZOOM_MIN = 80
@@ -156,12 +158,50 @@ export function TopStripView(props: TopStripProps) {
   })
 
   const [moreOpen, setMoreOpen] = createSignal(false)
+  let endHome: HTMLElement | null = null
+
+  // The overflow cluster lives in the header, which has a backdrop-filter.
+  // While it is open on a phone, move that node onto the overlay root so the
+  // transport cannot cover it, then put it back for the desktop row.
+  const parkMenu = (open: boolean): void => {
+    const end = document.getElementById('ts-end')
+    if (!end) return
+    if (end.parentElement?.classList.contains('ts-end-wrap')) endHome = end.parentElement
+    const home = endHome
+    const narrow = window.matchMedia?.('(max-width: 760px)').matches ?? false
+    if (open && narrow && home) {
+      overlayRoot().appendChild(end)
+      end.classList.add('ts-end--floating')
+      const rect = document.getElementById('ts-more')?.getBoundingClientRect()
+      if (!rect) return
+      const placed = placeLayer(rect, {
+        width: Math.max(end.offsetWidth, 180),
+        height: Math.max(end.offsetHeight, 48),
+      })
+      end.style.top = `${Math.round(placed.top)}px`
+      end.style.left = `${Math.round(placed.left)}px`
+      end.style.maxHeight = `${Math.max(120, Math.floor(placed.maxHeight))}px`
+      return
+    }
+    end.classList.remove('ts-end--floating')
+    end.style.top = ''
+    end.style.left = ''
+    end.style.maxHeight = ''
+    if (home && end.parentElement !== home) home.appendChild(end)
+  }
+
+  createEffect(() => {
+    parkMenu(moreOpen())
+  })
 
   onMount(() => {
     // Web-font swap can change label metrics after first paint.
     if (document.fonts?.ready) void document.fonts.ready.then(() => positionThumb(false))
     // Breakpoints toggle labels / padding, changing segment widths.
-    const onResize = (): void => positionThumb(false)
+    const onResize = (): void => {
+      positionThumb(false)
+      parkMenu(moreOpen())
+    }
     const onClick = (e: MouseEvent): void => {
       const target = e.target
       if (!(target instanceof Node)) return
@@ -269,7 +309,7 @@ export function TopStripView(props: TopStripProps) {
           <span class="ts-status-kicker" id="ts-context-kicker">
             {props.context().kicker}
           </span>
-          <span class="ts-status-title" id="ts-context-title" title={props.context().title}>
+          <span class="ts-status-title" id="ts-context-title" data-tip={props.context().title}>
             {props.context().title}
           </span>
         </span>
@@ -363,7 +403,6 @@ export function TopStripView(props: TopStripProps) {
             id="ts-midi"
             type="button"
             aria-label={props.midiMenuLabel()}
-            title={props.midiMenuLabel()}
             data-tip={t('topStrip.midi')}
             onClick={() => props.onMidi()}
           >
@@ -450,7 +489,7 @@ export function HudView(props: HudProps) {
           />
           <Show when={props.context?.().title}>
             <div class="hud-piece">
-              <span class="hud-piece-title" id="hud-piece-title" title={props.context?.().title}>
+              <span class="hud-piece-title" id="hud-piece-title" data-tip={props.context?.().title}>
                 {humaniseTitle(props.context?.().title ?? '')}
               </span>
               <span

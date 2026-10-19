@@ -1,4 +1,7 @@
-import { createSignal, For, type JSX, Show } from 'solid-js'
+import { createSignal, For, type JSX, onCleanup, onMount, Show } from 'solid-js'
+import { Portal } from 'solid-js/web'
+import { overlayRoot } from '../overlayRoot'
+import { placeLayer } from '../placeFloating'
 
 export function PlayButton(props: {
   playing: boolean
@@ -179,6 +182,56 @@ export function Badge(props: { tone: 'ok' | 'warn'; id?: string; children: JSX.E
   )
 }
 
+function DropdownMenu(props: {
+  trigger: HTMLButtonElement
+  value: string
+  options: readonly { id: string; label: string }[]
+  onChange: (id: string) => void
+}) {
+  let menu: HTMLDivElement | undefined
+  const position = (): void => {
+    const el = menu
+    if (!el) return
+    const rect = props.trigger.getBoundingClientRect()
+    const placed = placeLayer(rect, {
+      width: rect.width || el.offsetWidth || 180,
+      height: el.offsetHeight || props.options.length * 36 + 16,
+    })
+    el.style.top = `${Math.round(placed.top)}px`
+    el.style.left = `${Math.round(placed.left)}px`
+    el.style.width = `${Math.round(rect.width || placed.maxWidth)}px`
+    el.style.maxHeight = `${Math.max(80, Math.floor(placed.maxHeight))}px`
+  }
+  onMount(() => {
+    position()
+    window.addEventListener('resize', position)
+    window.addEventListener('scroll', position, true)
+  })
+  onCleanup(() => {
+    window.removeEventListener('resize', position)
+    window.removeEventListener('scroll', position, true)
+  })
+  return (
+    <Portal mount={overlayRoot()}>
+      <div ref={menu} class="gh-menu" role="listbox">
+        <For each={props.options}>
+          {(option) => (
+            <button
+              type="button"
+              class="gh-menu-item"
+              role="option"
+              aria-selected={option.id === props.value}
+              onClick={() => props.onChange(option.id)}
+            >
+              {option.label}
+            </button>
+          )}
+        </For>
+      </div>
+    </Portal>
+  )
+}
+
 export function Dropdown(props: {
   label: string
   value: string
@@ -186,9 +239,11 @@ export function Dropdown(props: {
   onChange: (id: string) => void
 }) {
   const [open, setOpen] = createSignal(false)
+  let trigger: HTMLButtonElement | undefined
   return (
     <div class="gh-dropdown">
       <button
+        ref={trigger}
         type="button"
         class="gh-dropdown-trigger"
         aria-expanded={open()}
@@ -198,25 +253,16 @@ export function Dropdown(props: {
         <span>{props.label}</span>
         <span aria-hidden="true">▾</span>
       </button>
-      <Show when={open()}>
-        <div class="gh-menu" role="listbox">
-          <For each={props.options}>
-            {(option) => (
-              <button
-                type="button"
-                class="gh-menu-item"
-                role="option"
-                aria-selected={option.id === props.value}
-                onClick={() => {
-                  props.onChange(option.id)
-                  setOpen(false)
-                }}
-              >
-                {option.label}
-              </button>
-            )}
-          </For>
-        </div>
+      <Show when={open() && trigger}>
+        <DropdownMenu
+          trigger={trigger as HTMLButtonElement}
+          value={props.value}
+          options={props.options}
+          onChange={(id) => {
+            props.onChange(id)
+            setOpen(false)
+          }}
+        />
       </Show>
     </div>
   )

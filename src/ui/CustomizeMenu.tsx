@@ -16,6 +16,7 @@ import { AppearanceStudio } from './AppearanceStudio'
 import { icons } from './icons'
 import { KeyLightsSettings } from './KeyLightsSettings'
 import { CLOSE_MODE_POPOVERS } from './modeChrome'
+import { placeLayer } from './placeFloating'
 import { isNarrowViewport } from './utils'
 
 // Aesthetics popover — collapses theme, particles, and chord overlay (three
@@ -128,7 +129,7 @@ function ParticleOption(props: {
       classList={{ 'particle-option--on': on() }}
       type="button"
       data-particle={props.style.id}
-      title={props.style.name}
+      data-tip={props.style.name}
       aria-label={`${props.style.name} particles`}
       aria-pressed={on()}
       onClick={() => props.onSelect(props.style.id)}
@@ -549,16 +550,14 @@ export class CustomizeMenu {
   private positionUnder(): void {
     const rect = this.trigger.getBoundingClientRect()
     const menuW = this.menu.offsetWidth || 340
-    const right = Math.min(
-      Math.max(12, window.innerWidth - rect.right),
-      Math.max(12, window.innerWidth - menuW - 12),
-    )
-    const top = rect.bottom + 8
-    const rightValue = `${Math.round(right)}px`
-    const topValue = `${Math.ceil(top)}px`
-    if (this.menu.style.right !== rightValue) this.menu.style.right = rightValue
+    const menuH = this.menu.offsetHeight || 320
+    const placed = placeLayer(rect, { width: menuW, height: menuH })
+    const topValue = `${Math.round(placed.top)}px`
+    const leftValue = `${Math.round(placed.left)}px`
     if (this.menu.style.top !== topValue) this.menu.style.top = topValue
-    const availableHeight = `${Math.max(0, Math.floor(window.innerHeight - top - 12))}px`
+    if (this.menu.style.left !== leftValue) this.menu.style.left = leftValue
+    if (this.menu.style.right !== 'auto') this.menu.style.right = 'auto'
+    const availableHeight = `${Math.max(0, Math.floor(placed.maxHeight))}px`
     if (this.menu.style.getPropertyValue('--customize-available-height') !== availableHeight) {
       this.menu.style.setProperty('--customize-available-height', availableHeight)
     }

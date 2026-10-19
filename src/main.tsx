@@ -15,6 +15,7 @@ import '@fontsource/nunito-sans/latin-600.css'
 import '@fontsource/nunito-sans/latin-700.css'
 import '@fontsource/nunito-sans/latin-800.css'
 import '@fontsource-variable/fraunces/full.css'
+import './styles/overlay.css'
 import './ui/paint'
 // Self-hosted fonts via @fontsource. Each CSS import emits a `@font-face`
 // rule into the main stylesheet bundle and ships its woff2 file to

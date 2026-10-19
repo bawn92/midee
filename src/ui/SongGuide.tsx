@@ -201,7 +201,7 @@ export function SongGuidePanel(props: {
                       'flex-grow': String(section.endBar - section.startBar + 1),
                       background: section.color,
                     }}
-                    title={`${section.name} · ${section.startBar}–${section.endBar}`}
+                    data-tip={`${section.name} · ${section.startBar}–${section.endBar}`}
                     aria-label={t('songGuide.sectionJump', {
                       name: section.name,
                       start: section.startBar,

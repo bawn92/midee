@@ -110,12 +110,14 @@ import { InstrumentMenu } from './ui/InstrumentMenu'
 import { KeyboardRangeBand, KeyboardRangeControl } from './ui/KeyboardRangeControl'
 import { KeyboardResizer } from './ui/KeyboardResizer'
 import { closeModePopovers } from './ui/modeChrome'
+import { overlayRoot } from './ui/overlayRoot'
 import { mountPhoneDock } from './ui/PhoneDock'
 import type { SessionAction } from './ui/PostSessionModal'
 import { PEDAL_HIDDEN, type PedalIndicatorState, pedalIndicatorState } from './ui/pedalIndicator'
 import { SongGuideController } from './ui/SongGuide'
 import { showError, showSuccess } from './ui/Toast'
 import { TrackPanel } from './ui/TrackPanel'
+import { installTooltips } from './ui/tooltips'
 import { installViewportClassSync } from './ui/utils'
 import { crossfadeModes, isModeCrossfade } from './ui/viewTransition'
 import { whenIdle } from './whenIdle'
@@ -296,6 +298,8 @@ export class App {
     const canvas = document.querySelector<HTMLCanvasElement>('#pianoroll')!
     const overlay = document.querySelector<HTMLElement>('#ui-overlay')!
     this.overlay = overlay
+    const layer = overlayRoot()
+    this.unsubs.push(installTooltips())
 
     // Flip `body.is-touch` / `body.is-narrow` so CSS can adapt (bottom-sheet
     // popovers, touch-friendly hit targets, etc.).
@@ -541,7 +545,7 @@ export class App {
     pushSession()
 
     this.trackPanel = new TrackPanel(
-      overlay,
+      layer,
       this.renderer,
       (id, enabled) => {
         this.synth.setTrackEnabled(id, enabled)
@@ -553,7 +557,7 @@ export class App {
     )
     this.trackPanel.setTrigger(this.controls.tracksButton)
 
-    this.instrumentMenu = new InstrumentMenu(this.controls.instrumentSlot, overlay)
+    this.instrumentMenu = new InstrumentMenu(this.controls.instrumentSlot, layer)
     this.instrumentMenu.onSelect = (id) => this.setInstrumentById(id)
     this.unsubs.push(
       this.synth.loadingInstrument.subscribe((id) => {
@@ -611,7 +615,7 @@ export class App {
     // collapses three topbar pills into a single trigger.
     this.customizeMenu = new CustomizeMenu(
       this.controls.customizeSlot,
-      overlay,
+      layer,
       THEMES,
       PARTICLE_STYLES,
       {
