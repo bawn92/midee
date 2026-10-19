@@ -554,3 +554,28 @@ describe('SynthEngine.play — guards', () => {
     expect(holder.parts.length).toBe(2)
   })
 })
+
+describe('SynthEngine practice loop', () => {
+  it('schedules only onsets inside the span, with full durations, and loops the part', async () => {
+    const crossing = note(67, 3.5, 1.5)
+    const midi = makeMidi(
+      [track('a', [note(60, 0, 1), note(62, 2, 0.5), crossing, note(64, 4, 0.5)])],
+      120,
+    )
+    const engine = await loadedEngine(midi)
+    engine.setPracticeLoop({ start: 2, end: 4 }, true)
+    await engine.play(0)
+
+    const part = holder.parts[0] as {
+      events: [number, { duration: number }][]
+      loop?: boolean
+      loopEnd?: number
+    }
+    expect(part.events.map(([time, ev]) => [time, ev.duration])).toEqual([
+      [0, 0.5],
+      [1.5, 1.5],
+    ])
+    expect(part.loop).toBe(true)
+    expect(part.loopEnd).toBe(2)
+  })
+})

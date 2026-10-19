@@ -1,4 +1,5 @@
 import { Show } from 'solid-js'
+import { Deadmau5Chrome } from './deadmau5/Deadmau5Chrome'
 import { SHOW_FPS } from './env'
 import { LandingGate } from './landing/LandingGate'
 import { ModeSwitch } from './modes/ModeSwitch'
@@ -11,6 +12,7 @@ export function AppRoot() {
     <>
       <ModeSwitch />
       <LandingGate />
+      <Deadmau5Chrome />
       <Show when={SHOW_FPS}>
         <FpsOverlay />
       </Show>

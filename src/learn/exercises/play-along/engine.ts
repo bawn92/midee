@@ -337,6 +337,22 @@ export class PlayAlongEngine {
     this.resumeAfterPracticeFilterChange()
   }
 
+  // A fixed [start, end) from the section page. The wrap path is the same
+  // one wait mode already uses, so a paused clock still loops.
+  armSpan(start: number, end: number): void {
+    if (!(end > start)) return
+    const dur = this.state.duration
+    const region: LoopRegion = {
+      start: Math.max(0, start),
+      end: Math.min(dur > 0 ? dur : end, end),
+    }
+    if (!(region.end > region.start)) return
+    this.setState('loopRegion', region)
+    const resume = this.state.userWantsToPlay
+    this.seek(region.start)
+    if (resume && !this.opts.services.clock.playing) this.play()
+  }
+
   setLoopFromBars(
     bars: number | null,
     playhead: number,

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   bootRoute,
+  deadmau5Href,
   LAST_SONG_KEY,
   markStarted,
   modeHref,
@@ -150,6 +151,32 @@ describe('landing routes', () => {
     )
     expect(modeHref('home', null, '?mode=play&connect=midi&lang=en', '')).toBe(
       '/start?connect=midi&lang=en',
+    )
+  })
+
+  it('opens /deadmau5 as the section page and keeps a valid section', () => {
+    expect(parseRoute('/deadmau5', '', true)).toEqual({
+      kind: 'deadmau5',
+      section: null,
+      bars: null,
+    })
+    expect(parseRoute('/deadmau5/', '?section=intro&lang=en', false)).toEqual({
+      kind: 'deadmau5',
+      section: 'intro',
+      bars: null,
+    })
+    expect(parseRoute('/library', '', true)).toEqual({ kind: 'home', connectMidi: false })
+    expect(bootRoute('/deadmau5', '?lang=en&section=intro', '#a', true)).toEqual({
+      route: { kind: 'deadmau5', section: 'intro', bars: null },
+      replace: null,
+    })
+    expect(bootRoute('/deadmau5', '?section=intro&lang=en', '#a', true).replace).toBe(
+      '/deadmau5?lang=en&section=intro#a',
+    )
+    expect(bootRoute('/deadmau5', '?section=nope', '', true).replace).toBe('/deadmau5')
+    expect(deadmau5Href('intro', '1-10', '?lang=en', '')).toBe('/deadmau5?lang=en&section=intro')
+    expect(deadmau5Href('intro', '2-8', '?lang=en', '#x')).toBe(
+      '/deadmau5?lang=en&section=intro&bars=2-8#x',
     )
   })
 })

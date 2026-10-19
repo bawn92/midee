@@ -1,6 +1,8 @@
-import { createSignal, For, onMount, Show } from 'solid-js'
+import { createSignal, For, onMount, Show, type JSX } from 'solid-js'
 import { render } from 'solid-js/web'
 import { forgetRecent, listRecents, type RecentMidi } from '../core/recentMidi'
+import { deadmau5Actions } from '../deadmau5/session'
+import { STROBE_SAMPLE_ID } from '../deadmau5/sections'
 import { computeSparkline, fetchSampleMidi, SAMPLES, type Sample } from '../core/samples'
 import { t } from '../i18n'
 import { icons } from './icons'
@@ -46,6 +48,7 @@ interface CardShellProps {
   onSelect: () => void
   onForget?: (() => void) | undefined
   forgetLabel?: string | undefined
+  extra?: JSX.Element
 }
 
 function CardShell(props: CardShellProps) {
@@ -90,6 +93,7 @@ function CardShell(props: CardShellProps) {
           <div class="sample-card-sub">{props.state().sub}</div>
         </div>
       </button>
+      {props.extra}
       <Show when={props.onForget}>
         {(forget) => (
           <button
@@ -141,6 +145,24 @@ function SampleCard(props: { sample: Sample; onSelect: (id: string) => void }) {
       title={props.sample.title}
       state={state}
       onSelect={() => props.onSelect(props.sample.id)}
+      extra={
+        props.sample.id === STROBE_SAMPLE_ID ? (
+          <a
+            class="sample-card-practice"
+            href="/deadmau5"
+            data-deadmau5-link
+            onClick={(e) => {
+              e.stopPropagation()
+              const open = deadmau5Actions()?.openPicker
+              if (!open) return
+              e.preventDefault()
+              open()
+            }}
+          >
+            {t('deadmau5.card')}
+          </a>
+        ) : undefined
+      }
     />
   )
 }

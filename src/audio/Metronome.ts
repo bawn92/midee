@@ -52,6 +52,26 @@ export class Metronome {
     else this.start()
   }
 
+  // Four clicks, then the promise resolves on the next downbeat. A metronome
+  // the player already started is left alone.
+  async countIn(beats: number, bpm: number): Promise<void> {
+    if (this.running.value || beats <= 0 || bpm <= 0) return
+    await toneStart()
+    this.ensureSynth()
+    const ctx = getContext()
+    const sec = 60 / bpm
+    const lead = 0.05
+    const t0 = ctx.currentTime + lead
+    for (let i = 0; i < beats; i++) {
+      const when = t0 + i * sec
+      const freq = i % BEATS_PER_BAR === 0 ? ACCENT_FREQ : BEAT_FREQ
+      this.synth?.triggerAttackRelease(freq, CLICK_DURATION, when)
+    }
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, (lead + beats * sec) * 1000)
+    })
+  }
+
   setBpm(bpm: number): void {
     // Clamp to musically useful range; extreme values just make the click
     // useless for a beginner.

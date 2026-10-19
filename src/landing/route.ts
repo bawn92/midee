@@ -1,9 +1,12 @@
 // Landing routes. `/` always shows the hero, including for a returning
 // visitor. `/welcome` is the same hero. `/start` is Home. Play, Live, and
 // Learn are `/play`, `/live`, and `/learn`. A sample is `/play?song=<id>`
-// or `/learn/<id>`. `midee.started` is still written when a CTA is pressed,
-// a note is played, or a file is opened, and it no longer changes the route.
+// or `/learn/<id>`. `/deadmau5` practises Strobe section by section.
+// `midee.started` is still written when a CTA is pressed, a note is played,
+// or a file is opened, and it no longer changes the route.
 // `midee.lastSong` remembers the last sample id for a refresh with no song.
+
+import { canonicalSectionQuery } from '../deadmau5/sections'
 
 export const STARTED_KEY = 'midee.started'
 export const LAST_SONG_KEY = 'midee.lastSong'
@@ -33,7 +36,13 @@ export interface ModeRoute {
   song: string | null
 }
 
-export type LandingRoute = HeroRoute | HomeRoute | ModeRoute
+export interface Deadmau5Route {
+  kind: 'deadmau5'
+  section: string | null
+  bars: string | null
+}
+
+export type LandingRoute = HeroRoute | HomeRoute | ModeRoute | Deadmau5Route
 
 export function modePath(mode: ModePath): string {
   return `/${mode}`
@@ -150,7 +159,33 @@ export function parseRoute(pathname: string, search: string, _started: boolean):
   const legacy = legacyMode(path, params)
   if (legacy) return { kind: 'mode', mode: legacy.mode, song: legacy.song }
 
+  if (path === '/deadmau5') {
+    return { kind: 'deadmau5', section: params.get('section'), bars: params.get('bars') }
+  }
+
   return { kind: 'home', connectMidi: params.get('connect') === 'midi' }
+}
+
+// `/deadmau5` and `/deadmau5?section=intro`. A bad id drops back to the
+// section list. `lang` and the hash ride along.
+export function deadmau5Href(
+  section: string | null,
+  bars: string | null,
+  search: string,
+  hash: string,
+): string {
+  const canon = canonicalSectionQuery(section, bars)
+  const params = readParams(search)
+  params.delete('mode')
+  params.delete('song')
+  params.delete('connect')
+  params.delete('section')
+  params.delete('bars')
+  if (canon.section) params.set('section', canon.section)
+  if (canon.bars) params.set('bars', canon.bars)
+  const q = params.toString()
+  const hashPart = hash ? (hash.startsWith('#') ? hash : `#${hash}`) : ''
+  return `/deadmau5${q ? `?${q}` : ''}${hashPart}`
 }
 
 // Canonical address for a mode. Play keeps the sample in the query. Learn
@@ -190,7 +225,9 @@ export function bootRoute(
   const next =
     route.kind === 'home'
       ? modeHref('home', null, search, hash)
-      : modeHref(route.mode, route.song, search, hash)
+      : route.kind === 'deadmau5'
+        ? deadmau5Href(route.section, route.bars, search, hash)
+        : modeHref(route.mode, route.song, search, hash)
   const current = `${normalizePath(pathname)}${search}${hash}`
   return { route, replace: current === next ? null : next }
 }
