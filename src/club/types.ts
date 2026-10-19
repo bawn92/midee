@@ -1,7 +1,10 @@
+import type { NoteCounts } from '../../shared/club/score'
 import type { MidiFile } from '../core/midi/types'
 
-// Local Club records. A later API can replace ClubStorage without changing
-// the screens. Accounts, friends, and the month-close timezone are not here.
+export type { NoteCounts }
+
+// Practice takes stay on the device through ClubStorage. An official take
+// is posted through the API when Clerk is configured.
 
 export interface ClubMonth {
   id: string
@@ -12,15 +15,6 @@ export interface ClubMonth {
   bpm: number
   beatsPerBar: number
   midi: MidiFile
-}
-
-export interface NoteCounts {
-  perfect: number
-  good: number
-  early: number
-  late: number
-  miss: number
-  extra: number
 }
 
 export interface ClubAttempt {
@@ -40,8 +34,9 @@ export interface LeaderboardEntry {
   displayName: string
   score: number
   createdAt: number
-  // Every entry written by this build lives on the device.
-  local: true
+  /** True when the row was saved on this device. Official rows come from the API. */
+  local: boolean
+  avatarUrl: string | null
 }
 
 export interface ClubStorage {

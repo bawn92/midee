@@ -21,7 +21,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; script-src 'self' 'unsafe-eval' blob:; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://tambien.github.io/Piano/audio/; worker-src 'self' blob:; media-src 'self' blob:; frame-src 'none'"
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self' https://*.clerk.accounts.dev https://*.clerk.com https://accounts.google.com https://appleid.apple.com; script-src 'self' 'unsafe-eval' blob: https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://img.clerk.com https://images.clerk.dev https://*.googleusercontent.com; font-src 'self'; connect-src 'self' https://tambien.github.io/Piano/audio/ https://*.clerk.accounts.dev https://*.clerk.com https://api.clerk.com https://clerk-telemetry.com; worker-src 'self' blob:; media-src 'self' blob:; frame-src https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com https://accounts.google.com https://appleid.apple.com"
         }
       ]
     }
@@ -54,6 +54,8 @@
     { "source": "/deadmau5", "destination": "/index.html" },
     { "source": "/deadmau5/", "destination": "/index.html" },
     { "source": "/club", "destination": "/index.html" },
-    { "source": "/club/", "destination": "/index.html" }
+    { "source": "/club/", "destination": "/index.html" },
+    { "source": "/club/sso-callback", "destination": "/index.html" },
+    { "source": "/club/sso-callback/", "destination": "/index.html" }
   ]
 }

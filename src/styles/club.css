@@ -94,6 +94,15 @@ body:has(#top-strip[data-mode="club"]) [data-song-guide] {
   margin-top: 18px;
 }
 
+.club-actions--stack {
+  flex-direction: column;
+}
+
+.club-actions--stack .club-primary,
+.club-actions--stack .club-secondary {
+  width: 100%;
+}
+
 .club-primary,
 .club-secondary {
   font: var(--type-label);
@@ -244,6 +253,72 @@ body:has(#top-strip[data-mode="club"]) [data-song-guide] {
 .club-you {
   font: var(--type-caption);
   color: var(--text-2);
+}
+
+.club-card--board {
+  width: min(520px, calc(100vw - 32px));
+}
+
+.club-tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.club-tabs button {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-2);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font: var(--type-caption);
+}
+
+.club-tabs button[aria-selected="true"] {
+  color: var(--text-1);
+  background: var(--accent-soft);
+  border-color: transparent;
+}
+
+.club-board--shared li {
+  grid-template-columns: 28px 28px minmax(0, 1fr) auto auto;
+}
+
+.club-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.club-avatar--letter {
+  display: grid;
+  place-items: center;
+  background: var(--accent-soft);
+  color: var(--text-1);
+  font: var(--type-caption);
+}
+
+.club-signed-in {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 0;
+}
+
+.club-replay {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: var(--type-caption);
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.club-error {
+  margin: 10px 0 0;
+  color: var(--danger);
+  font: var(--type-caption);
 }
 
 .club-recbar,
