@@ -653,6 +653,13 @@ const es: Messages = {
     'Sin calibrar. Pulsa tu tecla más grave para alinear esta ventana con tu controlador.',
   'kbdRange.notCalibrated': 'Sin calibrar',
   'kbdRange.calibratedBadge': 'Calibrado {note}',
+  'kbdRange.collapse': 'Contraer',
+  'kbdRange.minimise': 'Minimizar',
+  'kbdRange.restore': 'Mostrar la tesitura',
+  'kbdRange.calibrateSection': 'Calibrar',
+  'kbdRange.calibrateHelp': 'Alinea la tecla más grave del controlador.',
+  'kbdRange.outside': 'Notas fuera del rango',
+  'kbdRange.outsideHelp': 'Desplázalas a teclas que puedes tocar.',
   'kbdRange.band': 'Arrastra para mover el rango. Los bordes cambian el tamaño.',
   'kbdRange.fit': 'Ajustar a tu rango',
   'kbdRange.fitTip':

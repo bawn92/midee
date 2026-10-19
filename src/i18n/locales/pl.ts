@@ -643,6 +643,13 @@ const pl: Messages & Record<PolishPluralKey, string> = {
     'Bez kalibracji. Naciśnij najniższy klawisz, aby wyrównać to okno z kontrolerem.',
   'kbdRange.notCalibrated': 'Bez kalibracji',
   'kbdRange.calibratedBadge': 'Skalibrowano {note}',
+  'kbdRange.collapse': 'Zwiń',
+  'kbdRange.minimise': 'Minimalizuj',
+  'kbdRange.restore': 'Pokaż zakres klawiatury',
+  'kbdRange.calibrateSection': 'Kalibracja',
+  'kbdRange.calibrateHelp': 'Wyrównaj najniższy klawisz kontrolera.',
+  'kbdRange.outside': 'Nuty poza zakresem',
+  'kbdRange.outsideHelp': 'Przesuń je na klawisze, które grasz.',
   'kbdRange.band': 'Przeciągnij, aby przesunąć zakres. Krawędzie zmieniają rozmiar.',
   'kbdRange.fit': 'Dopasuj do zakresu',
   'kbdRange.fitTip':

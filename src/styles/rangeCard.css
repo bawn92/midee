@@ -1,6 +1,6 @@
 /* Keyboard range card. Collapsed it is a content-sized chip. Open, the
-   header and the scrolling body share one glass card. Both scenes use the
-   same surface tokens. */
+   header and the sections share one glass card that sizes to its content.
+   Both scenes use the same surface tokens. */
 
 html[data-scene] #kbd-range:not(.kbd-range--open) {
   width: max-content;
@@ -15,8 +15,8 @@ html[data-scene] #kbd-range:not(.kbd-range--open) .kbd-range-bar {
   width: max-content;
   max-width: min(420px, calc(100vw - 48px));
   height: 44px;
-  padding: 0;
-  border-radius: var(--radius-md);
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
 }
 
 html[data-scene] #kbd-range:not(.kbd-range--open) .kbd-range-label {
@@ -26,7 +26,7 @@ html[data-scene] #kbd-range:not(.kbd-range--open) .kbd-range-label {
   gap: 8px;
   width: max-content;
   height: 44px;
-  padding: 0 10px 0 12px;
+  padding: 0;
 }
 
 html[data-scene] .kbd-range-mark {
@@ -87,16 +87,42 @@ html[data-scene] #kbd-range.kbd-range--open .kbd-range-kicker {
 }
 
 html[data-scene] #kbd-range.kbd-range--open .kbd-range-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: flex-start;
   height: auto;
-  gap: 0;
+  gap: 8px;
   width: 100%;
-  padding: 12px 12px 10px 14px;
+  padding: 24px 24px 8px;
+  border-bottom: 0;
+  border-radius: 24px 24px 0 0;
+}
+
+html[data-scene] #kbd-range.kbd-range--open .kbd-range-copy {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 0;
+  width: auto;
+}
+
+html[data-scene] #kbd-range.kbd-range--open .kbd-range-kicker {
+  flex: 0 1 auto;
+  width: auto;
+}
+
+html[data-scene] #kbd-range.kbd-range--open .kbd-range-summary {
+  display: none;
 }
 
 html[data-scene] #kbd-range.kbd-range--open .kbd-range-label {
   align-items: flex-start;
   gap: 8px;
-  width: 100%;
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
   height: auto;
   padding: 0;
 }
@@ -179,8 +205,13 @@ html[data-scene] #kbd-range:not(.kbd-range--open) .kbd-range-panel {
 html[data-scene] #kbd-range.kbd-range--open .kbd-range-panel {
   grid-template-rows: 1fr;
   opacity: 1;
+  padding: 0;
+  overflow: visible;
+  max-height: none;
   border-width: 1px;
   border-style: solid;
+  border-top: 0;
+  border-radius: 0 0 24px 24px;
   box-shadow: var(--elev-2);
   pointer-events: auto;
   animation: none;
@@ -192,15 +223,17 @@ html[data-scene] .kbd-range-scroll {
 }
 
 html[data-scene] #kbd-range.kbd-range--open .kbd-range-scroll {
-  overflow: auto;
-  padding: 12px 16px 16px;
-  /* Header sits near 172px. Leave the keyboard and a gap under the card. */
-  max-height: calc(100svh - 320px - var(--keyboard-h, 180px));
+  min-height: auto;
+  overflow: visible;
+  max-height: none;
+  padding: 0 24px 16px;
 }
 
+html[data-scene] .kbd-range-bar,
 html[data-scene] .kbd-range-panel,
 html[data-scene] .kbd-range-kicker {
   transition:
+    border-radius 240ms cubic-bezier(0.2, 0, 0, 1),
     grid-template-rows 240ms cubic-bezier(0.2, 0, 0, 1),
     opacity 240ms cubic-bezier(0.2, 0, 0, 1);
 }
@@ -218,27 +251,406 @@ html[data-scene] .kbd-range-kicker {
 }
 
 @media (max-width: 640px) {
+  html[data-scene][data-phone-sheet="range"] #lower-left .kbd-range-mount {
+    overflow: visible;
+    max-height: none;
+  }
+
+  html[data-scene][data-phone-sheet="range"] #kbd-range,
+  html[data-scene][data-phone-sheet="range"] #kbd-range:not(.kbd-range--open) {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  html[data-scene][data-phone-sheet="range"] #kbd-range .kbd-range-bar,
+  html[data-scene][data-phone-sheet="range"] #kbd-range:not(.kbd-range--open) .kbd-range-bar {
+    flex-direction: row;
+    align-items: flex-start;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    padding: 24px 24px 8px;
+    border-bottom: 0;
+    border-radius: 24px 24px 0 0;
+  }
+
+  html[data-scene][data-phone-sheet="range"] #kbd-range .kbd-range-label,
+  html[data-scene][data-phone-sheet="range"] #kbd-range:not(.kbd-range--open) .kbd-range-label {
+    flex: 1 1 auto;
+    align-items: flex-start;
+    width: auto;
+    height: auto;
+  }
+
+  html[data-scene][data-phone-sheet="range"] #kbd-range .kbd-range-kicker {
+    flex: 0 1 auto;
+    max-width: 100%;
+    max-height: 24px;
+    opacity: 1;
+  }
+
+  html[data-scene][data-phone-sheet="range"] #kbd-range .kbd-range-summary,
+  html[data-scene][data-phone-sheet="range"] #kbd-range .kbd-range-mark {
+    display: none;
+  }
+
+  html[data-scene][data-phone-sheet="range"] #kbd-range:not(.kbd-range--open) .kbd-range-cal-badge {
+    position: static;
+    width: auto;
+    height: 28px;
+    min-width: 0;
+    margin: 0;
+    padding: 0 8px;
+    overflow: visible;
+  }
+
+  html[data-scene][data-phone-sheet="range"] #kbd-range:not(.kbd-range--open) .kbd-range-cal-badge::before,
+  html[data-scene][data-phone-sheet="range"] #kbd-range:not(.kbd-range--open) .kbd-range-cal-text {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+  }
+
   html[data-scene][data-phone-sheet="range"] #kbd-range .kbd-range-panel,
   html[data-scene][data-phone-sheet="range"] #kbd-range:not(.kbd-range--open) .kbd-range-panel {
     display: block;
+    position: relative;
+    width: 100%;
+    height: auto;
+    min-width: 0;
     grid-template-rows: 1fr;
     opacity: 1;
+    overflow: visible;
     border-width: 1px;
+    border-style: solid;
+    border-top: 0;
+    border-radius: 0 0 24px 24px;
     max-height: none;
     box-shadow: var(--elev-2);
     pointer-events: auto;
   }
 
   html[data-scene][data-phone-sheet="range"] .kbd-range-scroll {
-    overflow: auto;
+    min-height: auto;
+    overflow: visible;
     max-height: none;
-    padding: 12px 16px 16px;
+    padding: 0 24px 16px;
+  }
+}
+
+html[data-scene] .kbd-range-bar {
+  position: relative;
+}
+
+html[data-scene] .kbd-range-tools {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+  padding-right: 0;
+}
+
+html[data-scene] .kbd-range-collapse,
+html[data-scene] .kbd-range-minimise,
+html[data-scene] .kbd-range-dock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+html[data-scene] .kbd-range-collapse,
+html[data-scene] .kbd-range-minimise {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+}
+
+html[data-scene] .kbd-range-collapse:hover,
+html[data-scene] .kbd-range-minimise:hover,
+html[data-scene] .kbd-range-dock:hover {
+  color: var(--text-1);
+  background: var(--surface-sunken);
+}
+
+html[data-scene] .kbd-range-minimise {
+  font: var(--type-heading);
+  line-height: 1;
+}
+
+html[data-scene] #kbd-range:not(.kbd-range--open) .kbd-range-minimise {
+  display: none;
+}
+
+html[data-scene] #kbd-range.kbd-range--open .kbd-range-tools {
+  position: static;
+  align-self: start;
+  padding: 0;
+}
+
+html[data-scene] #kbd-range.kbd-range--open .kbd-range-label {
+  padding-right: 0;
+}
+
+html[data-scene] #kbd-range.kbd-range--open .kbd-range-chevron,
+html[data-scene] #kbd-range:not(.kbd-range--open) .kbd-range-chevron {
+  margin-top: 0;
+}
+
+html[data-scene] .kbd-range-dock {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  box-shadow: var(--elev-2);
+  backdrop-filter: blur(var(--blur-card)) saturate(1.15);
+  -webkit-backdrop-filter: blur(var(--blur-card)) saturate(1.15);
+  opacity: 0;
+  pointer-events: none;
+}
+
+html[data-scene] .kbd-range-dock svg {
+  display: block;
+}
+
+html[data-scene] #kbd-range.kbd-range--min {
+  width: 44px;
+  height: 44px;
+  margin-left: auto;
+  overflow: hidden;
+}
+
+html[data-scene] #kbd-range.kbd-range--min .kbd-range-dock {
+  position: relative;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+html[data-scene] #kbd-range.kbd-range--min .kbd-range-bar,
+html[data-scene] #kbd-range.kbd-range--min .kbd-range-panel {
+  position: absolute;
+  width: 0;
+  height: 0;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  box-shadow: none;
+}
+
+html[data-scene] .kbd-range-dock {
+  transition: opacity 240ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (max-width: 640px) {
+  html[data-scene][data-phone-sheet="range"] #kbd-range.kbd-range--min .kbd-range-panel,
+  html[data-scene][data-phone-sheet="range"]
+    #kbd-range.kbd-range--min:not(.kbd-range--open)
+    .kbd-range-panel {
+    display: grid;
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    pointer-events: none;
+    border-width: 0;
+  }
+}
+
+html[data-scene] .kbd-range-face {
+  display: none;
+}
+
+html[data-scene] #kbd-range-cal-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+html[data-scene] .kbd-range-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+html[data-scene] .kbd-range-section {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  min-width: 0;
+}
+
+html[data-scene] .kbd-range-section:has(.kbd-range-calibrate) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 4px;
+}
+
+html[data-scene] .kbd-range-section:has(.kbd-range-calibrate) .kbd-range-section-label {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+html[data-scene] .kbd-range-section:has(.kbd-range-calibrate) .kbd-range-calibrate {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  width: auto;
+}
+
+html[data-scene] .kbd-range-section:has(.kbd-range-calibrate) .kbd-range-hint {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+
+html[data-scene] .kbd-range-section-label {
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--text-2);
+}
+
+html[data-scene] .kbd-range-section .kbd-range-hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+html[data-scene] .kbd-range-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+html[data-scene] .kbd-range-section-head .kbd-range-section-label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+html[data-scene] .kbd-range-section-head .kbd-range-stepper,
+html[data-scene] .kbd-range-section-head .kbd-range-view {
+  flex: none;
+}
+
+html[data-scene] .kbd-range-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+html[data-scene] .kbd-range-stepper button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--text-1);
+}
+
+html[data-scene] .kbd-range-value {
+  min-width: 1.5em;
+}
+
+html[data-scene] .kbd-range-view {
+  height: 28px;
+  padding: 0 10px;
+}
+
+html[data-scene] .kbd-range-presets {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+html[data-scene] .kbd-range-preset {
+  flex: 1 1 0;
+  height: 28px;
+  min-width: 0;
+  padding: 0;
+  text-align: center;
+}
+
+html[data-scene] .kbd-range-calibrate {
+  align-self: center;
+  height: 28px;
+  margin: 0;
+  padding: 0 12px;
+  text-align: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-1);
+}
+
+html[data-scene] .kbd-range-segment {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+html[data-scene] .kbd-range-segment > button {
+  flex: 1 1 0;
+  height: 28px;
+  margin: 0;
+  padding: 0 10px;
+  text-align: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-1);
+}
+
+@media (min-width: 1000px) {
+  html[data-scene] #lower-left:has(#kbd-range.kbd-range--open) .kbd-range-mount {
+    width: 360px;
+    max-width: calc(100vw - 48px);
+    overflow: visible;
+  }
+
+  html[data-scene] #kbd-range.kbd-range--open {
+    width: 100%;
+    overflow: visible;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   html[data-scene] .kbd-range-panel,
-  html[data-scene] .kbd-range-kicker {
+  html[data-scene] .kbd-range-kicker,
+  html[data-scene] .kbd-range-dock,
+  html[data-scene] #kbd-range .kbd-range-bar {
     transition: opacity 120ms linear;
   }
 }

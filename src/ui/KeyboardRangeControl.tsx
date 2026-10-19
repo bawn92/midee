@@ -52,24 +52,29 @@ import { Stepper, Toggle } from './kit/kit'
 
 const RANGE_OPEN_KEY = 'midee.kbdRangeExpanded'
 
-function loadRangeOpen(): boolean {
+// open: the card. chip: the slim row. min: the round corner button.
+type RangeDock = 'open' | 'chip' | 'min'
+
+function loadRangeDock(): RangeDock {
   try {
     const raw = localStorage.getItem(RANGE_OPEN_KEY)
-    if (raw === '0') return false
-    if (raw === '1') return true
+    if (raw === '1') return 'open'
+    if (raw === '0') return 'chip'
+    if (raw === 'min') return 'min'
   } catch {
-    return false
+    return 'chip'
   }
   // Once the controller is lined up, the card stays a chip until opened.
-  if (getKeyboardRange().calibrated) return false
-  return typeof window.matchMedia === 'function'
-    ? window.matchMedia('(min-width: 1000px)').matches
-    : false
+  if (getKeyboardRange().calibrated) return 'chip'
+  return typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 1000px)').matches
+    ? 'open'
+    : 'chip'
 }
 
-function saveRangeOpen(open: boolean): void {
+function saveRangeDock(dock: RangeDock): void {
+  const raw = dock === 'open' ? '1' : dock === 'min' ? 'min' : '0'
   try {
-    localStorage.setItem(RANGE_OPEN_KEY, open ? '1' : '0')
+    localStorage.setItem(RANGE_OPEN_KEY, raw)
   } catch {
     // Persistence is best-effort.
   }
@@ -112,10 +117,11 @@ function sceneNow(): boolean {
 }
 
 function KeyboardRangeView(props: { store: AppStore }) {
-  const [open, setOpen] = createSignal(loadRangeOpen())
-  const setExpanded = (next: boolean): void => {
-    setOpen(next)
-    saveRangeOpen(next)
+  const [dock, setDockState] = createSignal<RangeDock>(loadRangeDock())
+  const open = () => dock() === 'open'
+  const setDock = (next: RangeDock): void => {
+    setDockState(next)
+    saveRangeDock(next)
   }
   const [scene, setScene] = createSignal(sceneNow())
   const [focus, setFocus] = createSignal(keyboardFocusEnabled())
@@ -137,10 +143,10 @@ function KeyboardRangeView(props: { store: AppStore }) {
       if (sceneNow() && window.matchMedia('(min-width: 1000px)').matches) return
       const target = e.target
       if (target instanceof Node && root.contains(target)) return
-      setExpanded(false)
+      setDock('chip')
     }
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') setExpanded(false)
+      if (e.key === 'Escape' && open()) setDock('chip')
     }
     // The detail panel opens upward. Keep it between the bar and the top
     // strip when the shortcuts card has already pushed the bar up.
@@ -316,9 +322,25 @@ function KeyboardRangeView(props: { store: AppStore }) {
       classList={{
         'kbd-range--hidden': props.store.state.mode === 'home',
         'kbd-range--open': open(),
+        'kbd-range--min': dock() === 'min',
       }}
     >
-      <fieldset class="kbd-range-bar" aria-label={t('kbdRange.title')}>
+      <button
+        class="kbd-range-dock"
+        id="kbd-range-dock"
+        type="button"
+        aria-label={t('kbdRange.restore')}
+        aria-hidden={dock() === 'min' ? 'false' : 'true'}
+        tabIndex={dock() === 'min' ? 0 : -1}
+        data-tip={t('kbdRange.aria', {
+          low: lowName(),
+          high: highName(),
+          count: range().size,
+        })}
+        onClick={() => setDock('chip')}
+        innerHTML={icons.midi(16)}
+      />
+      <fieldset class="kbd-range-bar" aria-label={t('kbdRange.title')} inert={dock() === 'min'}>
         <button
           class="kbd-range-step"
           id="kbd-range-oct-down"
@@ -360,7 +382,7 @@ function KeyboardRangeView(props: { store: AppStore }) {
           })}
           data-tip={t('kbdRange.tip')}
           data-custom={isFullPianoRange(range()) ? undefined : ''}
-          onClick={() => setExpanded(!open())}
+          onClick={() => setDock(open() ? 'chip' : 'open')}
         >
           <span class="kbd-range-mark" aria-hidden="true" innerHTML={icons.midi(15)} />
           <span class="kbd-range-copy">
@@ -386,8 +408,30 @@ function KeyboardRangeView(props: { store: AppStore }) {
               </span>
             </Show>
           </span>
-          <span class="kbd-range-chevron" aria-hidden="true" innerHTML={icons.chevronDown()} />
         </button>
+        <div class="kbd-range-tools">
+          <button
+            class="kbd-range-minimise"
+            id="kbd-range-minimise"
+            type="button"
+            aria-label={t('kbdRange.minimise')}
+            data-tip={t('kbdRange.minimise')}
+            onClick={() => setDock('min')}
+          >
+            <span aria-hidden="true">−</span>
+          </button>
+          <button
+            class="kbd-range-collapse"
+            id="kbd-range-collapse"
+            type="button"
+            aria-expanded={open()}
+            aria-label={open() ? t('kbdRange.collapse') : t('kbdRange.minimise')}
+            data-tip={open() ? t('kbdRange.collapse') : t('kbdRange.minimise')}
+            onClick={() => setDock(open() ? 'chip' : 'min')}
+          >
+            <span class="kbd-range-chevron" aria-hidden="true" innerHTML={icons.chevronDown()} />
+          </button>
+        </div>
         <button
           class="kbd-range-step"
           id="kbd-range-up"
@@ -516,15 +560,6 @@ function KeyboardRangeView(props: { store: AppStore }) {
             <div class="gh-field kbd-range-fit-row">
               <span class="gh-label">{t('kbdRange.fit')}</span>
               <span class="kbd-range-fit-actions">
-                <button
-                  type="button"
-                  id="kbd-view-all"
-                  class="kbd-range-view"
-                  aria-pressed={!focus()}
-                  onClick={() => setKeyboardFocusEnabled(!focus())}
-                >
-                  {focus() ? t('kbdRange.allKeys') : t('kbdRange.focusKeys')}
-                </button>
                 <Toggle
                   id="kbd-range-fit"
                   label={t('kbdRange.fit')}
@@ -556,86 +591,100 @@ function KeyboardRangeView(props: { store: AppStore }) {
             </button>
           </div>
 
-          <details class="kbd-range-advanced" open={scene() ? undefined : true}>
-            <summary>{t('kbdRange.more')}</summary>
-            <p class="kbd-range-hint">{t('kbdRange.tip')}</p>
+          <div class="kbd-range-sections">
+            <section class="kbd-range-section">
+              <h3 class="kbd-range-section-label">{t('kbdRange.calibrateSection')}</h3>
+              <p class="kbd-range-hint">{t('kbdRange.calibrateHelp')}</p>
+              <button
+                type="button"
+                id="kbd-range-calibrate"
+                class="kbd-range-calibrate"
+                aria-pressed={armed()}
+                data-tip={t('kbdRange.calibrateTip')}
+                onClick={() => setControllerCalibrateArmed(!armed())}
+              >
+                {armed() ? t('kbdRange.calibrateArmed') : t('kbdRange.calibrate')}
+              </button>
+              <p
+                class="kbd-range-cal-status"
+                classList={{ 'is-unset': !calibrated() }}
+                id="kbd-range-cal-status"
+              >
+                {calibrationLabel()}
+              </p>
+            </section>
 
-            <button
-              type="button"
-              id="kbd-range-calibrate"
-              class="kbd-range-calibrate"
-              aria-pressed={armed()}
-              data-tip={t('kbdRange.calibrateTip')}
-              onClick={() => setControllerCalibrateArmed(!armed())}
-            >
-              {armed() ? t('kbdRange.calibrateArmed') : t('kbdRange.calibrate')}
-            </button>
-            <p
-              class="kbd-range-cal-status"
-              classList={{ 'is-unset': !calibrated() }}
-              id="kbd-range-cal-status"
-            >
-              {calibrationLabel()}
-            </p>
-
-            <div class="kbd-range-row">
-              <span class="kbd-range-row-label">{t('kbdRange.size')}</span>
-              <span class="kbd-range-stepper">
-                <button
-                  type="button"
-                  disabled={range().size <= KEYBOARD_SIZE_MIN}
-                  onClick={() => applySnappedSize(range().size - 1)}
-                >
-                  −
-                </button>
-                <span class="kbd-range-value">{range().size}</span>
-                <button
-                  type="button"
-                  disabled={range().size >= KEYBOARD_SIZE_MAX}
-                  onClick={() => applySnappedSize(range().size + 1)}
-                >
-                  +
-                </button>
-              </span>
-            </div>
-
-            <fieldset class="kbd-range-presets" aria-label={t('kbdRange.presets')}>
-              <For each={KEYBOARD_SIZE_PRESETS}>
-                {(size) => (
+            <section class="kbd-range-section">
+              <div class="kbd-range-section-head">
+                <h3 class="kbd-range-section-label">{t('kbdRange.size')}</h3>
+                <span class="kbd-range-stepper">
                   <button
                     type="button"
-                    class="kbd-range-preset"
-                    aria-pressed={range().size === size}
-                    onClick={() => applySnappedSize(size)}
+                    disabled={range().size <= KEYBOARD_SIZE_MIN}
+                    onClick={() => applySnappedSize(range().size - 1)}
                   >
-                    {size}
+                    −
                   </button>
-                )}
-              </For>
-            </fieldset>
+                  <span class="kbd-range-value">{range().size}</span>
+                  <button
+                    type="button"
+                    disabled={range().size >= KEYBOARD_SIZE_MAX}
+                    onClick={() => applySnappedSize(range().size + 1)}
+                  >
+                    +
+                  </button>
+                </span>
+                <button
+                  type="button"
+                  id="kbd-view-all"
+                  class="kbd-range-view"
+                  aria-pressed={!focus()}
+                  onClick={() => setKeyboardFocusEnabled(!focus())}
+                >
+                  {focus() ? t('kbdRange.allKeys') : t('kbdRange.focusKeys')}
+                </button>
+              </div>
+              <fieldset class="kbd-range-presets" aria-label={t('kbdRange.presets')}>
+                <For each={KEYBOARD_SIZE_PRESETS}>
+                  {(size) => (
+                    <button
+                      type="button"
+                      class="kbd-range-preset"
+                      aria-pressed={range().size === size}
+                      onClick={() => applySnappedSize(size)}
+                    >
+                      {size}
+                    </button>
+                  )}
+                </For>
+              </fieldset>
+            </section>
 
-            <p class="kbd-range-cal-status">{t('kbdRange.fitTip')}</p>
-
-            <button
-              type="button"
-              class="kbd-range-follow"
-              id="kbd-range-follow"
-              aria-pressed={range().followMidi}
-              data-tip={t('kbdRange.followTip')}
-              onClick={() => setKeyboardRange({ followMidi: !range().followMidi })}
-            >
-              {t('kbdRange.follow')}
-            </button>
-
-            <button
-              type="button"
-              class="kbd-range-full"
-              disabled={isFullPianoRange(range())}
-              onClick={() => setKeyboardRange({ start: MIDI_MIN, size: KEYBOARD_SIZE_MAX })}
-            >
-              {t('kbdRange.full')}
-            </button>
-          </details>
+            <section class="kbd-range-section">
+              <h3 class="kbd-range-section-label">{t('kbdRange.outside')}</h3>
+              <p class="kbd-range-hint">{t('kbdRange.outsideHelp')}</p>
+              <div class="kbd-range-segment">
+                <button
+                  type="button"
+                  class="kbd-range-follow"
+                  id="kbd-range-follow"
+                  aria-pressed={range().followMidi}
+                  data-tip={t('kbdRange.followTip')}
+                  onClick={() => setKeyboardRange({ followMidi: !range().followMidi })}
+                >
+                  {t('kbdRange.follow')}
+                </button>
+                <button
+                  type="button"
+                  class="kbd-range-full"
+                  disabled={isFullPianoRange(range())}
+                  onClick={() => setKeyboardRange({ start: MIDI_MIN, size: KEYBOARD_SIZE_MAX })}
+                >
+                  {t('kbdRange.full')}
+                </button>
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     </div>

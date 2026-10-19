@@ -652,6 +652,13 @@ const ptBR: Messages = {
     'Sem calibrar. Pressione a tecla mais grave para alinhar esta janela ao controlador.',
   'kbdRange.notCalibrated': 'Sem calibrar',
   'kbdRange.calibratedBadge': 'Calibrado {note}',
+  'kbdRange.collapse': 'Recolher',
+  'kbdRange.minimise': 'Minimizar',
+  'kbdRange.restore': 'Mostrar a extensão',
+  'kbdRange.calibrateSection': 'Calibrar',
+  'kbdRange.calibrateHelp': 'Alinhe a tecla mais grave do controlador.',
+  'kbdRange.outside': 'Notas fora do alcance',
+  'kbdRange.outsideHelp': 'Desloque-as para teclas que você toca.',
   'kbdRange.band': 'Arraste para mover o intervalo. As bordas mudam o tamanho.',
   'kbdRange.fit': 'Ajustar ao seu alcance',
   'kbdRange.fitTip':

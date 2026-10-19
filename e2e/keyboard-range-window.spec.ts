@@ -43,7 +43,6 @@ test('24-key window highlights part of the full piano and snaps to C', async ({ 
   await page.setViewportSize({ width: 1280, height: 800 })
   await page.goto('/start')
   await page.locator('#home-live').click()
-  await page.locator('.kbd-range-advanced > summary').click()
   await page.locator('.kbd-range-preset', { hasText: /^24$/ }).click()
 
   await expect.poll(async () => {

@@ -660,6 +660,13 @@ const fr: Messages = {
     'Non calibré. Appuyez sur votre touche la plus grave pour aligner cette fenêtre sur votre contrôleur.',
   'kbdRange.notCalibrated': 'Non calibré',
   'kbdRange.calibratedBadge': 'Calibré {note}',
+  'kbdRange.collapse': 'Réduire',
+  'kbdRange.minimise': 'Réduire au minimum',
+  'kbdRange.restore': 'Afficher la tessiture',
+  'kbdRange.calibrateSection': 'Calibrer',
+  'kbdRange.calibrateHelp': 'Alignez la touche la plus grave du contrôleur.',
+  'kbdRange.outside': 'Notes hors tessiture',
+  'kbdRange.outsideHelp': 'Décalez-les sur des touches jouables.',
   'kbdRange.band': 'Glissez pour déplacer la tessiture. Les bords changent la taille.',
   'kbdRange.fit': 'Ajuster à votre tessiture',
   'kbdRange.fitTip':

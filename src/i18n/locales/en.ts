@@ -683,6 +683,13 @@ export const en = {
     'Not calibrated. Press your lowest key so this window lines up with your controller.',
   'kbdRange.notCalibrated': 'Not calibrated',
   'kbdRange.calibratedBadge': 'Calibrated {note}',
+  'kbdRange.collapse': 'Collapse',
+  'kbdRange.minimise': 'Minimise',
+  'kbdRange.restore': 'Show keyboard range',
+  'kbdRange.calibrateSection': 'Calibrate',
+  'kbdRange.calibrateHelp': 'Line up your controller’s lowest key.',
+  'kbdRange.outside': 'Notes outside range',
+  'kbdRange.outsideHelp': 'Shift them onto keys you can play.',
   'kbdRange.band': 'Drag to move the keyboard range. The side edges resize it.',
   'kbdRange.fit': 'Fit to your range',
   'kbdRange.fitTip':

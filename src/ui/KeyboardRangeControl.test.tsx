@@ -192,6 +192,42 @@ describe('KeyboardRangeControl', () => {
     expect(localStorage.getItem('midee.kbdRangeExpanded')).toBe('0')
   })
 
+  it('minimises from the chip and from the open card, then restores the chip', () => {
+    localStorage.setItem('midee.kbdRangeExpanded', '1')
+    setKeyboardRange({ start: 48, size: 24, controllerLow: 48, calibrated: true })
+    mount()
+    const root = host.querySelector('#kbd-range')!
+
+    host.querySelector<HTMLButtonElement>('#kbd-range-collapse')!.click()
+    expect(root.classList.contains('kbd-range--open')).toBe(false)
+    expect(root.classList.contains('kbd-range--min')).toBe(false)
+    expect(localStorage.getItem('midee.kbdRangeExpanded')).toBe('0')
+
+    host.querySelector<HTMLButtonElement>('#kbd-range-collapse')!.click()
+    expect(root.classList.contains('kbd-range--min')).toBe(true)
+    expect(localStorage.getItem('midee.kbdRangeExpanded')).toBe('min')
+    expect(host.querySelector('#kbd-range-dock')!.getAttribute('aria-hidden')).toBe('false')
+
+    host.querySelector<HTMLButtonElement>('#kbd-range-dock')!.click()
+    expect(root.classList.contains('kbd-range--min')).toBe(false)
+    expect(root.classList.contains('kbd-range--open')).toBe(false)
+    expect(localStorage.getItem('midee.kbdRangeExpanded')).toBe('0')
+
+    host.querySelector<HTMLButtonElement>('#kbd-range-label')!.click()
+    host.querySelector<HTMLButtonElement>('#kbd-range-minimise')!.click()
+    expect(root.classList.contains('kbd-range--min')).toBe(true)
+    expect(localStorage.getItem('midee.kbdRangeExpanded')).toBe('min')
+  })
+
+  it('restores a minimised card from storage', () => {
+    localStorage.setItem('midee.kbdRangeExpanded', 'min')
+    setKeyboardRange({ start: 48, size: 24, controllerLow: 48, calibrated: true })
+    mount()
+    const root = host.querySelector('#kbd-range')!
+    expect(root.classList.contains('kbd-range--min')).toBe(true)
+    expect(root.classList.contains('kbd-range--open')).toBe(false)
+  })
+
   it('keeps an explicit open choice after calibration', () => {
     localStorage.setItem('midee.kbdRangeExpanded', '1')
     setKeyboardRange({ start: 48, size: 24, controllerLow: 48, calibrated: true })
