@@ -43,6 +43,14 @@ vi.mock('pixi.js', () => {
       return this
     }
   }
+  class MockText extends MockContainer {
+    anchor = { set: vi.fn() }
+    text = ''
+    style: Record<string, unknown> = {}
+    alpha = 1
+    x = 0
+    y = 0
+  }
   class MockNineSliceSprite extends MockContainer {
     texture: unknown = null
     topHeight = 0
@@ -55,6 +63,7 @@ vi.mock('pixi.js', () => {
   return {
     Container: MockContainer,
     Graphics: MockGraphics,
+    Text: MockText,
     NineSliceSprite: MockNineSliceSprite,
     RenderTexture: { create: vi.fn(() => ({ destroy: vi.fn() })) },
     Texture: { EMPTY: {} },
@@ -197,7 +206,7 @@ describe('notes outside the keyboard range', () => {
 })
 
 describe('continuous classic bodies', () => {
-  it('draws abutting same-pitch notes as one tall bar', () => {
+  it('draws abutting same-pitch notes as separate capsules', () => {
     const viewport = new Viewport({
       canvasWidth: 800,
       canvasHeight: 500,
@@ -220,7 +229,11 @@ describe('continuous classic bodies', () => {
       }
     ).children.find((c) => c.label === 'notes-held-note')!
     const heights = g.roundRect.mock.calls.map((call) => call[3] as number)
-    expect(Math.max(...heights)).toBeGreaterThan(90)
+    // Each press keeps its own capsule. Half a second at 100px/s is about 50px,
+    // so the two notes stay apart instead of becoming one bar.
+    const bodies = heights.filter((h) => h > 30)
+    expect(bodies.length).toBeGreaterThanOrEqual(2)
+    expect(Math.max(...heights)).toBeLessThan(80)
     renderer.destroy()
   })
 })

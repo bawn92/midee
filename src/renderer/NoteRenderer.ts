@@ -1,11 +1,10 @@
 import { Container, Graphics, type Renderer, Text } from 'pixi.js'
 import { GlowFilter } from 'pixi-filters'
+import { fingerKey, planFingering } from '../core/fingering'
 import { getHandPractice } from '../core/handPractice'
-import { getKeyboardRange, placedPitch } from '../core/keyboardRange'
+import { getKeyboardRange, type KeyboardRangePrefs, placedPitch } from '../core/keyboardRange'
 import { noteHandOf, noteMatchesHandOf } from '../core/midi/hands'
 import { isBlackKey, MIDI_MAX, MIDI_MIN, type MidiNote, type MidiTrack } from '../core/midi/types'
-import { barAt, fingerFor } from '../songGuide/query'
-import type { SongGuide } from '../songGuide/types'
 import { paintPrefs } from '../ui/paint'
 import {
   ACTIVE_NOTE_ALPHA,
@@ -52,7 +51,8 @@ export class NoteRenderer {
   // Octave-folded notes. A layer of its own so the mark stays visible when the
   // note body is drawn by a material mesh instead of the track Graphics.
   private foldGraphics = new Graphics()
-  private fingerGuide: SongGuide | null = null
+  private fingerPlan = new Map<string, number>()
+  private fingerStamp = ''
   private fingerLabels: Text[] = []
   private fingerUsed = 0
   private landing = new Graphics()
@@ -111,16 +111,13 @@ export class NoteRenderer {
     this.labels.setEnabled(on)
   }
 
-  setFingerGuide(guide: SongGuide | null): void {
-    this.fingerGuide = guide
-  }
-
   setTempo(bpm: number): void {
     this.bpm = bpm > 0 ? bpm : 120
   }
 
   // Call once when tracks are loaded — sets up one Graphics per track
   setTracks(tracks: MidiTrack[]): void {
+    this.fingerStamp = ''
     // Remove stale graphics
     const incomingIds = new Set(tracks.map((t) => t.id))
     for (const [id, g] of this.trackGraphics) {
@@ -176,6 +173,7 @@ export class NoteRenderer {
     const labels = this.labels.isActive ? this.labels : null
     labels?.begin()
     const rangePrefs = getKeyboardRange()
+    this.ensureFingers(tracks, rangePrefs)
     const practiceHand = getHandPractice().hand
 
     let activeCount = 0
@@ -417,6 +415,15 @@ export class NoteRenderer {
     }
   }
 
+  // Recomputed when the song or the key window changes. The number is for
+  // the key under the badge, not the written pitch.
+  private ensureFingers(tracks: readonly MidiTrack[], range: KeyboardRangePrefs): void {
+    const stamp = `${range.start}:${range.size}:${range.fitToRange}:${tracks.map((track) => `${track.id}:${track.notes.length}`).join(',')}`
+    if (stamp === this.fingerStamp) return
+    this.fingerStamp = stamp
+    this.fingerPlan = planFingering(tracks, range)
+  }
+
   // Finger numbers sit inside the note, pinned to its lower edge, at least 12px.
   private paintFinger(
     note: MidiNote,
@@ -429,16 +436,10 @@ export class NoteRenderer {
     edge: number,
     hands: boolean,
   ): void {
-    const guide = this.fingerGuide
-    if (!guide || h < 8 || alpha < 0.2) return
-    const found = fingerFor(
-      guide,
-      barAt(note.time, guide.secondsPerBar),
-      note.pitch,
-      [{ pitch: note.pitch, time: note.time, duration: note.duration }],
-      null,
-    )
-    if (!found) return
+    if (h < 8 || alpha < 0.2) return
+    const which = hand === 'lh' ? 'left' : 'right'
+    const finger = this.fingerPlan.get(fingerKey(which, note))
+    if (!finger) return
     const size = Math.max(14, badgeDiameter(w))
     const cx = x + w / 2
     // Pinned to the bottom edge. A short note lets the badge rise rather than
@@ -473,7 +474,7 @@ export class NoteRenderer {
       this.fingerLabels.push(label)
     }
     label.visible = true
-    label.text = String(found.finger)
+    label.text = String(finger)
     label.style.fontSize = 12
     label.style.fill = hands ? edge : 0xfff8ee
     label.alpha = alpha
