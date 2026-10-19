@@ -3,7 +3,7 @@ import { createStore } from 'solid-js/store'
 import { deriveMidi } from '../core/midi/derive'
 import type { MidiFile } from '../core/midi/types'
 
-export type AppMode = 'home' | 'play' | 'live' | 'learn'
+export type AppMode = 'home' | 'play' | 'live' | 'learn' | 'club'
 export type PlaybackStatus = 'idle' | 'loading' | 'ready' | 'playing' | 'paused' | 'exporting'
 
 export interface AppStoreState {

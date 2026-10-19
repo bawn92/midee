@@ -17,13 +17,13 @@ export const goldenHourTheme: Theme = {
   blackKey: 0x3e2a1f,
   blackKeyActive: 0x5e3b24,
   keyBorder: 0x5e3b24,
-  nowLine: 0xb9773a,
+  nowLine: 0x9c5f2b,
   nowLineAlpha: 0.7,
   nowLineGlow: 0xe6a94f,
   beatLineAlpha: 0.08,
   barLineAlpha: 0.14,
   gridColor: 0xc4a080,
-  accent: 0xb9773a,
+  accent: 0x9c5f2b,
   trackColors: [0xe6a94f, 0xd9908f, 0xc98a32, 0xebc99a, 0xb8706f, 0xf6ebda, 0x9a6640, 0xfbf3e8],
 }
 

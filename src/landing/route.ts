@@ -1,6 +1,6 @@
 // Landing routes. `/` always shows the hero, including for a returning
 // visitor. `/welcome` is the same hero. `/start` is Home. Play, Live, and
-// Learn are `/play`, `/live`, and `/learn`. A sample is `/play?song=<id>`
+// Learn and Club are `/play`, `/live`, `/learn`, and `/club`. A sample is `/play?song=<id>`
 // or `/learn/<id>`. `/deadmau5` practises Strobe section by section.
 // `midee.started` is still written when a CTA is pressed, a note is played,
 // or a file is opened, and it no longer changes the route.
@@ -13,12 +13,13 @@ export const LAST_SONG_KEY = 'midee.lastSong'
 
 export type LandingKind = 'desktop' | 'phone'
 
-export type ModePath = 'play' | 'live' | 'learn'
+export type ModePath = 'play' | 'live' | 'learn' | 'club'
 
 const MODE_BY_PATH: Record<string, ModePath> = {
   '/play': 'play',
   '/live': 'live',
   '/learn': 'learn',
+  '/club': 'club',
 }
 
 export interface HeroRoute {
@@ -101,7 +102,7 @@ function readParams(search: string): URLSearchParams {
 }
 
 function asMode(value: string | null | undefined): ModePath | null {
-  if (value === 'play' || value === 'live' || value === 'learn') return value
+  if (value === 'play' || value === 'live' || value === 'learn' || value === 'club') return value
   return null
 }
 
@@ -124,7 +125,7 @@ function legacyMode(
   path: string,
   params: URLSearchParams,
 ): { mode: ModePath; song: string | null } | null {
-  const match = /^\/start\/(play|live|learn)(?:\/([^/]+))?$/.exec(path)
+  const match = /^\/start\/(play|live|learn|club)(?:\/([^/]+))?$/.exec(path)
   if (match) {
     const mode = asMode(match[1])
     if (!mode) return null
@@ -146,6 +147,7 @@ export function parseRoute(pathname: string, search: string, _started: boolean):
   const mode = MODE_BY_PATH[path]
   if (mode) {
     const song = mode === 'play' || mode === 'learn' ? songParam(params) : null
+    if (mode === 'club') return { kind: 'mode', mode, song: null }
     return { kind: 'mode', mode, song }
   }
 
@@ -200,6 +202,9 @@ export function modeHref(
   const params = readParams(search)
   params.delete('mode')
   params.delete('song')
+  params.delete('section')
+  params.delete('bars')
+  if (mode !== 'club') params.delete('view')
   if (mode !== 'home') params.delete('connect')
   let path = mode === 'home' ? '/start' : `/${mode}`
   if (mode === 'play' && song) params.set('song', song)

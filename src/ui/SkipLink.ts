@@ -9,6 +9,7 @@ const CONTENT_TARGETS: Record<AppMode, string[]> = {
   play: ['#hud-play', '#hud button'],
   live: ['#hud-metro', '#hud button'],
   learn: ['.learn-host--exercise button', '.learn-host--hub button'],
+  club: ['[data-club] button'],
 }
 
 export function installSkipLink(getMode: () => AppMode): void {

@@ -34,7 +34,9 @@
     { "source": "/start/learn", "destination": "/learn", "permanent": false },
     { "source": "/start/learn/", "destination": "/learn", "permanent": false },
     { "source": "/start/learn/:song", "destination": "/learn/:song", "permanent": false },
-    { "source": "/start/learn/:song/", "destination": "/learn/:song", "permanent": false }
+    { "source": "/start/learn/:song/", "destination": "/learn/:song", "permanent": false },
+    { "source": "/start/club", "destination": "/club", "permanent": false },
+    { "source": "/start/club/", "destination": "/club", "permanent": false }
   ],
   "rewrites": [
     { "source": "/start", "destination": "/index.html" },
@@ -50,6 +52,8 @@
     { "source": "/learn/:song", "destination": "/index.html" },
     { "source": "/learn/:song/", "destination": "/index.html" },
     { "source": "/deadmau5", "destination": "/index.html" },
-    { "source": "/deadmau5/", "destination": "/index.html" }
+    { "source": "/deadmau5/", "destination": "/index.html" },
+    { "source": "/club", "destination": "/index.html" },
+    { "source": "/club/", "destination": "/index.html" }
   ]
 }

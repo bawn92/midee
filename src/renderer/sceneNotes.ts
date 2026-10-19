@@ -356,7 +356,7 @@ export function paintSceneNotes(args: PaintArgs): void {
     const right = Math.max(...bracket.map((item) => item.x + item.w))
     const y = Math.max(...bracket.map((item) => item.bottom)) + 5
     if (y < nowLineY - 1 && right - left > 8) {
-      const ink = readCssColor('--text-3', { color: rainy ? 0x8a969c : 0xa4876f, alpha: 1 })
+      const ink = readCssColor('--text-3', { color: rainy ? 0x8a969c : 0x7e604b, alpha: 1 })
       g.rect(left, y, right - left, 2)
       g.rect(left, y - 5, 2, 7)
       g.rect(right - 2, y - 5, 2, 7)

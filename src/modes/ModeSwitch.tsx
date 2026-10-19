@@ -1,5 +1,6 @@
 import { ErrorBoundary, Match, Switch } from 'solid-js'
 import { useApp } from '../store/AppCtx'
+import { ClubMode } from './ClubMode'
 import { HomeMode } from './HomeMode'
 import { LearnMode } from './LearnMode'
 import { LiveMode } from './LiveMode'
@@ -24,6 +25,9 @@ export function ModeSwitch() {
         </Match>
         <Match when={store.state.mode === 'learn'}>
           <LearnMode />
+        </Match>
+        <Match when={store.state.mode === 'club'}>
+          <ClubMode />
         </Match>
       </Switch>
     </ErrorBoundary>

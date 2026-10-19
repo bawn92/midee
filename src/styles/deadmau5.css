@@ -31,7 +31,7 @@ html:has([data-deadmau5-picker]) #dropzone {
   font: var(--type-caption, 600 12px/16px var(--font-ui, system-ui, sans-serif));
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--accent, #b9773a);
+  color: var(--accent, #9c5f2b);
 }
 
 .dm-title {
@@ -85,7 +85,7 @@ html:has([data-deadmau5-picker]) #dropzone {
 }
 
 .dm-card.is-saved {
-  border-color: var(--accent, #b9773a);
+  border-color: var(--accent, #9c5f2b);
   box-shadow: var(--elev-2, 0 4px 12px rgba(94, 59, 36, 0.1));
 }
 
@@ -93,7 +93,7 @@ html:has([data-deadmau5-picker]) #dropzone {
   width: 28px;
   height: 4px;
   border-radius: var(--radius-pill, 999px);
-  background: var(--dm-color, var(--accent, #b9773a));
+  background: var(--dm-color, var(--accent, #9c5f2b));
 }
 
 .dm-card-name {
@@ -157,7 +157,7 @@ html:has([data-deadmau5-picker]) #dropzone {
 }
 
 .dm-chip.is-on {
-  background: var(--accent, #b9773a);
+  background: var(--accent, #9c5f2b);
   border-color: transparent;
   color: var(--text-on-accent, #fff8ee);
 }
@@ -233,7 +233,7 @@ html:has([data-deadmau5-picker]) #dropzone {
 }
 
 .dm-text-btn.is-accent {
-  background: var(--accent, #b9773a);
+  background: var(--accent, #9c5f2b);
   border-color: transparent;
   color: var(--text-on-accent, #fff8ee);
 }
@@ -241,7 +241,7 @@ html:has([data-deadmau5-picker]) #dropzone {
 .sample-card-practice,
 .song-guide-practice {
   font: var(--type-caption, 600 12px/16px var(--font-ui, system-ui, sans-serif));
-  color: var(--accent, #b9773a);
+  color: var(--accent, #9c5f2b);
   text-decoration: none;
 }
 

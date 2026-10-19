@@ -46,4 +46,5 @@ export const MODE_CAPTURES_LIVE: Record<AppMode, boolean> = {
   play: true,
   live: true,
   learn: false,
+  club: false,
 }

@@ -20,7 +20,7 @@ export const SLIDE_PX = 8
 export const KEYBOARD_RISE_PX = 8
 export const ROLL_RISE_PX = 16
 
-const PLAY_MODES = new Set(['play', 'live', 'learn'])
+const PLAY_MODES = new Set(['play', 'live', 'learn', 'club'])
 
 export interface Box {
   x: number

@@ -36,10 +36,16 @@ describe('landing routes', () => {
     expect(parseRoute('/start/', '', true)).toEqual({ kind: 'home', connectMidi: false })
   })
 
-  it('maps /play, /live, and /learn onto those modes', () => {
+  it('maps /play, /live, /learn, and /club onto those modes', () => {
     expect(parseRoute('/play', '', true)).toEqual({ kind: 'mode', mode: 'play', song: null })
     expect(parseRoute('/live/', '?x=1', false)).toEqual({ kind: 'mode', mode: 'live', song: null })
     expect(parseRoute('/learn', '', true)).toEqual({ kind: 'mode', mode: 'learn', song: null })
+    expect(parseRoute('/club', '', true)).toEqual({ kind: 'mode', mode: 'club', song: null })
+    expect(parseRoute('/club/', '?song=bach-prelude-c', false)).toEqual({
+      kind: 'mode',
+      mode: 'club',
+      song: null,
+    })
     expect(parseRoute('/library', '', true)).toEqual({ kind: 'home', connectMidi: false })
   })
 
@@ -152,6 +158,16 @@ describe('landing routes', () => {
     expect(modeHref('home', null, '?mode=play&connect=midi&lang=en', '')).toBe(
       '/start?connect=midi&lang=en',
     )
+    expect(modeHref('club', 'bach-prelude-c', '?song=bach-prelude-c&lang=en', '#a')).toBe(
+      '/club?lang=en#a',
+    )
+    expect(modeHref('club', null, '?section=intro&bars=1-10&lang=en', '')).toBe('/club?lang=en')
+    expect(modeHref('live', null, '?section=intro&lang=en', '')).toBe('/live?lang=en')
+    expect(bootRoute('/club', '?lang=en', '', true)).toEqual({
+      route: { kind: 'mode', mode: 'club', song: null },
+      replace: null,
+    })
+    expect(bootRoute('/start', '?mode=club&lang=en', '', true).replace).toBe('/club?lang=en')
   })
 
   it('opens /deadmau5 as the section page and keeps a valid section', () => {

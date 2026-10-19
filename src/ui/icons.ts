@@ -184,6 +184,9 @@ export const icons = {
   modeLive: (size: Size = 13): string =>
     `<svg width="${size}" height="${size}" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 8h2l1.2-3.5L7 12l1.8-6 1.3 3 0.9-1.2H14"/></svg>`,
 
+  modeClub: (size: Size = 13): string =>
+    `<svg width="${size}" height="${size}" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><circle cx="5.2" cy="5.1" r="2"/><circle cx="10.7" cy="5.6" r="1.6"/><path d="M1.8 13.1c.35-2.15 1.85-3.3 3.5-3.3s3.15 1.15 3.5 3.3"/><path d="M8.7 10.2c.65-.45 1.5-.75 2.45-.75 1.45 0 2.55.85 2.9 2.55"/></svg>`,
+
   wordmark: (): string =>
     `<svg class="ts-home-mark" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#F6E0C2"/><rect x="8" y="10" width="6" height="10" rx="3" fill="#D9908F"/><rect x="18" y="4" width="6" height="16" rx="3" fill="#E6A94F"/><rect x="6" y="22" width="20" height="6" rx="2" fill="#5E3B24"/></svg>`,
 
