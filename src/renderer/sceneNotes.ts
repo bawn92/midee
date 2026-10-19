@@ -169,6 +169,12 @@ function paintDashed(
   g.fill({ color, alpha })
 }
 
+const POOL_LAYERS = [
+  { dw: 1.35, dh: 18, a: 0.14 },
+  { dw: 0.95, dh: 11, a: 0.2 },
+  { dw: 0.55, dh: 6, a: 0.16 },
+] as const
+
 function paintPool(
   g: Graphics,
   cx: number,
@@ -177,13 +183,9 @@ function paintPool(
   color: number,
   alpha: number,
 ): void {
-  const layers = [
-    { dw: w * 1.35, dh: 18, a: 0.14 },
-    { dw: w * 0.95, dh: 11, a: 0.2 },
-    { dw: w * 0.55, dh: 6, a: 0.16 },
-  ]
-  for (const layer of layers) {
-    g.roundRect(cx - layer.dw / 2, y - layer.dh / 2, layer.dw, layer.dh, layer.dh / 2)
+  for (const layer of POOL_LAYERS) {
+    const dw = w * layer.dw
+    g.roundRect(cx - dw / 2, y - layer.dh / 2, dw, layer.dh, layer.dh / 2)
     g.fill({ color, alpha: alpha * layer.a })
   }
 }
@@ -248,6 +250,10 @@ export function paintSceneNotes(args: PaintArgs): void {
     viewport.config.pixelsPerSecond,
   )
   const bracket: { x: number; w: number; bottom: number }[] = []
+  // A crowded frame is one fill and one stroke per note. Shadows, beat
+  // ticks, dashed outlines, and landing pools are what push the geometry
+  // upload over the edge and stall the next frames.
+  const crowded = bodies.length >= 18
 
   for (const body of bodies) {
     const timeDelta = body.time - currentTime
@@ -282,7 +288,7 @@ export function paintSceneNotes(args: PaintArgs): void {
       fill = mix(ink.fill, 0xfff6e8, t)
     }
 
-    if (soft && !body.dimmed) paintShadow(g, x, y, w, h, radius, rainy, alpha)
+    if (soft && !body.dimmed && !crowded) paintShadow(g, x, y, w, h, radius, rainy, alpha)
     paintBody(g, {
       shape,
       x,
@@ -300,6 +306,7 @@ export function paintSceneNotes(args: PaintArgs): void {
       reduced,
       rainy,
       dense: args.dense,
+      crowded,
       currentTime,
       onset: body.time,
       bpm: args.bpm,
@@ -307,7 +314,7 @@ export function paintSceneNotes(args: PaintArgs): void {
       hands: prefs.noteHandShapes,
       shifted: body.shifted,
     })
-    if (shape === 'classic') {
+    if (shape === 'classic' && !crowded) {
       paintTicks(g, body, x, y, w, radius, bottom, currentTime, viewport, args.bpm, alpha)
     }
     if (next) bracket.push({ x, w, bottom })
@@ -336,7 +343,7 @@ export function paintSceneNotes(args: PaintArgs): void {
         edge: ink.edge,
       })
     }
-    paintLanding(args, {
+    if (!crowded) paintLanding(args, {
       x,
       w,
       bottom,
@@ -384,6 +391,7 @@ function paintBody(
     reduced: boolean
     rainy: boolean
     dense: boolean
+    crowded: boolean
     currentTime: number
     onset: number
     bpm: number
@@ -401,7 +409,7 @@ function paintBody(
 }
 
 function paintClassic(g: Graphics, o: Parameters<typeof paintBody>[1]): void {
-  const dashed = o.next || o.shifted
+  const dashed = (o.next || o.shifted) && !o.crowded
   const fillAlpha = o.next ? 0.78 * o.alpha : o.alpha
   g.roundRect(o.x, o.y, o.w, o.h, o.radius)
   g.fill({ color: o.fill, alpha: fillAlpha })
@@ -433,7 +441,7 @@ function paintGlass(g: Graphics, o: Parameters<typeof paintBody>[1]): void {
     g.roundRect(o.x + 1.5, o.y + 1.5, Math.max(1, o.w - 3), cap, Math.max(1, radius - 2))
     g.fill({ color: 0xfff8ee, alpha: 0.2 * o.alpha })
   }
-  if (o.next || o.shifted) paintDashed(g, o.x, o.y, o.w, o.h, radius, o.edge, 0.85 * o.alpha)
+  if ((o.next || o.shifted) && !o.crowded) paintDashed(g, o.x, o.y, o.w, o.h, radius, o.edge, 0.85 * o.alpha)
   else {
     g.roundRect(o.x + 0.5, o.y + 0.5, Math.max(1, o.w - 1), Math.max(1, o.h - 1), radius)
     g.stroke({ color: o.edge, width: 1, alpha: 0.9 * o.alpha })
@@ -455,7 +463,7 @@ function paintFelt(g: Graphics, o: Parameters<typeof paintBody>[1]): void {
   g.fill({ color: o.fill, alpha })
   g.rect(o.x, y, o.w, Math.min(4, o.h))
   g.fill({ color: o.edge, alpha: 0.85 * o.alpha })
-  if (o.next || o.shifted) paintDashed(g, o.x, y, o.w, o.h, radius, o.edge, o.alpha)
+  if ((o.next || o.shifted) && !o.crowded) paintDashed(g, o.x, y, o.w, o.h, radius, o.edge, o.alpha)
   else {
     g.roundRect(o.x + 0.5, y + 0.5, Math.max(1, o.w - 1), Math.max(1, o.h - 1), radius)
     g.stroke({ color: o.edge, width: 1, alpha: o.alpha })
@@ -499,7 +507,7 @@ function paintBeam(g: Graphics, o: Parameters<typeof paintBody>[1]): void {
     g.circle(cx, hy, head * 0.72)
   }
   g.fill({ color: o.fill, alpha })
-  if (o.next || o.shifted) paintDashed(g, o.x, o.y, o.w, o.h, o.radius, o.edge, 0.7 * o.alpha)
+  if ((o.next || o.shifted) && !o.crowded) paintDashed(g, o.x, o.y, o.w, o.h, o.radius, o.edge, 0.7 * o.alpha)
 }
 
 function paintOutline(g: Graphics, o: Parameters<typeof paintBody>[1]): void {
@@ -514,7 +522,7 @@ function paintOutline(g: Graphics, o: Parameters<typeof paintBody>[1]): void {
   }
   g.roundRect(o.x + 0.5, o.y + 0.5, Math.max(1, o.w - 1), Math.max(1, o.h - 1), o.radius)
   g.stroke({ color: o.next ? o.edge : o.fill, width: 1.5, alpha: o.alpha })
-  if (o.next || o.shifted) paintDashed(g, o.x, o.y, o.w, o.h, o.radius, o.edge, 0.8 * o.alpha)
+  if ((o.next || o.shifted) && !o.crowded) paintDashed(g, o.x, o.y, o.w, o.h, o.radius, o.edge, 0.8 * o.alpha)
   if (o.hands && o.h > 14) {
     const tx = o.hand === 'rh' ? o.x + o.w - 3.5 : o.x + 1.5
     g.rect(tx, o.y + 3, 2, Math.max(1, o.h - 6))
@@ -544,7 +552,7 @@ function paintPetal(g: Graphics, o: Parameters<typeof paintBody>[1]): void {
     g.ellipse(cx, o.y + o.h * 0.28, o.w * 0.16, Math.min(6, o.h * 0.12))
     g.fill({ color: 0xfff8ee, alpha: 0.28 * o.alpha })
   }
-  if (o.next || o.shifted) paintDashed(g, o.x, o.y, o.w, o.h, o.radius, o.edge, 0.75 * o.alpha)
+  if ((o.next || o.shifted) && !o.crowded) paintDashed(g, o.x, o.y, o.w, o.h, o.radius, o.edge, 0.75 * o.alpha)
 }
 
 function paintLanding(
