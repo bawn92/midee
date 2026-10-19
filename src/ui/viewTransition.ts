@@ -29,7 +29,37 @@ export interface Box {
   height: number
 }
 
-type ViewTransitionHandle = { finished: Promise<void> }
+type ViewTransitionHandle = {
+  finished: Promise<void>
+  ready?: Promise<void>
+  skipTransition?: () => void
+}
+
+// The active transition, if the browser is still inside one. A history
+// change during it throws, so a mode switch skips the old one first.
+let activeTransition: ViewTransitionHandle | null = null
+
+function trackTransition(vt: ViewTransitionHandle): void {
+  activeTransition = vt
+  // skipTransition rejects both promises. Leave either one and the browser
+  // reports an unhandled rejection on the next mode switch.
+  void vt.ready?.catch(() => {})
+  void vt.finished
+    .catch(() => {})
+    .finally(() => {
+      if (activeTransition === vt) activeTransition = null
+    })
+}
+
+export function releaseViewTransition(): void {
+  const vt = activeTransition
+  activeTransition = null
+  try {
+    vt?.skipTransition?.()
+  } catch {
+    // Already finished, or this browser has no skip.
+  }
+}
 
 export function prefersReducedMotion(): boolean {
   if (typeof matchMedia !== 'function') return false
@@ -220,7 +250,10 @@ export function settleSongIntoPlay(apply: () => void): void {
           apply()
           return afterUpdate()
         })
-        void vt.finished.finally(finish)
+        // A newer transition aborts this one. Swallow that rejection so it
+        // does not surface as an unhandled error while the next move plays.
+        trackTransition(vt)
+        void vt.finished.then(finish, finish)
         scheduleClear(gen, VIEW_MS + 160, finish)
         return
       } catch {
@@ -345,7 +378,7 @@ function runScoped(apply: () => void): boolean {
       apply()
       return afterUpdate()
     })
-    void running.finished.catch(() => {})
+    trackTransition(running)
     return true
   } catch {
     return ran

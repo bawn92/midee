@@ -1,10 +1,12 @@
 // Landing routes. `/` always shows the hero, including for a returning
 // visitor. `/welcome` is the same hero. `/start` is Home. Play, Live, and
-// Learn are `/play`, `/live`, and `/learn`. `midee.started` is still written
-// when a CTA is pressed, a note is played, or a file is opened, and it no
-// longer changes the route.
+// Learn are `/play`, `/live`, and `/learn`. A sample is `/play?song=<id>`
+// or `/learn/<id>`. `midee.started` is still written when a CTA is pressed,
+// a note is played, or a file is opened, and it no longer changes the route.
+// `midee.lastSong` remembers the last sample id for a refresh with no song.
 
 export const STARTED_KEY = 'midee.started'
+export const LAST_SONG_KEY = 'midee.lastSong'
 
 export type LandingKind = 'desktop' | 'phone'
 
@@ -28,6 +30,7 @@ export interface HomeRoute {
 export interface ModeRoute {
   kind: 'mode'
   mode: ModePath
+  song: string | null
 }
 
 export type LandingRoute = HeroRoute | HomeRoute | ModeRoute
@@ -66,24 +69,128 @@ export function markStarted(): void {
   }
 }
 
-export function parseRoute(pathname: string, search: string, _started: boolean): LandingRoute {
-  const path = normalizePath(pathname)
-  if (path === '/' || path === '/welcome') return { kind: 'hero' }
-  const mode = MODE_BY_PATH[path]
-  if (mode) return { kind: 'mode', mode }
-  return { kind: 'home', connectMidi: new URLSearchParams(search).get('connect') === 'midi' }
+export function readLastSong(): string | null {
+  try {
+    const id = storage()?.getItem(LAST_SONG_KEY)?.trim()
+    return id ? id : null
+  } catch {
+    return null
+  }
 }
 
-// The inline script in index.html mirrors this. `/` stays the hero, so
-// nothing is replaced before paint.
+export function rememberLastSong(id: string): void {
+  try {
+    storage()?.setItem(LAST_SONG_KEY, id)
+  } catch {
+    // A missing memory just means the next bare /play opens the picker.
+  }
+}
+
+function readParams(search: string): URLSearchParams {
+  const q = search.startsWith('?') ? search.slice(1) : search
+  return new URLSearchParams(q)
+}
+
+function asMode(value: string | null | undefined): ModePath | null {
+  if (value === 'play' || value === 'live' || value === 'learn') return value
+  return null
+}
+
+function decodeSong(value: string | null | undefined): string | null {
+  if (!value) return null
+  try {
+    const song = decodeURIComponent(value).trim()
+    return song.length > 0 ? song : null
+  } catch {
+    return null
+  }
+}
+
+function songParam(params: URLSearchParams): string | null {
+  return decodeSong(params.get('song'))
+}
+
+// `/start?mode=play` and `/start/learn/<id>` are the old addresses.
+function legacyMode(
+  path: string,
+  params: URLSearchParams,
+): { mode: ModePath; song: string | null } | null {
+  const match = /^\/start\/(play|live|learn)(?:\/([^/]+))?$/.exec(path)
+  if (match) {
+    const mode = asMode(match[1])
+    if (!mode) return null
+    const fromPath = match[2] ? decodeSong(match[2]) : null
+    const song = mode === 'live' ? null : (fromPath ?? songParam(params))
+    return { mode, song }
+  }
+  if (path !== '/start') return null
+  const mode = asMode(params.get('mode'))
+  if (!mode) return null
+  return { mode, song: mode === 'live' ? null : songParam(params) }
+}
+
+export function parseRoute(pathname: string, search: string, _started: boolean): LandingRoute {
+  const path = normalizePath(pathname)
+  const params = readParams(search)
+  if (path === '/' || path === '/welcome') return { kind: 'hero' }
+
+  const mode = MODE_BY_PATH[path]
+  if (mode) {
+    const song = mode === 'play' || mode === 'learn' ? songParam(params) : null
+    return { kind: 'mode', mode, song }
+  }
+
+  if (path.startsWith('/learn/')) {
+    const rest = path.slice('/learn/'.length)
+    if (rest && !rest.includes('/')) {
+      return { kind: 'mode', mode: 'learn', song: decodeSong(rest) }
+    }
+  }
+
+  const legacy = legacyMode(path, params)
+  if (legacy) return { kind: 'mode', mode: legacy.mode, song: legacy.song }
+
+  return { kind: 'home', connectMidi: params.get('connect') === 'midi' }
+}
+
+// Canonical address for a mode. Play keeps the sample in the query. Learn
+// keeps it in the path. `mode` and `song` are dropped from the leftover
+// query; `connect` stays on Home only. `lang` and the hash ride along.
+export function modeHref(
+  mode: 'home' | ModePath,
+  song: string | null,
+  search: string,
+  hash: string,
+): string {
+  const params = readParams(search)
+  params.delete('mode')
+  params.delete('song')
+  if (mode !== 'home') params.delete('connect')
+  let path = mode === 'home' ? '/start' : `/${mode}`
+  if (mode === 'play' && song) params.set('song', song)
+  if (mode === 'learn' && song) path = `/learn/${encodeURIComponent(song)}`
+  const q = params.toString()
+  const hashPart = hash ? (hash.startsWith('#') ? hash : `#${hash}`) : ''
+  return `${path}${q ? `?${q}` : ''}${hashPart}`
+}
+
+// The inline script in index.html mirrors the hero check. A legacy mode
+// address is replaced before paint so Back does not return to it.
 export function bootRoute(
   pathname: string,
   search: string,
-  _hash: string,
+  hash: string,
   started: boolean,
 ): {
   route: LandingRoute
   replace: string | null
 } {
-  return { route: parseRoute(pathname, search, started), replace: null }
+  const route = parseRoute(pathname, search, started)
+  if (route.kind === 'hero') return { route, replace: null }
+  const next =
+    route.kind === 'home'
+      ? modeHref('home', null, search, hash)
+      : modeHref(route.mode, route.song, search, hash)
+  const current = `${normalizePath(pathname)}${search}${hash}`
+  return { route, replace: current === next ? null : next }
 }

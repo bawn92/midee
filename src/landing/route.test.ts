@@ -1,5 +1,15 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { bootRoute, markStarted, parseRoute, readStarted, STARTED_KEY } from './route'
+import {
+  bootRoute,
+  LAST_SONG_KEY,
+  markStarted,
+  modeHref,
+  parseRoute,
+  readLastSong,
+  readStarted,
+  rememberLastSong,
+  STARTED_KEY,
+} from './route'
 
 describe('landing routes', () => {
   beforeEach(() => {
@@ -26,17 +36,63 @@ describe('landing routes', () => {
   })
 
   it('maps /play, /live, and /learn onto those modes', () => {
-    expect(parseRoute('/play', '', true)).toEqual({ kind: 'mode', mode: 'play' })
-    expect(parseRoute('/live/', '?x=1', false)).toEqual({ kind: 'mode', mode: 'live' })
-    expect(parseRoute('/learn', '', true)).toEqual({ kind: 'mode', mode: 'learn' })
+    expect(parseRoute('/play', '', true)).toEqual({ kind: 'mode', mode: 'play', song: null })
+    expect(parseRoute('/live/', '?x=1', false)).toEqual({ kind: 'mode', mode: 'live', song: null })
+    expect(parseRoute('/learn', '', true)).toEqual({ kind: 'mode', mode: 'learn', song: null })
     expect(parseRoute('/library', '', true)).toEqual({ kind: 'home', connectMidi: false })
   })
 
-  it('stores the flag under midee.started', () => {
+  it('addresses a sample on /play and /learn', () => {
+    expect(parseRoute('/play', '?song=bach-prelude-c', true)).toEqual({
+      kind: 'mode',
+      mode: 'play',
+      song: 'bach-prelude-c',
+    })
+    expect(parseRoute('/learn/bach-prelude-c', '', true)).toEqual({
+      kind: 'mode',
+      mode: 'learn',
+      song: 'bach-prelude-c',
+    })
+    expect(parseRoute('/learn', '?song=chopin-nocturne-op9-2', false)).toEqual({
+      kind: 'mode',
+      mode: 'learn',
+      song: 'chopin-nocturne-op9-2',
+    })
+    expect(parseRoute('/live', '?song=bach-prelude-c', true)).toEqual({
+      kind: 'mode',
+      mode: 'live',
+      song: null,
+    })
+  })
+
+  it('reads the old /start mode links as the new routes', () => {
+    expect(parseRoute('/start', '?mode=play&song=bach-prelude-c&lang=en', true)).toEqual({
+      kind: 'mode',
+      mode: 'play',
+      song: 'bach-prelude-c',
+    })
+    expect(parseRoute('/start/live', '', false)).toEqual({
+      kind: 'mode',
+      mode: 'live',
+      song: null,
+    })
+    expect(parseRoute('/start/learn/intervals', '?lang=en', true)).toEqual({
+      kind: 'mode',
+      mode: 'learn',
+      song: 'intervals',
+    })
+  })
+
+  it('stores the flag under midee.started and the last sample under midee.lastSong', () => {
     expect(readStarted()).toBe(false)
     markStarted()
     expect(localStorage.getItem(STARTED_KEY)).toBe('1')
     expect(readStarted()).toBe(true)
+    expect(LAST_SONG_KEY).toBe('midee.lastSong')
+    expect(readLastSong()).toBeNull()
+    rememberLastSong('bach-prelude-c')
+    expect(localStorage.getItem(LAST_SONG_KEY)).toBe('bach-prelude-c')
+    expect(readLastSong()).toBe('bach-prelude-c')
   })
 
   it('keeps / and /welcome on the hero before paint', () => {
@@ -54,10 +110,46 @@ describe('landing routes', () => {
       replace: null,
     })
     expect(bootRoute('/play', '', '', true)).toEqual({
-      route: { kind: 'mode', mode: 'play' },
+      route: { kind: 'mode', mode: 'play', song: null },
       replace: null,
     })
     expect(bootRoute('/live', '', '', false).replace).toBeNull()
-    expect(bootRoute('/learn/', '', '', true).route).toEqual({ kind: 'mode', mode: 'learn' })
+    expect(bootRoute('/learn/', '', '', true).route).toEqual({
+      kind: 'mode',
+      mode: 'learn',
+      song: null,
+    })
+  })
+
+  it('replaces a legacy mode link with the canonical URL', () => {
+    expect(bootRoute('/start', '?mode=live&lang=en', '#room', true)).toEqual({
+      route: { kind: 'mode', mode: 'live', song: null },
+      replace: '/live?lang=en#room',
+    })
+    expect(bootRoute('/start', '?mode=play&song=bach-prelude-c&lang=en', '', true).replace).toBe(
+      '/play?lang=en&song=bach-prelude-c',
+    )
+    expect(bootRoute('/start/learn/bach-prelude-c', '?lang=en', '', false).replace).toBe(
+      '/learn/bach-prelude-c?lang=en',
+    )
+    expect(bootRoute('/learn', '?song=bach-prelude-c', '', true).replace).toBe(
+      '/learn/bach-prelude-c',
+    )
+    expect(bootRoute('/play', '?song=bach-prelude-c', '', true).replace).toBeNull()
+  })
+
+  it('builds a mode URL without leaking the other mode’s song', () => {
+    expect(modeHref('play', 'bach-prelude-c', '?lang=en&mode=live&connect=midi', '#a')).toBe(
+      '/play?lang=en&song=bach-prelude-c#a',
+    )
+    expect(modeHref('learn', 'bach-prelude-c', '?lang=en&song=other', '')).toBe(
+      '/learn/bach-prelude-c?lang=en',
+    )
+    expect(modeHref('live', 'bach-prelude-c', '?song=bach-prelude-c&lang=en', '')).toBe(
+      '/live?lang=en',
+    )
+    expect(modeHref('home', null, '?mode=play&connect=midi&lang=en', '')).toBe(
+      '/start?connect=midi&lang=en',
+    )
   })
 })

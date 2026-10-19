@@ -22,7 +22,8 @@ async function settled(page: Page): Promise<void> {
 
 async function expectOnly(page: Page, mode: ModeName, popoverClosed = true): Promise<void> {
   await settled(page)
-  await expect(page).toHaveURL(new RegExp(`/${mode}$`))
+  if (mode === 'play') await expect(page).toHaveURL(/\/play\?song=untitled-g-sharp-minor$/)
+  else await expect(page).toHaveURL(new RegExp(`/${mode}$`))
   await expect(page.locator('#top-strip')).toHaveAttribute('data-mode', mode)
   await expect(page.locator('#dropzone')).toHaveClass(/dz--hidden/)
   await expect(page.locator('#home-open')).toBeHidden()
@@ -134,4 +135,83 @@ test('mode routes stay on one surface through fast switches and history', async 
   await expect(page.locator('.learn-host')).toHaveCount(0)
   await shot(page, info, '10-hero')
   expect(errors, errors.join('\n')).toEqual([])
+})
+
+test('deep links open that mode and legacy /start links redirect', async ({ page }, info) => {
+  test.setTimeout(120_000)
+  await mkdir(SHOTS, { recursive: true })
+  await page.setViewportSize({ width: 1440, height: 900 })
+
+  await page.goto('/start')
+  const songTransition = page.waitForFunction(
+    () => {
+      const vt = document.documentElement.dataset.vt
+      return vt === 'enter' || vt === 'reduced'
+    },
+    { timeout: 10_000 },
+  )
+  await page.locator('[data-card-id="bach-prelude-c"]').click()
+  await songTransition
+  await expect(page).toHaveURL(/\/play\?song=bach-prelude-c$/)
+  await expect(page.locator('#top-strip')).toHaveAttribute('data-mode', 'play')
+  await expect(page.locator('#hud-piece-title')).toContainText('Prelude')
+  await shot(page, info, '11-play-song')
+
+  const liveRise = page.waitForFunction(
+    () => {
+      const vt = document.documentElement.dataset.vt
+      return vt === 'live' || vt === 'reduced'
+    },
+    { timeout: 10_000 },
+  )
+  await page.locator('#ts-mode-live').click()
+  await liveRise
+  await expect(page).toHaveURL(/\/live$/)
+  await expect(page.locator('#top-strip')).toHaveAttribute('data-mode', 'live')
+  await page.goBack()
+  await expect(page).toHaveURL(/\/play\?song=bach-prelude-c$/)
+  await expect(page.locator('#top-strip')).toHaveAttribute('data-mode', 'play')
+  await expect(page.locator('#hud-piece-title')).toContainText('Prelude')
+
+  await page.goto('/play?song=bach-prelude-c')
+  await expect(page).toHaveURL(/\/play\?song=bach-prelude-c$/)
+  await expect(page.locator('#top-strip')).toHaveAttribute('data-mode', 'play')
+  await expect(page.locator('#hud-piece-title')).toContainText('Prelude')
+  await shot(page, info, '12-direct-play-song')
+
+  await page.reload()
+  await expect(page).toHaveURL(/\/play\?song=bach-prelude-c$/)
+  await expect(page.locator('#hud-piece-title')).toContainText('Prelude')
+
+  await page.goto('/learn/bach-prelude-c')
+  await expect(page).toHaveURL(/\/learn\/bach-prelude-c$/)
+  await expect(page.locator('#top-strip')).toHaveAttribute('data-mode', 'learn')
+  await expect(page.locator('.learn-host--exercise:not(.learn-host--hidden)')).toBeVisible()
+  await expect(page.locator('#hud-piece-title')).toContainText('Prelude')
+  await shot(page, info, '13-direct-learn-song')
+
+  await page.goto('/learn/intervals')
+  await expect(page).toHaveURL(/\/learn\/intervals$/)
+  await expect(page.locator('#top-strip')).toHaveAttribute('data-mode', 'learn')
+  await expect(page.locator('.learn-host--exercise:not(.learn-host--hidden)')).toBeVisible()
+  await shot(page, info, '14-direct-learn-intervals')
+
+  await page.goto('/start?mode=live&lang=en')
+  await expect(page).toHaveURL(/\/live\?lang=en$/)
+  await expect(page.locator('#top-strip')).toHaveAttribute('data-mode', 'live')
+  await shot(page, info, '15-legacy-live')
+
+  await page.goto('/start/learn/chopin-nocturne-op9-2')
+  await expect(page).toHaveURL(/\/learn\/chopin-nocturne-op9-2$/)
+  await expect(page.locator('#top-strip')).toHaveAttribute('data-mode', 'learn')
+  await expect(page.locator('#hud-piece-title')).toContainText('Nocturne')
+
+  await page.goto('/play?song=does-not-exist')
+  await expect(page.locator('#top-strip')).toHaveAttribute('data-mode', 'play')
+  await expect(page).toHaveURL(/\/play\?song=chopin-nocturne-op9-2$/)
+  await expect(page.locator('#hud-piece-title')).toContainText('Nocturne')
+
+  await page.goto('/')
+  await expect(page).toHaveURL(/\/$/)
+  await expect(page.locator('#landing')).toBeVisible()
 })
