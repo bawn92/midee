@@ -26,7 +26,16 @@
       ]
     }
   ],
-  "redirects": [],
+  "redirects": [
+    { "source": "/start/play", "destination": "/play", "permanent": false },
+    { "source": "/start/play/", "destination": "/play", "permanent": false },
+    { "source": "/start/live", "destination": "/live", "permanent": false },
+    { "source": "/start/live/", "destination": "/live", "permanent": false },
+    { "source": "/start/learn", "destination": "/learn", "permanent": false },
+    { "source": "/start/learn/", "destination": "/learn", "permanent": false },
+    { "source": "/start/learn/:song", "destination": "/learn/:song", "permanent": false },
+    { "source": "/start/learn/:song/", "destination": "/learn/:song", "permanent": false }
+  ],
   "rewrites": [
     { "source": "/start", "destination": "/index.html" },
     { "source": "/start/", "destination": "/index.html" },
@@ -37,6 +46,8 @@
     { "source": "/live", "destination": "/index.html" },
     { "source": "/live/", "destination": "/index.html" },
     { "source": "/learn", "destination": "/index.html" },
-    { "source": "/learn/", "destination": "/index.html" }
+    { "source": "/learn/", "destination": "/index.html" },
+    { "source": "/learn/:song", "destination": "/index.html" },
+    { "source": "/learn/:song/", "destination": "/index.html" }
   ]
 }

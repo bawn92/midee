@@ -66,15 +66,62 @@ export class LearnController {
   // time `enter()` runs, the cached MIDI is the cleanest way to hand context
   // across the async boundary.
   private pendingMidi: MidiFile | null = null
+  // `/learn/<id>` queued before the hub is mounted. Drained at the end of enter.
+  private pendingAddress: string | null = null
+  private entered = false
+  // Sample currently in Learn. A second address for the same id must not
+  // reload the synth — a mode switch is not a new piece.
+  private addressedSample: string | null = null
 
   constructor(private ctx: ModeContext) {
     this.hub = createLearnHub()
     this.hubOpts = {
       progress: this.progress,
       learnState: this.learnState,
-      launchExercise: (descriptor) => void this.launchExercise(descriptor),
+      launchExercise: (descriptor) => {
+        this.ctx.onLearnAddress?.(descriptor.id)
+        void this.launchExercise(descriptor)
+      },
       onOpenFilePicker: () => this.openLearnFilePicker(),
     }
+  }
+
+  isOpen(): boolean {
+    return this.entered
+  }
+
+  // Deep link or history entry. Before enter(), the id waits for the hub.
+  // An unknown id reports a miss so the caller can fall back to the last song.
+  applyAddress(id: string): boolean {
+    if (!this.entered) {
+      this.pendingAddress = id
+      return true
+    }
+    const ok = this.dispatchAddress(id)
+    if (!ok) this.ctx.onLearnMiss?.(id)
+    return ok
+  }
+
+  private drainAddress(): void {
+    const fromCtx = this.ctx.takePendingLearnAddress?.() ?? null
+    const id = this.pendingAddress ?? fromCtx
+    this.pendingAddress = null
+    if (!id) return
+    if (!this.dispatchAddress(id)) this.ctx.onLearnMiss?.(id)
+  }
+
+  private dispatchAddress(id: string): boolean {
+    if (getSample(id)) {
+      void this.loadSample(id)
+      return true
+    }
+    const exercise = findExercise(id)
+    if (!exercise) return false
+    // Play-along needs a piece. Without one, the hub is the picker.
+    if (exercise.id === playAlongDescriptor.id && !this.learnState.state.loadedMidi) return false
+    this.ctx.onLearnAddress?.(exercise.id)
+    void this.launchExercise(exercise)
+    return true
   }
 
   enter(): void {
@@ -142,6 +189,9 @@ export class LearnController {
       this.pendingMidi = null
       void this.consumeMidi(midi)
     }
+
+    this.entered = true
+    this.drainAddress()
   }
 
   // Hand-off for cross-mode launches. Caller flips `store.mode` to 'learn'
@@ -172,6 +222,8 @@ export class LearnController {
     this.learnState.clearMidi()
     this.runner = null
     this.view.set('hub')
+    this.entered = false
+    this.addressedSample = null
     // Drop the topbar context — we're leaving Learn, the next mode owns it.
     this.ctx.setLearnFileName(null)
   }
@@ -193,6 +245,8 @@ export class LearnController {
         tempo_events: stats.tempoEvents,
       })
       await this.consumeMidi(midi)
+      this.addressedSample = null
+      this.ctx.onLearnAddress?.(null)
       markStarted()
       // Recents are shared with Play: a file practised here is one click away
       // from the home grid, and vice versa. Fire-and-forget — a storage
@@ -227,6 +281,13 @@ export class LearnController {
   async loadSample(sampleId: string): Promise<void> {
     const sample = getSample(sampleId)
     if (!sample) return
+    // Same piece already in the synth. Refresh the address without reloading.
+    if (this.addressedSample === sampleId && this.learnState.state.loadedMidi) {
+      this.ctx.onLearnAddress?.(sampleId)
+      return
+    }
+    this.addressedSample = sampleId
+    this.ctx.onLearnAddress?.(sampleId)
     // Sample click counts as the user gesture that unlocks audio.
     this.ctx.primeInteractiveAudio()
     this.learnState.beginLoad()
@@ -271,6 +332,8 @@ export class LearnController {
       return
     }
     await this.consumeMidi(midi)
+    this.addressedSample = null
+    this.ctx.onLearnAddress?.(null)
     markStarted()
     trackMidiLoaded({
       source: 'recent',

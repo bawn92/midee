@@ -24,7 +24,7 @@ import {
   type LivePerformanceBus,
 } from './core/performance/LivePerformanceBus'
 import { booleanPersisted, idPersisted, numberPersisted } from './core/persistence'
-import { forgetRecent, readRecentMidi, rememberRecent } from './core/recentMidi'
+import { forgetRecent, listRecents, readRecentMidi, rememberRecent } from './core/recentMidi'
 import { fetchSampleMidi, getSample } from './core/samples'
 import type { AppServices } from './core/services'
 // VideoExporter pulls Mediabunny; OfflineAudioRenderer pulls Tone + instruments.
@@ -50,7 +50,17 @@ import {
 import type { ExportStage, VideoExporter } from './export/VideoExporter'
 import { audioBufferToWav } from './export/wav'
 import { setLocale, t } from './i18n'
-import { markStarted, modePath, normalizePath, parseRoute, readStarted } from './landing/route'
+import {
+  bootRoute,
+  type LandingRoute,
+  markStarted,
+  modeHref,
+  normalizePath,
+  parseRoute,
+  readLastSong,
+  readStarted,
+  rememberLastSong,
+} from './landing/route'
 import { bindPlayKeyLights } from './midi/bindPlayKeyLights'
 import { CaptureFanout } from './midi/CaptureFanout'
 import { ComputerKeyboardInput } from './midi/ComputerKeyboardInput'
@@ -126,6 +136,7 @@ import {
   isModeCrossfade,
   leaveLiveView,
   prefersReducedMotion,
+  releaseViewTransition,
 } from './ui/viewTransition'
 import { whenIdle } from './whenIdle'
 
@@ -865,6 +876,9 @@ export class App {
         // Learn's piece lives on LearnState, outside the store watch below.
         this.syncPedalIndicator()
       },
+      takePendingLearnAddress: () => this.takePendingLearnAddress(),
+      onLearnAddress: (id) => this.onLearnAddress(id),
+      onLearnMiss: (id) => this.onLearnMiss(id),
     }
 
     // Start in home. <HomeMode/>'s onMount handles the side effects.
@@ -876,35 +890,103 @@ export class App {
 
   // The address bar follows the mode. Popstate applies the URL without
   // pushing a second entry on top of the one the browser just restored.
+  // The first write of a deep link replaces; later clicks push.
   private urlQuiet = false
+  private urlReplace = false
+  private routeToken = 0
+  private watchedMode: AppMode = 'home'
+  // Play and Learn remember their own piece so a header switch does not
+  // copy one mode's song onto the other's URL, and coming back does not
+  // fetch it again.
+  private playSong: string | null = null
+  private learnSong: string | null = null
+  private pendingLearnAddress: string | null = null
 
   private installModeRoutes(): void {
+    const boot = bootRoute(location.pathname, location.search, location.hash, readStarted())
+    const here = `${normalizePath(location.pathname)}${location.search}${location.hash}`
+    if (boot.replace && boot.replace !== here) {
+      const mode = boot.route.kind === 'mode' ? boot.route.mode : 'home'
+      history.replaceState({ mode }, '', boot.replace)
+    }
     this.unsubs.push(
       watch(
         () => this.store.state.mode,
-        (mode) => this.pushModeUrl(mode),
+        (mode) => {
+          const prev = this.watchedMode
+          this.watchedMode = mode
+          // Leaving Learn drops its address. The history entry still has it,
+          // so Back loads that piece again instead of the hub.
+          if (prev === 'learn' && mode !== 'learn') this.learnSong = null
+          this.writeModeUrl(mode)
+        },
       ),
     )
     window.addEventListener('popstate', this.onModePopState)
     this.unsubs.push(() => window.removeEventListener('popstate', this.onModePopState))
-    this.applyLocationMode()
+    this.urlReplace = true
+    this.openInitialRoute(boot.route)
   }
 
-  private pushModeUrl(mode: AppMode): void {
-    if (this.urlQuiet) return
-    const path = normalizePath(location.pathname)
-    if (mode === 'home') {
-      if (path === '/' || path === '/welcome' || path === '/start') return
-      history.pushState({ mode: 'home' }, '', `/start${location.search}${location.hash}`)
+  private openInitialRoute(route: LandingRoute): void {
+    if (route.kind === 'hero' || route.kind === 'home') {
+      this.urlReplace = false
       return
     }
-    const next = modePath(mode)
-    if (path === next) return
-    history.pushState({ mode }, '', `${next}${location.search}${location.hash}`)
+    if (route.mode === 'live') {
+      this.requestMode('live', true)
+      this.urlReplace = false
+      return
+    }
+    if (route.mode === 'learn') {
+      this.deliverLearn(route.song, true)
+      if (!route.song) this.urlReplace = false
+      return
+    }
+    const seq = ++this.routeToken
+    // Home has to mount and show the song grid before the piece arrives,
+    // so the card-to-roll transition still runs on a deep link.
+    requestAnimationFrame(() => {
+      void this.settlePlayAddress(route.song, seq)
+    })
+  }
+
+  private writeModeUrl(mode: AppMode): void {
+    if (this.urlQuiet) return
+    const path = normalizePath(location.pathname)
+    if (mode === 'home' && (path === '/' || path === '/welcome')) return
+    const song = mode === 'play' ? this.playSong : mode === 'learn' ? this.learnSong : null
+    const next = modeHref(mode, song, location.search, location.hash)
+    const current = `${path}${location.search}${location.hash}`
+    if (current === next) return
+    // A history write during an active view transition throws and cancels
+    // the mode change that was about to run. Skip the old transition first.
+    releaseViewTransition()
+    const state = { mode }
+    try {
+      if (this.urlReplace) history.replaceState(state, '', next)
+      else history.pushState(state, '', next)
+    } catch {
+      requestAnimationFrame(() => {
+        if (this.urlQuiet || this.store.state.mode !== mode) return
+        const now = `${normalizePath(location.pathname)}${location.search}${location.hash}`
+        if (now === next) return
+        try {
+          if (this.urlReplace) history.replaceState(state, '', next)
+          else history.pushState(state, '', next)
+        } catch {
+          // The surface is already on this mode. The next move republishes.
+        }
+      })
+    }
   }
 
   private onModePopState = (): void => {
+    // Drop an in-flight deep link so it cannot land on top of the entry
+    // the browser just restored.
+    this.routeToken++
     this.urlQuiet = true
+    this.urlReplace = true
     try {
       this.applyLocationMode()
     } finally {
@@ -918,11 +1000,97 @@ export class App {
     const route = parseRoute(location.pathname, location.search, readStarted())
     if (route.kind === 'hero' || route.kind === 'home') {
       if (this.store.state.mode !== 'home') this.enterHomeMode()
+      this.urlReplace = false
       return
     }
-    if (route.mode === 'learn') this.renderer.setVisible(false)
-    if (this.store.state.mode === route.mode) return
-    this.requestMode(route.mode, true)
+    if (route.mode === 'learn') {
+      if (route.song === this.learnSong && this.store.state.mode === 'learn') {
+        this.urlReplace = false
+        return
+      }
+      this.deliverLearn(route.song, true)
+      if (!route.song) this.urlReplace = false
+      return
+    }
+    if (route.mode === 'live') {
+      if (this.store.state.mode !== 'live') this.requestMode('live', true)
+      this.urlReplace = false
+      return
+    }
+    void this.settlePlayAddress(route.song, this.routeToken)
+  }
+
+  // `/play` with no sample uses the last sample, then the newest recent
+  // file, then the picker. A bad id skips the recent file and uses the
+  // last sample or the picker.
+  private async settlePlayAddress(song: string | null, seq: number): Promise<void> {
+    try {
+      if (seq !== this.routeToken) return
+      const known = song && getSample(song) ? song : null
+      if (known) {
+        await this.loadSample(known, seq)
+        return
+      }
+      const last = readLastSong()
+      const fallback = last && getSample(last) ? last : null
+      if (fallback && fallback !== song) {
+        await this.loadSample(fallback, seq)
+        return
+      }
+      if (!song) {
+        const recents = await listRecents()
+        if (seq !== this.routeToken) return
+        const recent = recents[0]
+        if (recent) {
+          const opened = await this.loadRecent(recent.id, seq)
+          if (opened || seq !== this.routeToken) return
+        }
+      }
+      if (seq !== this.routeToken) return
+      this.playSong = null
+      if (this.store.state.mode !== 'play') this.requestMode('play', true)
+      else this.writeModeUrl('play')
+    } finally {
+      if (seq === this.routeToken) this.urlReplace = false
+    }
+  }
+
+  private deliverLearn(song: string | null, fromHistory: boolean): void {
+    this.learnSong = song
+    const open = this.learnControllerHandle.peek()
+    if (open?.isOpen()) {
+      if (song) open.applyAddress(song)
+      else open.closeActiveExercise('abandoned')
+      return
+    }
+    this.pendingLearnAddress = song
+    if (this.store.state.mode !== 'learn') {
+      this.renderer.setVisible(false)
+      this.requestMode('learn', fromHistory)
+    }
+  }
+
+  private takePendingLearnAddress(): string | null {
+    const id = this.pendingLearnAddress
+    this.pendingLearnAddress = null
+    return id
+  }
+
+  private onLearnAddress(id: string | null): void {
+    this.learnSong = id
+    if (id && getSample(id)) rememberLastSong(id)
+    this.writeModeUrl(this.store.state.mode)
+    this.urlReplace = false
+  }
+
+  private onLearnMiss(id: string): void {
+    const last = readLastSong()
+    const open = this.learnControllerHandle.peek()
+    if (last && last !== id && getSample(last) && open?.applyAddress(last)) return
+    this.learnSong = null
+    this.pendingLearnAddress = null
+    this.writeModeUrl(this.store.state.mode)
+    this.urlReplace = false
   }
 
   private releaseAllLiveNotes(): void {
@@ -1208,8 +1376,11 @@ export class App {
   }
 
   private async loadMidi(file: File, source: 'drag' | 'picker' = 'picker'): Promise<void> {
+    const seq = ++this.routeToken
     const previousMode = this.store.state.mode
     const previousMidi = this.store.state.loadedMidi
+    const previousSong = this.playSong
+    this.playSong = null
     this.resetInteractionState()
     this.store.beginPlayLoad()
     this.renderer.clearMidi()
@@ -1223,10 +1394,12 @@ export class App {
         has_sustain_pedal: stats.hasSustainPedal,
         tempo_events: stats.tempoEvents,
       })
+      if (seq !== this.routeToken) return
       // completePlayLoad flips mode to 'play'; <PlayMode/>'s effect then
       // drives renderer.loadMidi, trackPanel.render, document.title, and
       // dropzone.hide off the new loadedMidi.
       this.store.completePlayLoad(midi)
+      this.writeModeUrl('play')
       markStarted()
       this.synth.load(midi).catch((err) => {
         console.error('SynthEngine.load failed:', err)
@@ -1258,6 +1431,7 @@ export class App {
         fileExt: file.name.split('.').pop()?.toLowerCase() ?? null,
         fileSizeKb: Math.round(file.size / 1024),
       })
+      this.playSong = previousSong
       if (previousMode === 'play' && previousMidi) {
         // Manual surface restore — the one place that can't lean on
         // <PlayMode/>'s effect: `loadedMidi` still holds the same
@@ -1272,6 +1446,7 @@ export class App {
         this.enterLiveMode(false)
       } else if (previousMode === 'home') this.enterHomeMode()
       else this.store.setState('status', 'ready')
+      this.writeModeUrl(this.store.state.mode)
       const msg =
         err instanceof Error && err.name === 'EmptyMidiError'
           ? t('error.midi.empty')
@@ -1868,9 +2043,22 @@ export class App {
   }
 
   // Play-mode sample loader. Learn has its own via LearnController.loadSample.
-  private async loadSample(sampleId: string): Promise<void> {
+  // `token` is the caller's route generation so a deep link that loses the
+  // race does not replace the piece the user just opened.
+  private async loadSample(sampleId: string, token?: number): Promise<void> {
+    const seq = token ?? ++this.routeToken
     const sample = getSample(sampleId)
     if (!sample) return
+    if (
+      seq === this.routeToken &&
+      this.playSong === sampleId &&
+      this.store.state.loadedMidi &&
+      this.store.state.mode !== 'home'
+    ) {
+      if (this.store.state.mode !== 'play') this.requestMode('play', true)
+      else this.writeModeUrl('play')
+      return
+    }
     this.primeInteractiveAudio()
     let midi: Awaited<ReturnType<typeof fetchSampleMidi>>
     try {
@@ -1881,7 +2069,11 @@ export class App {
       this.showError(t('error.sample.fetchFailed'))
       return
     }
+    if (seq !== this.routeToken) return
+    this.playSong = sampleId
+    rememberLastSong(sampleId)
     this.loadSessionAsFile(midi)
+    this.writeModeUrl(this.store.state.mode)
     trackMidiLoaded({
       source: 'sample',
       sampleId,
@@ -1894,7 +2086,8 @@ export class App {
   // Play-mode loader for a previously-opened file. The bytes are re-parsed
   // from IndexedDB, so from here on it's the same path a sample takes — we
   // hold a MidiFile, not a File.
-  private async loadRecent(recentId: string): Promise<void> {
+  private async loadRecent(recentId: string, token?: number): Promise<boolean> {
+    const seq = token ?? ++this.routeToken
     this.primeInteractiveAudio()
     let midi: MidiFile | null
     try {
@@ -1906,12 +2099,15 @@ export class App {
       void forgetRecent(recentId)
       midi = null
     }
+    if (seq !== this.routeToken) return false
     if (!midi) {
       trackEvent('recent_load_failed', { target: 'play' })
       this.showError(t('error.recent.loadFailed'))
-      return
+      return false
     }
+    this.playSong = null
     this.loadSessionAsFile(midi)
+    this.writeModeUrl(this.store.state.mode)
     markStarted()
     trackMidiLoaded({
       source: 'recent',
@@ -1919,6 +2115,7 @@ export class App {
       noteCount: countNotes(midi),
       durationS: Math.round(midi.duration),
     })
+    return true
   }
 
   // Opening a piece — card, drop, or file picker — is a "watch it" gesture, so
@@ -1942,6 +2139,11 @@ export class App {
   }
 
   private requestMode(mode: Exclude<AppMode, 'home'>, fromHistory = false): void {
+    // A click wins over an in-flight deep link, and it pushes a history entry.
+    if (!fromHistory) {
+      this.urlReplace = false
+      this.routeToken++
+    }
     // Play with nothing loaded opens the picker and stays in the current mode.
     // That is not a view change, so it must not arm the roll-preserving flag.
     // A back/forward visit to /play still enters Play so the URL and the
@@ -1951,6 +2153,9 @@ export class App {
       return
     }
     const from = this.store.state.mode
+    // Publish the address before the transition. history.pushState inside a
+    // view-transition update callback aborts it.
+    if (from !== mode) this.writeModeUrl(mode)
     if (mode === 'live' && from !== 'live') {
       enterLiveView(
         from,
@@ -2011,6 +2216,7 @@ export class App {
     track('learn_from_play', { duration_s: Math.round(midi.duration) })
     void this.ensureLearnController().then((c) => {
       c.queueMidi(midi)
+      this.writeModeUrl('learn')
       crossfadeModes(() => {
         this.closeTransientOverlays()
         this.store.setState('mode', 'learn')
@@ -2022,6 +2228,7 @@ export class App {
   // the side effects (onMount in HomeMode/PlayMode/LiveMode/LearnMode).
   private enterHomeMode(): void {
     const from = this.store.state.mode
+    if (from !== 'home') this.writeModeUrl('home')
     const apply = (): void => {
       if (from !== 'home') this.closeTransientOverlays()
       this.store.enterHome()
@@ -2118,7 +2325,10 @@ export class App {
         `Live session · ${Math.round(pending.duration)}s`,
       )
       this.pendingSession = null
+      this.routeToken++
+      this.playSong = null
       this.loadSessionAsFile(midi)
+      this.writeModeUrl(this.store.state.mode)
     }
   }
 

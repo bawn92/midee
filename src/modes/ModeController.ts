@@ -23,6 +23,12 @@ export interface ModeContext {
   // direct Controls reference so the import graph stays one-way (modes
   // never reach into UI directly).
   setLearnFileName: (name: string | null) => void
+  // Address of a `/learn/<id>` visit, consumed once when Learn mounts.
+  takePendingLearnAddress?: () => string | null
+  // The piece or exercise Learn is showing, so the URL can follow it.
+  // `null` is a file with no public id. A miss falls back to the last sample.
+  onLearnAddress?: (id: string | null) => void
+  onLearnMiss?: (id: string) => void
 }
 
 // Live-mode entry options. Used by `setNextLiveOpts()` in LiveMode to
