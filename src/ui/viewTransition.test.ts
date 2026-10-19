@@ -1,11 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { LIVE_IN_END_MS, LIVE_OUT_MS } from './liveEntrance'
 import {
   consumePreserveRoll,
   crossfadeModes,
+  enterLiveView,
   flipTransform,
   installViewMotion,
   isModeCrossfade,
   KEYBOARD_RISE_PX,
+  leaveLiveView,
   prefersReducedMotion,
   ROLL_RISE_PX,
   retireModeView,
@@ -229,5 +232,85 @@ describe('crossfadeModes', () => {
     expect(again.isConnected).toBe(true)
     crossfadeModes(() => {})
     expect(again.isConnected).toBe(false)
+  })
+})
+
+describe('live entrance', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  it('lifts home immediately and leaves the page able to take a key', () => {
+    const app = document.createElement('main')
+    app.id = 'app'
+    const dropzone = document.createElement('div')
+    dropzone.id = 'dropzone'
+    document.body.append(app, dropzone)
+    const apply = vi.fn()
+    enterLiveView('home', apply)
+    expect(apply).toHaveBeenCalledOnce()
+    expect(document.documentElement.dataset.vt).toBe('live')
+    expect(app.style.pointerEvents).toBe('')
+    expect(dropzone.style.pointerEvents).toBe('')
+    vi.advanceTimersByTime(LIVE_IN_END_MS + 40)
+    expect(document.documentElement.dataset.vt).toBeUndefined()
+  })
+
+  it('uses a sentinel view transition and does not snapshot the document', () => {
+    const apply = vi.fn()
+    const start = vi.fn((update: () => void) => {
+      update()
+      return { finished: Promise.resolve() }
+    })
+    const proto = HTMLElement.prototype as HTMLElement & { startViewTransition?: typeof start }
+    proto.startViewTransition = start
+    const docStart = vi.fn()
+    ;(document as unknown as { startViewTransition?: typeof docStart }).startViewTransition =
+      docStart
+    enterLiveView('home', apply)
+    expect(start).toHaveBeenCalledOnce()
+    expect(docStart).not.toHaveBeenCalled()
+    expect(apply).toHaveBeenCalledOnce()
+    expect(document.getElementById('vt-live-sentinel')).not.toBeNull()
+    expect(document.documentElement.dataset.vt).toBe('live')
+    delete proto.startViewTransition
+    delete (document as unknown as { startViewTransition?: unknown }).startViewTransition
+  })
+
+  it('keeps the roll when Live is opened from Play', () => {
+    let kept = false
+    enterLiveView('play', () => {
+      kept = consumePreserveRoll()
+    })
+    expect(kept).toBe(true)
+    expect(document.documentElement.dataset.vt).toBe('live')
+  })
+
+  it('crossfades in 120ms when motion is reduced', () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+    )
+    const apply = vi.fn()
+    const start = vi.fn()
+    ;(document as unknown as { startViewTransition?: typeof start }).startViewTransition = start
+    enterLiveView('home', apply)
+    expect(prefersReducedMotion()).toBe(true)
+    expect(apply).toHaveBeenCalledOnce()
+    expect(start).not.toHaveBeenCalled()
+    expect(document.documentElement.dataset.vt).toBe('reduced')
+    delete (document as unknown as { startViewTransition?: unknown }).startViewTransition
+  })
+
+  it('plays the reverse when leaving Live for Home', () => {
+    const apply = vi.fn()
+    const done = vi.fn()
+    leaveLiveView(apply, done)
+    expect(apply).toHaveBeenCalledOnce()
+    expect(document.documentElement.dataset.vt).toBe('live-out')
+    expect(done).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(LIVE_OUT_MS + 40)
+    expect(done).toHaveBeenCalledOnce()
+    expect(document.documentElement.dataset.vt).toBeUndefined()
   })
 })

@@ -9,6 +9,11 @@
   --vt-slide: 8px;
   --vt-keys: 8px;
   --vt-roll: 16px;
+  --vt-live-lift: 260ms;
+  --vt-live-stagger: 30ms;
+  --vt-live-rise: 520ms;
+  --vt-live-ease: cubic-bezier(0.34, 1.3, 0.64, 1);
+  --vt-live-overshoot: 6px;
 }
 
 /* The overlay must not eat clicks or keys. The transition is scoped to the
@@ -247,6 +252,132 @@ html[data-vt-api="on"][data-vt="mode"]
   animation: none;
 }
 
+/* Live entrance. Home copy lifts 12px and fades, staggered 30ms. The
+   keyboard rise, lamp, shimmer, and range glide are drawn on the live
+   canvas so a key pressed during the move still lights. */
+@keyframes vt-live-lift {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes vt-live-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* The View Transitions API only snapshots this empty node. Naming the home
+   copy would hide it for the whole transition, so the lift runs on the live
+   elements instead. */
+#vt-live-sentinel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  view-transition-name: vt-live-sentinel;
+}
+
+::view-transition-group(vt-live-sentinel),
+::view-transition-old(vt-live-sentinel),
+::view-transition-new(vt-live-sentinel) {
+  animation: none;
+  opacity: 0;
+  display: none;
+}
+
+html[data-vt="live"] #dropzone.dz--hidden {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  transition: none;
+  pointer-events: none;
+}
+
+/* Once the lift has finished, drop the home surface without fading it back in. */
+html.vt-live-hold #dropzone.dz--hidden {
+  transition: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: none;
+}
+
+html[data-vt="live"] .home-kicker {
+  animation: vt-live-lift var(--vt-live-lift) var(--vt-ease) both;
+}
+
+html[data-vt="live"] .home-title {
+  animation: vt-live-lift var(--vt-live-lift) var(--vt-ease) var(--vt-live-stagger) both;
+}
+
+html[data-vt="live"] .home-sub,
+html[data-vt="live"] .home-actions {
+  animation: vt-live-lift var(--vt-live-lift) var(--vt-ease) calc(var(--vt-live-stagger) * 2) both;
+}
+
+html[data-vt="live"] .home-samples {
+  animation: vt-live-lift var(--vt-live-lift) var(--vt-ease) calc(var(--vt-live-stagger) * 3) both;
+}
+
+html[data-vt="live"] .song-guide,
+html[data-vt="live"] .learn-host.mode-view--leave {
+  animation: vt-live-lift var(--vt-live-lift) var(--vt-ease) both;
+  pointer-events: none;
+}
+
+html[data-vt="live-out"] #dropzone {
+  transition: none;
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  pointer-events: none;
+}
+
+html[data-scene][data-vt="live-out"] body:has(#dropzone:not(.dz--hidden)) #pianoroll,
+html[data-scene][data-vt="live-out"] body:has(#dropzone:not(.dz--hidden)) #kbd-resizer {
+  visibility: visible;
+}
+
+html[data-vt="live-out"] .home-kicker {
+  animation: vt-live-rise-in var(--vt-live-lift) var(--vt-ease) both;
+}
+
+html[data-vt="live-out"] .home-title {
+  animation: vt-live-rise-in var(--vt-live-lift) var(--vt-ease) var(--vt-live-stagger) both;
+}
+
+html[data-vt="live-out"] .home-sub,
+html[data-vt="live-out"] .home-actions {
+  animation: vt-live-rise-in var(--vt-live-lift) var(--vt-ease) calc(var(--vt-live-stagger) * 2)
+    both;
+}
+
+html[data-vt="live-out"] .home-samples {
+  animation: vt-live-rise-in var(--vt-live-lift) var(--vt-ease) calc(var(--vt-live-stagger) * 3)
+    both;
+}
+
+html[data-vt="reduced"] #dropzone {
+  transform: none;
+  transition:
+    opacity var(--vt-reduced) linear,
+    visibility 0s linear var(--vt-reduced);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ts-mode-thumb {
     transition: opacity var(--vt-reduced) linear;
@@ -279,6 +410,10 @@ html[data-vt-api="on"][data-vt="mode"]
     animation: vt-fade-out var(--vt-reduced) linear forwards;
   }
 
+  html[data-vt="live"] :is(.home-kicker, .home-title, .home-sub, .home-actions, .home-samples),
+  html[data-vt="live-out"] :is(.home-kicker, .home-title, .home-sub, .home-actions, .home-samples),
+  html[data-vt="live"] .song-guide,
+  html[data-vt="live"] .learn-host.mode-view--leave,
   html[data-vt="enter"] #pianoroll,
   html[data-vt="mode"] .song-guide,
   html[data-vt="mode"] .learn-host--hub:not(.learn-host--hidden),

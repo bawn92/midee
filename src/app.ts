@@ -119,7 +119,13 @@ import { showError, showSuccess } from './ui/Toast'
 import { TrackPanel } from './ui/TrackPanel'
 import { installTooltips } from './ui/tooltips'
 import { installViewportClassSync } from './ui/utils'
-import { crossfadeModes, isModeCrossfade } from './ui/viewTransition'
+import {
+  crossfadeModes,
+  enterLiveView,
+  isModeCrossfade,
+  leaveLiveView,
+  prefersReducedMotion,
+} from './ui/viewTransition'
 import { whenIdle } from './whenIdle'
 
 // Total note count across all tracks — the content-size signal attached to
@@ -1931,6 +1937,19 @@ export class App {
       return
     }
     const from = this.store.state.mode
+    if (mode === 'live' && from !== 'live') {
+      enterLiveView(
+        from,
+        () => {
+          if (!prefersReducedMotion()) this.renderer.playLiveArrival()
+          if (from !== 'home') this.closeTransientOverlays()
+          this.enterLiveMode(true, !isModeCrossfade(from, mode))
+        },
+        () => this.renderer.finishLiveArrival(),
+      )
+      return
+    }
+    if (from === 'live') this.renderer.finishLiveMotion()
     const cross = isModeCrossfade(from, mode)
     const run = (): void => {
       if (from !== 'home' && from !== mode) this.closeTransientOverlays()
@@ -1988,8 +2007,22 @@ export class App {
   // Thin delegators: each flips the store and lets Solid's mode shell run
   // the side effects (onMount in HomeMode/PlayMode/LiveMode/LearnMode).
   private enterHomeMode(): void {
-    if (this.store.state.mode !== 'home') this.closeTransientOverlays()
-    this.store.enterHome()
+    const from = this.store.state.mode
+    const apply = (): void => {
+      if (from !== 'home') this.closeTransientOverlays()
+      this.store.enterHome()
+    }
+    if (from !== 'live') {
+      apply()
+      return
+    }
+    leaveLiveView(
+      () => {
+        if (!prefersReducedMotion()) this.renderer.playLiveDeparture()
+        apply()
+      },
+      () => this.renderer.finishLiveMotion(),
+    )
   }
 
   private enterLiveMode(primeAudio = true, resetTime = true): void {

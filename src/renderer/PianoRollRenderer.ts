@@ -6,6 +6,7 @@ import { noteHandOf, noteMatchesHandOf } from '../core/midi/hands'
 import type { MidiFile } from '../core/midi/types'
 import type { LiveNoteStore } from '../midi/LiveNoteStore'
 import { guideForMidi } from '../songGuide'
+import { glideRange, LiveMotionClock } from '../ui/liveEntrance'
 import { paintPrefs } from '../ui/paint'
 import { BeatGrid } from './BeatGrid'
 import { readCssColor } from './cssColor'
@@ -113,6 +114,9 @@ export class PianoRollRenderer {
   private rangeLaneGraphics!: Graphics
   private playStart = 21
   private playEnd = 108
+  private liveClock = new LiveMotionClock()
+  private liveRoll: number | null = null
+  private liveRange: { start: number; end: number } | null = null
   private mistStrike: EmberMistStrike | null = null
   private materialAtmosphere: Sprite | null = null
   private atmosphereThemeId: string | null = null
@@ -618,7 +622,8 @@ export class PianoRollRenderer {
       hasLive ||
       this.particles.hasActive ||
       layersAnimating(this.externalLayers) ||
-      rangePhaseAnimating()
+      rangePhaseAnimating() ||
+      this.liveClock.active
     if (animating) {
       this.idleFrames = 0
       this.renderFrame(clock.currentTime, ticker.deltaMS / 1000, clock.playing)
@@ -673,6 +678,7 @@ export class PianoRollRenderer {
   }
 
   private renderFrame(currentTime: number, dt: number, emitParticles: boolean): void {
+    this.stepLiveMotion()
     this.stepPlantShadows()
     this.lastRenderTime = currentTime
     const curr = this.currActive
@@ -863,8 +869,10 @@ export class PianoRollRenderer {
     }
 
     this.keyboardRenderer.drawActiveKeys(activeColors, this.viewport)
+    this.keyboardRenderer.drawShimmer(this.viewport)
     this.keyboardRenderer.drawRange(this.viewport)
     this.drawRangeLanes()
+    this.applyLiveRollFade()
     this.particles.update(dt)
     this.mistStrike?.update(this.viewport, activeColors, currentTime)
 
@@ -1026,6 +1034,103 @@ export class PianoRollRenderer {
     if (!this.exportMode) this.presentFrame()
   }
 
+  // Keyboard rises from below the fold. The canvas keeps painting, so a key
+  // pressed while it settles still lights and the note still sounds.
+  playLiveArrival(): void {
+    if (this.exportMode) return
+    this.liveClock.beginIn(performance.now(), this.keyboardHeight)
+    this.stepLiveMotion()
+    this.presentFrame()
+    this.wake()
+  }
+
+  playLiveDeparture(): void {
+    if (this.exportMode) return
+    this.liveClock.beginOut(
+      performance.now(),
+      this.keyboardRenderer.container.y,
+      this.keyboardHeight,
+    )
+    this.stepLiveMotion()
+    this.presentFrame()
+    this.wake()
+  }
+
+  // Snap back to a resting keyboard. Presents while the canvas is hidden so
+  // the sunk frame cannot flash once Home covers it.
+  finishLiveMotion(): void {
+    this.liveClock.stop()
+    this.liveRoll = null
+    this.liveRange = null
+    this.keyboardRenderer.container.y = 0
+    this.keyboardRenderer.setArrivalLight(0)
+    this.keyboardRenderer.setShimmerClock(null)
+    this.keyboardRenderer.setRangeGlide(null, null)
+    this.backgroundGraphics.alpha = 1
+    this.nowLineGraphics.alpha = 1
+    this.rangeLaneGraphics.alpha = 1
+    const canvas = this.app.canvas as HTMLCanvasElement
+    const previous = canvas.style.visibility
+    canvas.style.visibility = 'hidden'
+    this.presentFrame()
+    canvas.style.visibility = previous
+  }
+
+  finishLiveArrival(): void {
+    if (!this.liveClock.active) return
+    this.liveClock.stop()
+    this.liveRoll = null
+    this.liveRange = null
+    this.keyboardRenderer.container.y = 0
+    this.keyboardRenderer.setArrivalLight(1)
+    this.keyboardRenderer.setShimmerClock(null)
+    this.keyboardRenderer.setRangeGlide(null, null)
+    this.backgroundGraphics.alpha = 1
+    this.nowLineGraphics.alpha = 1
+    this.rangeLaneGraphics.alpha = 1
+    if (!this.exportMode) this.presentFrame()
+  }
+
+  private stepLiveMotion(): void {
+    if (!this.liveClock.active) return
+    const frame = this.liveClock.sample(performance.now())
+    this.keyboardRenderer.container.y = frame.keyboardY
+    this.keyboardRenderer.setArrivalLight(frame.light)
+    this.keyboardRenderer.setShimmerClock(frame.shimmerMs)
+    this.liveRoll = frame.roll
+    this.backgroundGraphics.alpha = frame.roll
+    this.nowLineGraphics.alpha = frame.roll
+    if (frame.rangeT === null) {
+      this.liveRange = null
+      this.keyboardRenderer.setRangeGlide(null, null)
+    } else {
+      const next = glideRange(frame.rangeT, this.playStart, this.playEnd)
+      this.liveRange = next
+      this.keyboardRenderer.setRangeGlide(next.start, next.end)
+    }
+    if (!frame.done || this.liveClock.kind !== 'in') return
+    this.liveClock.stop()
+    this.liveRoll = null
+    this.liveRange = null
+    this.keyboardRenderer.container.y = 0
+    this.keyboardRenderer.setArrivalLight(1)
+    this.keyboardRenderer.setShimmerClock(null)
+    this.keyboardRenderer.setRangeGlide(null, null)
+    this.backgroundGraphics.alpha = 1
+    this.nowLineGraphics.alpha = 1
+    this.rangeLaneGraphics.alpha = 1
+  }
+
+  // drawRangeLanes resets its own alpha. Re-apply the entrance fade after it,
+  // and keep the hit line and lane wash on the same clock.
+  private applyLiveRollFade(): void {
+    const roll = this.liveRoll
+    if (roll === null) return
+    this.backgroundGraphics.alpha = roll
+    this.nowLineGraphics.alpha = roll
+    if (this.rangeLaneGraphics) this.rangeLaneGraphics.alpha *= roll
+  }
+
   // Tinted highway above the playable window. 24 stepped bands of
   // --range-lane, 0 → 36% from the top of the roll down to the keys,
   // with --range-edge rails and a foot. Opacity lives on this layer.
@@ -1039,10 +1144,12 @@ export class PianoRollRenderer {
     const { pitchMin, pitchMax } = this.viewport.config
     const lo = pitchMin ?? 21
     const hi = pitchMax ?? 108
-    if (this.playStart <= lo && this.playEnd >= hi) return
+    const windowStart = this.liveRange?.start ?? this.playStart
+    const windowEnd = this.liveRange?.end ?? this.playEnd
+    if (windowStart <= lo && windowEnd >= hi) return
     const positions = this.viewport.getAllKeyPositions()
-    const startPos = positions.get(this.playStart)
-    const endPos = positions.get(this.playEnd)
+    const startPos = positions.get(windowStart)
+    const endPos = positions.get(windowEnd)
     if (!startPos || !endPos) return
     const x0 = startPos.x
     const width = endPos.x + endPos.width - x0

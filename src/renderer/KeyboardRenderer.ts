@@ -1,6 +1,7 @@
 import type { Application, Ticker } from 'pixi.js'
 import { Container, Graphics, RenderTexture, Sprite, Text, Texture, TilingSprite } from 'pixi.js'
 import { isBlackKey, MIDI_MAX, MIDI_MIN } from '../core/midi/types'
+import { shimmerStrength, whiteKeyColumn } from '../ui/liveEntrance'
 import { paintPrefs } from '../ui/paint'
 import { readCssColor } from './cssColor'
 import { KBD, keyFrame, whiteKeyCount } from './keyboardMetrics'
@@ -179,9 +180,15 @@ export class KeyboardRenderer {
   private pressLiftLayer: Graphics
   private pressedPitches = new Map<number, number>()
   private caseLayer: Graphics
+  private shadowLayer: Graphics
+  private lampLayer: Graphics
+  private shimmerLayer: Graphics
   private keyLabels: Text[] = []
   private playStart = MIDI_MIN
   private playEnd = MIDI_MAX
+  private glideStart: number | null = null
+  private glideEnd: number | null = null
+  private shimmerMs: number | null = null
   private rangeSignature = ''
 
   // Snapshot of the last-drawn pitch→color map as a single signature string.
@@ -219,11 +226,25 @@ export class KeyboardRenderer {
     this.pressLiftLayer.label = 'keyboard-range-press'
     this.caseLayer = new Graphics()
     this.caseLayer.label = 'keyboard-case'
+    this.shadowLayer = new Graphics()
+    this.shadowLayer.label = 'keyboard-shadow'
+    this.shadowLayer.eventMode = 'none'
+    this.shadowLayer.alpha = 0
+    this.lampLayer = new Graphics()
+    this.lampLayer.label = 'keyboard-lamp'
+    this.lampLayer.eventMode = 'none'
+    this.lampLayer.alpha = 0
+    this.shimmerLayer = new Graphics()
+    this.shimmerLayer.label = 'keyboard-shimmer'
+    this.shimmerLayer.eventMode = 'none'
     // Order matters: white hints/active must sit above the white sprite but
     // below the black sprite. Black hints/active sit above the black sprite.
     // The range wash sits above every key so the playable window reads on
     // both white and black keys. The press lift is last, so a key outside
-    // the range keeps its hand tint above the dim. Sprites are inserted by build().
+    // the range keeps its hand tint above the dim. The shimmer sits above
+    // that wash and skips any key that is actually pressed. Sprites are
+    // inserted by build(). The shadow stays behind the case.
+    this.container.addChild(this.shadowLayer)
     this.container.addChild(this.whitePracticeHintLayer)
     this.container.addChild(this.whiteActiveLayer)
     this.container.addChild(this.blackPracticeHintLayer)
@@ -232,6 +253,8 @@ export class KeyboardRenderer {
     this.container.addChild(this.rangeSatLayer)
     this.container.addChild(this.rangeLayer)
     this.container.addChild(this.pressLiftLayer)
+    this.container.addChild(this.lampLayer)
+    this.container.addChild(this.shimmerLayer)
   }
 
   // Build or rebuild the static keyboard textures.
@@ -416,6 +439,10 @@ export class KeyboardRenderer {
     this.rangeSatLayer.y = yOffset
     this.rangeLayer.y = yOffset
     this.pressLiftLayer.y = yOffset
+    this.container.addChildAt(this.shadowLayer, 0)
+    this.paintArrivalLight(canvasWidth, keyboardHeight, yOffset)
+    this.container.addChild(this.lampLayer)
+    this.container.addChild(this.shimmerLayer)
     this.rangeSignature = ''
     // Force a redraw of the hint layer on the next setPracticeHints call —
     // the geometry depends on the freshly-built viewport.
@@ -620,12 +647,33 @@ export class KeyboardRenderer {
     this.rangeSignature = ''
   }
 
+  // Visual window only. Null uses the real playable range. A press still
+  // uses playStart/playEnd, so the glide cannot silence a key.
+  setRangeGlide(start: number | null, end: number | null): void {
+    if (this.glideStart === start && this.glideEnd === end) return
+    this.glideStart = start
+    this.glideEnd = end
+    this.rangeSignature = ''
+  }
+
+  setArrivalLight(alpha: number): void {
+    const next = Math.min(1, Math.max(0, alpha))
+    this.shadowLayer.alpha = next
+    this.lampLayer.alpha = next
+  }
+
+  setShimmerClock(elapsedMs: number | null): void {
+    this.shimmerMs = elapsedMs
+  }
+
   drawRange(viewport: Viewport): void {
     const { canvasWidth, keyboardHeight, pitchMin, pitchMax } = viewport.config
     const overlay = rangeOverlay()
     const playAlpha = rangeLayerAlpha('dim')
+    const windowStart = this.glideStart ?? this.playStart
+    const windowEnd = this.glideEnd ?? this.playEnd
     const sig =
-      `${this.playStart}-${this.playEnd}|${canvasWidth}x${keyboardHeight}|` +
+      `${windowStart}-${windowEnd}|${canvasWidth}x${keyboardHeight}|` +
       `${pitchMin ?? MIDI_MIN}-${pitchMax ?? MIDI_MAX}|${this.theme.id}|` +
       `${overlay.style}|${overlay.addonStrip}|${overlay.addonLanes}|` +
       `${Math.round(playAlpha * 30)}|${this.lastSignature}`
@@ -638,11 +686,11 @@ export class KeyboardRenderer {
     const lo = pitchMin ?? MIDI_MIN
     const hi = pitchMax ?? MIDI_MAX
     if (playAlpha < 0.02) return
-    if (this.playStart <= lo && this.playEnd >= hi) return
+    if (windowStart <= lo && windowEnd >= hi) return
 
     const positions = viewport.getAllKeyPositions()
-    const startPos = positions.get(this.playStart)
-    const endPos = positions.get(this.playEnd)
+    const startPos = positions.get(windowStart)
+    const endPos = positions.get(windowEnd)
     if (!startPos || !endPos) return
     const x0 = startPos.x
     const x1 = endPos.x + endPos.width
@@ -690,6 +738,64 @@ export class KeyboardRenderer {
   // empty so a theme swap can clear an older fallboard without a leftover.
   private drawCase(_canvasWidth: number, _keyboardHeight: number, _walnut: boolean): void {
     this.caseLayer.clear()
+  }
+
+  // Contact shadow on the wall and a small pool of hand-coloured light.
+  // Both travel with the keyboard container and fade in via setArrivalLight.
+  private paintArrivalLight(canvasWidth: number, keyboardHeight: number, yOffset: number): void {
+    this.shadowLayer.clear()
+    this.lampLayer.clear()
+    const palette = keyboardPalette(this.theme.id)
+    const shadowH = Math.max(12, Math.round(keyboardHeight * 0.16))
+    for (let i = 0; i < 6; i++) {
+      const t = i / 6
+      this.shadowLayer
+        .rect(0, yOffset - shadowH + (shadowH * i) / 6, canvasWidth, shadowH / 6 + 1)
+        .fill({ color: palette.caseDark, alpha: 0.02 + t * 0.1 })
+    }
+    const cx = canvasWidth / 2
+    const cy = yOffset + keyboardHeight * 0.34
+    const pools: readonly [number, number, number][] = [
+      [0.18, 0.2, 0.1],
+      [0.28, 0.32, 0.06],
+      [0.4, 0.46, 0.035],
+    ]
+    for (const [rx, ry, alpha] of pools) {
+      this.lampLayer
+        .ellipse(cx, cy, canvasWidth * rx, keyboardHeight * ry)
+        .fill({ color: palette.noteRh, alpha })
+      this.lampLayer
+        .ellipse(
+          cx,
+          cy - keyboardHeight * 0.08,
+          canvasWidth * rx * 0.72,
+          keyboardHeight * ry * 0.55,
+        )
+        .fill({ color: palette.highlight, alpha: alpha * 0.8 })
+    }
+  }
+
+  // Left-to-right wash in the scene's hand colours. A pressed key is left
+  // alone so the real note light wins.
+  drawShimmer(viewport: Viewport): void {
+    this.shimmerLayer.clear()
+    const elapsed = this.shimmerMs
+    if (elapsed === null) return
+    const positions = viewport.getAllKeyPositions()
+    const keyboardHeight = viewport.config.keyboardHeight
+    const palette = keyboardPalette(this.theme.id)
+    for (let pitch = MIDI_MIN; pitch <= MIDI_MAX; pitch++) {
+      if (this.pressedPitches.has(pitch)) continue
+      const alpha = shimmerStrength(elapsed, whiteKeyColumn(pitch))
+      if (alpha < 0.01) continue
+      const pos = positions.get(pitch)
+      if (!pos) continue
+      const rect = keyRect(pitch, pos, keyboardHeight)
+      const dip = 2
+      this.shimmerLayer
+        .roundRect(rect.x, rect.y + dip, rect.w, Math.max(1, rect.h - dip), rect.radius)
+        .fill({ color: pitch < 60 ? palette.noteLh : palette.noteRh, alpha })
+    }
   }
 
   // Public hook for the parent renderer to swap in the current practice-mode

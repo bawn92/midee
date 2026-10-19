@@ -2,6 +2,16 @@
 // Motion is transform and opacity only. The canvas render loop and the audio
 // clock are left alone: a key pressed during a transition still sounds.
 
+import {
+  LIVE_IN_END_MS,
+  LIVE_LIFT_MS,
+  LIVE_OUT_MS,
+  LIVE_OVERSHOOT_PX,
+  LIVE_RISE_EASE,
+  LIVE_RISE_MS,
+  LIVE_STAGGER_MS,
+} from './liveEntrance'
+
 export const VIEW_EASE = 'cubic-bezier(0.2, 0, 0, 1)'
 export const VIEW_MS = 360
 export const VIEW_REDUCED_MS = 120
@@ -59,6 +69,11 @@ export function installViewMotion(root: HTMLElement = document.documentElement):
   root.style.setProperty('--vt-slide', `${SLIDE_PX}px`)
   root.style.setProperty('--vt-keys', `${KEYBOARD_RISE_PX}px`)
   root.style.setProperty('--vt-roll', `${ROLL_RISE_PX}px`)
+  root.style.setProperty('--vt-live-lift', `${LIVE_LIFT_MS}ms`)
+  root.style.setProperty('--vt-live-stagger', `${LIVE_STAGGER_MS}ms`)
+  root.style.setProperty('--vt-live-rise', `${LIVE_RISE_MS}ms`)
+  root.style.setProperty('--vt-live-ease', LIVE_RISE_EASE)
+  root.style.setProperty('--vt-live-overshoot', `${LIVE_OVERSHOOT_PX}px`)
 }
 
 if (typeof document !== 'undefined') installViewMotion()
@@ -289,4 +304,104 @@ export function crossfadeModes(apply: () => void): void {
   // A snapshot of the overlay would freeze the pill slide.
   apply()
   scheduleClear(gen, reduced ? VIEW_REDUCED_MS + 40 : VIEW_MS + 80, finish)
+}
+
+// A zero-size sentinel is the only thing the View Transitions API snapshots.
+// Scoping the transition to the home surface (or the document) would freeze
+// the keyboard canvas, so a key pressed mid-rise could not light. The copy
+// itself moves with CSS. The sentinel is the API path; CSS is the fallback
+// when startViewTransition is missing.
+// The home surface is opacity 1 for the lift. Removing data-vt would otherwise
+// transition it back through the 450ms hide. Hold it hidden for two frames.
+function parkHiddenDropzone(): void {
+  const root = document.documentElement
+  root.classList.add('vt-live-hold')
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      root.classList.remove('vt-live-hold')
+    })
+  })
+}
+
+function liveSentinel(): HTMLElement | null {
+  if (typeof document === 'undefined') return null
+  let el = document.getElementById('vt-live-sentinel')
+  if (!el) {
+    el = document.createElement('div')
+    el.id = 'vt-live-sentinel'
+    el.setAttribute('aria-hidden', 'true')
+    document.body.appendChild(el)
+  }
+  return el
+}
+
+function runScoped(apply: () => void): boolean {
+  const start = scopedTransition(liveSentinel() ?? document.documentElement)
+  if (!start) return false
+  let ran = false
+  try {
+    const running = start(() => {
+      ran = true
+      apply()
+      return afterUpdate()
+    })
+    void running.finished.catch(() => {})
+    return true
+  } catch {
+    return ran
+  }
+}
+
+// Clicking Live. Home's copy lifts; Play and Learn keep the clock and hand
+// their panels to the same lift. The keyboard rise itself is painted on the
+// live canvas (see PianoRollRenderer.playLiveArrival) so a key still sounds.
+export function enterLiveView(from: string, apply: () => void, onFinish?: () => void): void {
+  const reduced = prefersReducedMotion()
+  if (isModeCrossfade(from, 'live')) preserveRoll = true
+  const gen = beginMotion()
+  clearMotionNodes()
+  document.documentElement.dataset.vt = reduced ? 'reduced' : 'live'
+  let settled = false
+  const finish = (): void => {
+    if (settled || gen !== motionGen) return
+    settled = true
+    window.clearTimeout(clearTimer)
+    delete document.documentElement.dataset.vtApi
+    const vt = document.documentElement.dataset.vt
+    if (vt === 'live') parkHiddenDropzone()
+    if (vt === 'live' || vt === 'reduced') delete document.documentElement.dataset.vt
+    onFinish?.()
+  }
+  const budget = reduced ? VIEW_REDUCED_MS : LIVE_IN_END_MS
+  if (!reduced && runScoped(apply)) {
+    scheduleClear(gen, budget + 40, finish)
+    return
+  }
+  apply()
+  scheduleClear(gen, budget + 40, finish)
+}
+
+// Live back to Home. The keyboard sinks on the canvas; the start copy rises.
+export function leaveLiveView(apply: () => void, onFinish?: () => void): void {
+  const reduced = prefersReducedMotion()
+  const gen = beginMotion()
+  clearMotionNodes()
+  document.documentElement.dataset.vt = reduced ? 'reduced' : 'live-out'
+  let settled = false
+  const finish = (): void => {
+    if (settled || gen !== motionGen) return
+    settled = true
+    window.clearTimeout(clearTimer)
+    delete document.documentElement.dataset.vtApi
+    const vt = document.documentElement.dataset.vt
+    if (vt === 'live-out' || vt === 'reduced') delete document.documentElement.dataset.vt
+    onFinish?.()
+  }
+  const budget = reduced ? VIEW_REDUCED_MS : LIVE_OUT_MS
+  if (!reduced && runScoped(apply)) {
+    scheduleClear(gen, budget + 40, finish)
+    return
+  }
+  apply()
+  scheduleClear(gen, budget + 40, finish)
 }
