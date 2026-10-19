@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-const HOME_TITLE = 'Play notes, see them bloom'
+const HOME_TITLE = 'Piano Club, see them bloom'
 
 test.describe('App navigation accessibility', () => {
   test('the skip link stays offscreen before the app stylesheet loads', async ({ page }) => {

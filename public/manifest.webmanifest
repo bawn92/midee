@@ -1,6 +1,6 @@
 {
-  "name": "Play notes, see them bloom",
-  "short_name": "Play notes",
+  "name": "Piano Club, see them bloom",
+  "short_name": "Piano Club",
   "description": "A piano trainer for your MIDI keyboard, with learn mode, a range for small keyboards, and cozy scenes.",
   "start_url": "/",
   "scope": "/",

@@ -42,7 +42,7 @@ describe('HomeMode', () => {
 
   it('sets the document title to the home title', () => {
     renderWithApp(() => <HomeMode />)
-    expect(document.title).toBe('Play notes, see them bloom')
+    expect(document.title).toBe('Piano Club, see them bloom')
   })
   it('updates the descriptive title when the home locale changes', async () => {
     renderWithApp(() => <HomeMode />)

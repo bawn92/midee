@@ -30,7 +30,7 @@ const woffFiles = [
   `${FS}/jetbrains-mono/files/jetbrains-mono-latin-400-normal.woff`,
   `${FS}/jetbrains-mono/files/jetbrains-mono-latin-500-normal.woff`,
 ]
-const fontDir = resolve(tmpdir(), 'play-notes-og-fonts')
+const fontDir = resolve(tmpdir(), 'piano-club-og-fonts')
 mkdirSync(fontDir, { recursive: true })
 const fontFiles = woffFiles.map((woff) => {
   const ttf = resolve(fontDir, basename(woff).replace(/\.woff$/, '.ttf'))
@@ -289,7 +289,7 @@ const eyebrow = (label, y) =>
 function defaultBanner() {
   return FRAME(`
 ${eyebrow('Piano trainer', 168)}
-<text x="80" y="268" font-family="Instrument Serif" font-size="78" fill="${INK}" letter-spacing="-1.5">Play notes,</text>
+<text x="80" y="268" font-family="Instrument Serif" font-size="78" fill="${INK}" letter-spacing="-1.5">Piano Club,</text>
 <text x="80" y="352" font-family="Instrument Serif" font-size="78" fill="${INK}" letter-spacing="-1.5">see them bloom.</text>
 <text x="80" y="418" font-family="Inter" font-size="22" font-weight="500" fill="${INK_SOFT}">A piano trainer for your MIDI keyboard,</text>
 <text x="80" y="450" font-family="Inter" font-size="22" font-weight="500" fill="${INK_SOFT}">with learn mode, a range for small</text>

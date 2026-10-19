@@ -15,7 +15,7 @@ test.describe('landing hero', () => {
     await expect(page).toHaveURL(/\/start$/)
     await expect(page.locator('#home-open')).toBeVisible()
     await expect(page.locator('.home-title')).toHaveText('What shall we play?')
-    await expect(page).toHaveTitle('Play notes, see them bloom')
+    await expect(page).toHaveTitle('Piano Club, see them bloom')
 
     await page.goto('/')
     await expect(page).toHaveURL(/\/$/)

@@ -1,4 +1,4 @@
-# Play notes, see them bloom
+# Piano Club, see them bloom
 
 A piano trainer for a MIDI keyboard. Open a `.mid` file, play live, or practise
 with learn mode. A small keyboard can use a range inside the full 88-key piano,

@@ -92,7 +92,7 @@ export const en = {
   'home.midi.disconnected': 'No MIDI device - keyboard & mouse work too',
   'home.aria': '{name} home',
   'landing.kicker': 'Piano trainer',
-  'landing.headline.html': 'Play notes,<br/>see them bloom.',
+  'landing.headline.html': 'Piano Club,<br/>see them bloom.',
   'landing.description':
     'A piano trainer for your MIDI keyboard, with learn mode, a range for small keyboards, and cozy scenes.',
   'landing.cta.start': 'Start playing',
@@ -393,7 +393,7 @@ export const en = {
   'modeError.retry': 'Try again',
 
   // ── Document title (browser tab) ───────────────────────────
-  'doc.title.home': 'Play notes, see them bloom',
+  'doc.title.home': 'Piano Club, see them bloom',
   'a11y.skipToMain': 'Skip to main content',
   'doc.title.live': 'Live · {name}',
   'doc.title.learn': 'Learn · {name}',
