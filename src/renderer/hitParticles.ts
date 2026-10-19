@@ -147,7 +147,7 @@ export interface Rgb {
 }
 
 export interface HitPalette {
-  scene: 'golden' | 'rainy' | 'after'
+  scene: 'golden' | 'rainy' | 'after' | 'night'
   rh: Rgb
   rhEdge: Rgb
   lh: Rgb

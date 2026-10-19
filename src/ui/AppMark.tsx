@@ -13,6 +13,7 @@ export function AppMark(props: { variant?: 'header' | 'landing' }) {
         src="/icons/after-hours/header-mark.svg"
         alt=""
       />
+      <img class="app-mark__layer app-mark__night" src="/icons/night/header-mark.svg" alt="" />
     </span>
   )
 }

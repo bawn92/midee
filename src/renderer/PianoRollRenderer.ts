@@ -517,8 +517,10 @@ export class PianoRollRenderer {
       const lineY = y - KBD.hitGap * frame.v
       const x = frame.cheek
       const span = Math.max(1, w - frame.cheek * 2)
-      g.rect(x, lineY + 2 * frame.v, span, 24 * frame.v)
-      g.fill({ color: glow, alpha: 0.18 })
+      if (this.theme.id !== 'night') {
+        g.rect(x, lineY + 2 * frame.v, span, 24 * frame.v)
+        g.fill({ color: glow, alpha: 0.18 })
+      }
       g.rect(x, lineY, span, Math.max(1, 2 * frame.v))
       g.fill({ color: this.theme.nowLine, alpha: this.theme.nowLineAlpha })
       return

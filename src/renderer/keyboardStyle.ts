@@ -221,6 +221,25 @@ const AFTER_PRESS = {
   noteLh: hex('FF3FA4'),
 }
 
+const NIGHT_WALNUT: Role = {
+  caseLight: hex('5A3F2D'),
+  caseDark: hex('3A291E'),
+  ivory: hex('DCD4C6'),
+  ivorySide: hex('A79D8D'),
+  ebony: hex('2B211B'),
+  ebonySide: hex('19130F'),
+  felt: hex('5E302A'),
+  strip: hex('5E302A'),
+  highlight: hex('7A5A43'),
+}
+
+const NIGHT_PRESS = {
+  rh: hex('B0823F'),
+  lh: hex('A86A6C'),
+  noteRh: hex('DDA95E'),
+  noteLh: hex('D49395'),
+}
+
 const PRESS: Record<SceneKey, { rh: number; lh: number; noteRh: number; noteLh: number }> = {
   'golden-hour': {
     rh: hex('A86A1E'),
@@ -307,16 +326,23 @@ export function subscribeKeyboardStyle(fn: (id: KeyboardStyleId) => void): () =>
 
 export function keyboardPalette(themeId: string, id: KeyboardStyleId = current): KeyboardPalette {
   const after = themeId === 'after-hours'
+  const night = themeId === 'night'
   const scene: SceneKey = themeId === 'rainy-study' ? 'rainy-study' : 'golden-hour'
   const rainy = ROLES[id]['rainy-study']
-  const role = after ? (id === 'synth' ? AFTER_SYNTH : rainy) : ROLES[id][scene]
+  const role = after
+    ? id === 'synth'
+      ? AFTER_SYNTH
+      : rainy
+    : night && id === 'walnut'
+      ? NIGHT_WALNUT
+      : ROLES[id][scene]
   const decor = DECOR[id]
-  const press = after ? AFTER_PRESS : PRESS[scene]
+  const press = after ? AFTER_PRESS : night ? NIGHT_PRESS : PRESS[scene]
   return {
     id,
     name: NAMES[id],
     ...role,
-    gap: role.caseDark,
+    gap: night && id === 'walnut' ? hex('14110F') : role.caseDark,
     grain: decor.grain,
     feltPx: decor.feltPx,
     lacquer: decor.lacquer,

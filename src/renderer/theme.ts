@@ -4,11 +4,12 @@ import type { NoteMaterialId } from './NoteMaterial'
 import type { ParticleStyle } from './particleStyles'
 import { afterHoursTheme } from './scenes/afterHours'
 import { goldenHourTheme } from './scenes/goldenHour'
+import { nightTheme } from './scenes/night'
 import { rainyStudyTheme } from './scenes/rainyStudy'
 
-// Persisted in localStorage (`midee.theme`). The three scenes ship.
+// Persisted in localStorage (`midee.theme`). The four scenes ship.
 // Anything else — a classic id or a legacy index — is rewritten to Golden Hour.
-export type ThemeId = 'golden-hour' | 'rainy-study' | 'after-hours'
+export type ThemeId = 'golden-hour' | 'rainy-study' | 'after-hours' | 'night'
 
 export interface Theme {
   id: ThemeId
@@ -66,8 +67,13 @@ export function getTrackColor(track: MidiTrack, theme: Theme): number {
   return theme.trackColors[track.colorIndex % theme.trackColors.length]!
 }
 
-// The shipping roster is the three scenes. Golden Hour stays the default.
-export const ALL_THEMES: readonly Theme[] = [goldenHourTheme, rainyStudyTheme, afterHoursTheme]
+// The shipping roster is the four scenes. Golden Hour stays the default.
+export const ALL_THEMES: readonly Theme[] = [
+  goldenHourTheme,
+  rainyStudyTheme,
+  afterHoursTheme,
+  nightTheme,
+]
 
 // New visitors land in the living room. A saved scene id still wins.
 export const DEFAULT_THEME_ID: ThemeId = 'golden-hour'
@@ -75,7 +81,7 @@ export const DEFAULT_THEME_ID: ThemeId = 'golden-hour'
 // Every user entry point (menu, cycling, persistence) uses this shipping roster.
 export const THEMES = availableVisuals(ALL_THEMES, FOR_LATER_THEME_IDS)
 
-const SCENE_THEME_IDS: readonly ThemeId[] = ['golden-hour', 'rainy-study', 'after-hours']
+const SCENE_THEME_IDS: readonly ThemeId[] = ['golden-hour', 'rainy-study', 'after-hours', 'night']
 
 /** Scene id from storage. Classic ids and a missing key become Golden Hour. */
 export function readStoredThemeId(): ThemeId {

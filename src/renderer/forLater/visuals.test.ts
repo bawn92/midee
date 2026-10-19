@@ -8,7 +8,12 @@ beforeEach(() => localStorage.clear())
 
 describe('visual release gate', () => {
   it('ships the two scenes and keeps the particle roster available', () => {
-    expect(THEMES.map(({ id }) => id)).toEqual(['golden-hour', 'rainy-study', 'after-hours'])
+    expect(THEMES.map(({ id }) => id)).toEqual([
+      'golden-hour',
+      'rainy-study',
+      'after-hours',
+      'night',
+    ])
     expect(THEMES.filter((theme) => theme.noteMaterial)).toEqual([])
     expect(PARTICLE_STYLES.map(({ id }) => id)).toEqual([
       'sparks',

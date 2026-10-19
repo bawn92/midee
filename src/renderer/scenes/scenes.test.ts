@@ -9,10 +9,11 @@ describe('scenes', () => {
       'golden-hour-living-room',
       'rainy-study',
       'after-hours',
+      'night',
     ])
     expect(DEFAULT_THEME_ID).toBe('golden-hour')
     expect(THEMES.some((theme) => theme.id === 'golden-hour')).toBe(true)
-    expect(ALL_THEMES.at(-1)?.id).toBe('after-hours')
+    expect(ALL_THEMES.at(-1)?.id).toBe('night')
   })
 
   it('paints After Hours cyan on the right hand and pink on the left', () => {
@@ -26,6 +27,24 @@ describe('scenes', () => {
     expect(synth.felt).toBe(0x1a1221)
     expect(synth.noteRh).toBe(0x22e8ff)
     expect(synth.noteLh).toBe(0xff3fa4)
+  })
+
+  it('paints Night as a flat walnut room with muted hands', () => {
+    const scene = sceneForTheme('night')
+    expect(scene?.name).toBe('Night')
+    expect(scene?.background.decor).toBe('none')
+    expect(scene?.theme.noteGlowStrength).toBe(0)
+    expect(scene?.theme.trackColors[0]).toBe(0xdda95e)
+    expect(scene?.theme.trackColors[1]).toBe(0xd49395)
+    expect(scene?.theme.accent).toBe(0xe2ae63)
+    expect(scene?.theme.background).toBe(0x14151c)
+    const walnut = keyboardPalette('night', 'walnut')
+    expect(walnut.caseDark).toBe(0x3a291e)
+    expect(walnut.caseLight).toBe(0x5a3f2d)
+    expect(walnut.ivory).toBe(0xdcd4c6)
+    expect(walnut.noteRh).toBe(0xdda95e)
+    expect(walnut.noteLh).toBe(0xd49395)
+    expect(walnut.gap).toBe(0x14110f)
   })
 
   it('paints the right hand honey and the left hand rose', () => {
@@ -63,6 +82,11 @@ describe('scenes', () => {
     expect(svg.getAttribute('href')).toBe('/icons/after-hours/favicon.svg')
     expect(png16.getAttribute('href')).toBe('/icons/after-hours/favicon-16.png')
     expect(png32.getAttribute('href')).toBe('/icons/after-hours/favicon-32.png')
+    expect(apple.getAttribute('href')).toBe('/icons/apple-touch-icon.png')
+    applySceneClass('night')
+    expect(svg.getAttribute('href')).toBe('/icons/night/favicon.svg')
+    expect(png16.getAttribute('href')).toBe('/icons/night/favicon-16.png')
+    expect(png32.getAttribute('href')).toBe('/icons/night/favicon-32.png')
     expect(apple.getAttribute('href')).toBe('/icons/apple-touch-icon.png')
     applySceneClass('golden-hour')
     expect(svg.getAttribute('href')).toBe('/icons/favicon.svg')
