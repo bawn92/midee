@@ -34,6 +34,21 @@ html[data-scene="rainy-study"] .app-mark__rainy {
   opacity: 1;
 }
 
+.app-mark__after {
+  object-fit: contain;
+  opacity: 0;
+}
+
+html[data-scene="after-hours"] .app-mark__golden,
+html[data-scene="after-hours"] .app-mark__rainy {
+  opacity: 0;
+}
+
+html[data-scene="after-hours"] .app-mark__after {
+  opacity: 1;
+  filter: drop-shadow(0 0 1px rgba(34, 232, 255, 0.65));
+}
+
 .landing-mark.app-mark {
   display: inline-grid;
   width: 30px;

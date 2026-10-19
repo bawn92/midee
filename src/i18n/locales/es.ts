@@ -211,6 +211,9 @@ const es: Messages = {
   'customize.keyLabels': 'Nombres de teclas',
   'customize.motion': 'Movimiento',
   'customize.calm': 'Animaciones calmas',
+  'customize.strobe': 'Pulso estroboscópico',
+  'customize.strobe.note':
+    '¿Fotosensible? Los destellos se mantienen por debajo de 3 por segundo. Desactívalo si te molestan.',
   'customize.rollSpeed': 'Velocidad del rollo',
   'customize.sound': 'Sonido',
   'customize.volume': 'Volumen',

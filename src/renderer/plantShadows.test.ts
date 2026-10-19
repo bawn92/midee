@@ -36,6 +36,7 @@ describe('plant shadows', () => {
     expect(plantShadowsActive('golden-hour', 'mixed')).toBe(true)
     expect(plantShadowsActive('golden-hour', 'off')).toBe(false)
     expect(plantShadowsActive('rainy-study', 'fern')).toBe(false)
+    expect(plantShadowsActive('after-hours', 'fern')).toBe(false)
     expect(plantShadowsActive('rainy-study', 'off')).toBe(false)
     expect(plantShadowsActive('sunset', 'fern')).toBe(false)
   })

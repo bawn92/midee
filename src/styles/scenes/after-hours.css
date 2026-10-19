@@ -1,0 +1,89 @@
+/* After Hours. Near-black room, neon hands, acid lime accent. No plant shadow. */
+
+:root[data-scene="after-hours"] {
+  color-scheme: dark;
+  --bg-top: #0e0f17;
+  --bg-bottom: #050509;
+  --bg-vignette: #000000;
+  --scene-shadow-img: none;
+  --surface: #14151e;
+  --surface-solid: #101119;
+  --surface-sunken: #dce0ff;
+  --surface-hover: #1b1c28;
+  --surface-sunken-hover: #e8ebff;
+  --surface-active: #dce0ff;
+  --border: rgba(167, 176, 255, 0.16);
+  --border-strong: rgba(34, 232, 255, 0.7);
+  --text-1: #f3f5ff;
+  --text-2: #a4a9c6;
+  --text-3: #6c7192;
+  --text-on-accent: #06070b;
+  --accent: #c6ff3d;
+  --accent-hover: #d6ff70;
+  --accent-press: #a6de1f;
+  --accent-soft: #26301a;
+  --note-rh: #22e8ff;
+  --note-rh-edge: #0aa3c2;
+  --note-lh: #ff3fa4;
+  --note-lh-edge: #c41e7c;
+  --particle-hot: #f2ffff;
+  --particle-glint: #ffffff;
+  --particle-rain: #8fe9ff;
+  --particle-mist: #b9a8ff;
+  --particle-glass-rim: #9af7ff;
+  --particle-opal-1: #ff7ad9;
+  --particle-opal-2: #9d7bff;
+  --particle-opal-3: #5ce1ff;
+  --particle-opal-4: #7dffb2;
+  --particle-opal-5: #ffe45c;
+  --success: #3dffa0;
+  --success-soft: #0e2a1f;
+  --warning: #ffb020;
+  --warning-soft: #2d2410;
+  --danger: #ff4d5e;
+  --danger-soft: #2d1217;
+  --focus-ring: #c6ff3d;
+  --wood-light: #23252d;
+  --wood-dark: #0e0f13;
+  --key-ivory: #e3e6ee;
+  --key-ivory-side: #a3a8b5;
+  --key-ebony: #17181d;
+  --key-ebony-side: #0a0a0d;
+  --felt: #2a0f33;
+  --scrim: rgba(0, 0, 0, 0.55);
+  --key-gap: #08080b;
+  --key-out-of-range: #08080b;
+  --roll-lane-c: rgba(167, 176, 255, 0.16);
+  --roll-lane: rgba(167, 176, 255, 0.08);
+  --roll-fade: #050509;
+  --range-glass: #0e8fa6;
+  --range-glass-drag: #18a9c2;
+  --range-border: #c6ff3d;
+  --range-dim: #000000;
+  --range-edge: #c6ff3d;
+  --range-strip: #c6ff3d;
+  --range-lane: #a7b0ff;
+  --segment-lh-thumb: rgba(255, 63, 164, 0.4);
+  --segment-rh-thumb: rgba(34, 232, 255, 0.4);
+  --icon-toggled-bg: #26301a;
+  --key-pressed-rh: #0aa3c2;
+  --key-pressed-lh: #c41e7c;
+  --key-wrong: #ff4d5e;
+  --tooltip-bg: rgba(20, 21, 30, 0.94);
+  --tooltip-fg: #f3f5ff;
+  --tooltip-border: rgba(167, 176, 255, 0.22);
+  --tooltip-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+  --hit-line: #c6ff3d;
+  --wood-highlight: #3a3e50;
+}
+
+html[data-scene="after-hours"] {
+  color-scheme: dark;
+}
+
+html[data-scene="after-hours"] .strobe-note {
+  margin: 4px 0 0;
+  color: var(--text-2);
+  font: var(--type-caption);
+  line-height: 1.4;
+}

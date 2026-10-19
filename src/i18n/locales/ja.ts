@@ -207,6 +207,9 @@ const ja: Messages = {
   'customize.keyLabels': '音名を表示',
   'customize.motion': '動き',
   'customize.calm': '穏やかな動き',
+  'customize.strobe': 'ストロボ',
+  'customize.strobe.note':
+    '光が苦手な方へ。点滅は毎秒3回未満です。気になる場合はオフにしてください。',
   'customize.rollSpeed': 'ロール速度',
   'customize.sound': '音',
   'customize.volume': '音量',

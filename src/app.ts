@@ -79,6 +79,7 @@ import {
 } from './renderer/particleStyles'
 import { finishRangeAdjust } from './renderer/rangeOverlay'
 import { applySceneClass } from './renderer/scenes'
+import { adoptSceneLook, primeAfterHours, rememberSceneParticle } from './renderer/scenes/sceneLook'
 import { accentCSS, readStoredThemeId, THEMES, type Theme, type ThemeId } from './renderer/theme'
 import type { AppMode, AppStore } from './store/state'
 import { watch } from './store/watch'
@@ -654,6 +655,8 @@ export class App {
     window.addEventListener('midee-paint', onPaint)
     this.unsubs.push(() => window.removeEventListener('midee-paint', onPaint))
 
+    const bootLook = primeAfterHours(THEMES[this.themeIndex]?.id ?? 'golden-hour')
+    if (bootLook) this.applyLookParticle(bootLook.particle)
     this.noteLabelsOn = noteLabelsStore.load()
     this.renderer.setNoteLabels(this.noteLabelsOn)
     this.customizeMenu.setNoteLabels(this.noteLabelsOn)
@@ -1285,12 +1288,15 @@ export class App {
 
   private setThemeByIndex(idx: number, method: 'cycle' | 'menu'): void {
     if (idx < 0 || idx >= THEMES.length) return
+    const fromId = THEMES[this.themeIndex]?.id ?? 'golden-hour'
     this.themeIndex = idx
     const theme = THEMES[idx]!
+    const look = adoptSceneLook(fromId, theme.id)
+    if (look) this.applyLookParticle(look.particle)
     // A material theme is a complete visual preset. Selecting it also restores
     // its authored particles, even from Off or when reselecting the same theme.
     // The particle picker can still override that choice afterwards.
-    if (theme.recommendedParticles) {
+    else if (theme.recommendedParticles) {
       this.setParticleByIndex(
         PARTICLE_STYLES.findIndex((p) => p.id === theme.recommendedParticles),
         method,
@@ -1350,11 +1356,19 @@ export class App {
     )
   }
 
+  private applyLookParticle(id: ParticleStyle): void {
+    const idx = PARTICLE_STYLES.findIndex((style) => style.id === id)
+    if (idx < 0) return
+    this.particleIndex = idx
+    particleStore.save(id)
+  }
+
   private setParticleByIndex(idx: number, method: 'cycle' | 'menu'): void {
     if (idx < 0 || idx >= PARTICLE_STYLES.length || idx === this.particleIndex) return
     this.particleIndex = idx
     this.applyParticleStyle()
     particleStore.save(PARTICLE_STYLES[idx]!.id)
+    rememberSceneParticle(THEMES[this.themeIndex]?.id ?? 'golden-hour', PARTICLE_STYLES[idx]!.id)
     trackEvent('particle_changed', { style: PARTICLE_STYLES[idx]!.id, method })
   }
 

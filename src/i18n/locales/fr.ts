@@ -215,6 +215,9 @@ const fr: Messages = {
   'customize.keyLabels': 'Noms des touches',
   'customize.motion': 'Mouvement',
   'customize.calm': 'Animations calmes',
+  'customize.strobe': 'Impulsion stroboscopique',
+  'customize.strobe.note':
+    'Photosensible ? Les flashs restent sous 3 par seconde. Désactivez-le s’ils vous gênent.',
   'customize.rollSpeed': 'Vitesse du rouleau',
   'customize.sound': 'Son',
   'customize.volume': 'Volume',

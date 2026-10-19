@@ -87,7 +87,7 @@ export function subscribePlantShadow(fn: (id: PlantShadowId) => void): () => voi
   return () => listeners.delete(fn)
 }
 
-// Shadows are a Golden Hour wall. Rainy Study, and Off, draw nothing.
+// Shadows are a Golden Hour wall. Rainy Study, After Hours, and Off draw nothing.
 export function plantShadowsActive(themeId: string, id: PlantShadowId = current): boolean {
   return themeId === 'golden-hour' && id !== 'off'
 }

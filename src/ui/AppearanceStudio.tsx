@@ -16,6 +16,7 @@ import {
   setPlantShadow,
   subscribePlantShadow,
 } from '../renderer/plantShadows'
+import { setStrobeEnabled, strobeEnabled, subscribeStrobe } from '../renderer/scenes/afterHoursShow'
 import { Segmented, Slider, Toggle } from './kit/kit'
 import { NoteStylePicker } from './NoteStylePicker'
 import { paintPrefs, setPaintPrefs, subscribePaint } from './paint'
@@ -120,6 +121,34 @@ function PlantShadowPicker() {
   )
 }
 
+function StrobeToggle() {
+  const [on, setOn] = createSignal(strobeEnabled())
+  const [scene, setScene] = createSignal(document.documentElement.dataset.scene ?? 'golden-hour')
+  onCleanup(subscribeStrobe(setOn))
+  onMount(() => {
+    const mo = new MutationObserver(() => {
+      setScene(document.documentElement.dataset.scene ?? 'golden-hour')
+    })
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-scene'] })
+    onCleanup(() => mo.disconnect())
+  })
+
+  return (
+    <Show when={scene() === 'after-hours'}>
+      <p class="gh-overline">{t('customize.strobe')}</p>
+      <div class="gh-field" id="strobe-pulse">
+        <span class="gh-label">{t('customize.strobe')}</span>
+        <Toggle
+          label={t('customize.strobe')}
+          pressed={on()}
+          onChange={(next) => setStrobeEnabled(next)}
+        />
+      </div>
+      <p class="strobe-note">{t('customize.strobe.note')}</p>
+    </Show>
+  )
+}
+
 export function AppearanceStudio(props: {
   volume: () => number
   onVolume?: ((value: number) => void) | undefined
@@ -180,6 +209,8 @@ export function AppearanceStudio(props: {
           onChange={(next) => setPaintPrefs({ keyLabels: next })}
         />
       </div>
+
+      <StrobeToggle />
 
       <p class="gh-overline">{t('customize.motion')}</p>
       <div class="gh-field">

@@ -89,6 +89,8 @@ describe('hit particle spawn', () => {
   })
 
   it('shows Rain and Mist only in Rainy Study and remembers them as Sparkle elsewhere', () => {
+    expect(displayParticle('rain', 'after-hours')).toBe('sparkle')
+    expect(displayParticle('mist', 'after-hours')).toBe('sparkle')
     expect(displayParticle('rain', 'golden-hour')).toBe('sparkle')
     expect(displayParticle('mist', 'golden-hour')).toBe('sparkle')
     expect(displayParticle('rain', 'rainy-study')).toBe('rain')

@@ -16,6 +16,13 @@ const RAINY: Record<string, string> = {
   '96x96': '/icons/rainy/favicon-96.png',
 }
 
+const AFTER: Record<string, string> = {
+  svg: '/icons/after-hours/favicon.svg',
+  '16x16': '/icons/after-hours/favicon-16.png',
+  '32x32': '/icons/after-hours/favicon-32.png',
+  '96x96': '/icons/after-hours/favicon-96.png',
+}
+
 function slot(link: HTMLLinkElement): string | null {
   if (link.type === 'image/svg+xml') return 'svg'
   const sizes = link.getAttribute('sizes')
@@ -24,7 +31,7 @@ function slot(link: HTMLLinkElement): string | null {
 }
 
 export function applySceneFavicon(scene: string | undefined): void {
-  const table = scene === 'rainy-study' ? RAINY : GOLDEN
+  const table = scene === 'rainy-study' ? RAINY : scene === 'after-hours' ? AFTER : GOLDEN
   for (const link of document.querySelectorAll<HTMLLinkElement>('link[rel="icon"]')) {
     const key = slot(link)
     if (!key) continue

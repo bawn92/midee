@@ -8,6 +8,11 @@ export function AppMark(props: { variant?: 'header' | 'landing' }) {
     <span class="app-mark" classList={{ 'landing-mark': props.variant === 'landing' }}>
       <span class="app-mark__layer app-mark__golden" innerHTML={icons.wordmark()} />
       <img class="app-mark__layer app-mark__rainy" src="/icons/rainy/header-mark.svg" alt="" />
+      <img
+        class="app-mark__layer app-mark__after"
+        src="/icons/after-hours/header-mark.svg"
+        alt=""
+      />
     </span>
   )
 }
