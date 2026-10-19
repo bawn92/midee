@@ -295,7 +295,7 @@ export class ParticleSystem {
   private hitTexture: Texture | null = null
   private viewW = 0
   private viewH = 0
-  private scene: 'golden' | 'rainy' | 'after' = 'golden'
+  private scene: 'golden' | 'rainy' | 'after' | 'night' = 'golden'
   private motionQuery: MediaQueryList | null = null
   private onMotion: ((event: MediaQueryListEvent) => void) | null = null
   // Wind always blows to the right — a gentle consistent breeze. Kept as a
@@ -362,7 +362,13 @@ export class ParticleSystem {
 
   setScene(themeId: string): void {
     this.scene =
-      themeId === 'rainy-study' ? 'rainy' : themeId === 'after-hours' ? 'after' : 'golden'
+      themeId === 'rainy-study'
+        ? 'rainy'
+        : themeId === 'after-hours'
+          ? 'after'
+          : themeId === 'night'
+            ? 'night'
+            : 'golden'
     this.applyHitBlend()
   }
 

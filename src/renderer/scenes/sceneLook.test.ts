@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { paintPrefs, setPaintPrefs } from '../../ui/paint'
 import { keyboardStyleId, setKeyboardStyle } from '../keyboardStyle'
 import { rangeOverlay, setRangeOverlay } from '../rangeOverlay'
-import { AFTER_HOURS_LOOK, adoptSceneLook, primeAfterHours } from './sceneLook'
+import { AFTER_HOURS_LOOK, adoptSceneLook, primeAfterHours, primeSceneLook } from './sceneLook'
 
 describe('After Hours scene look', () => {
   beforeEach(() => {
@@ -55,5 +55,46 @@ describe('After Hours scene look', () => {
   it('leaves Rainy Study on the shared look', () => {
     expect(adoptSceneLook('golden-hour', 'rainy-study')).toBeNull()
     expect(keyboardStyleId()).toBe('walnut')
+  })
+
+  it('applies Night defaults only the first time and keeps the range', () => {
+    const first = primeSceneLook('night')
+    expect(first?.keyboard).toBe('walnut')
+    expect(first?.noteStyle).toBe('glass')
+    expect(first?.particle).toBe('none')
+    expect(first?.rangeStyle).toBe('outline')
+    expect(keyboardStyleId()).toBe('walnut')
+    expect(paintPrefs().noteStyle).toBe('glass')
+    expect(rangeOverlay().style).toBe('outline')
+
+    setKeyboardStyle('synth')
+    setPaintPrefs({ noteStyle: 'beam' })
+    expect(primeSceneLook('night')).toBeNull()
+    expect(keyboardStyleId()).toBe('synth')
+    expect(paintPrefs().noteStyle).toBe('beam')
+  })
+
+  it('keeps Night choices apart from After Hours and the shared look', () => {
+    const entered = adoptSceneLook('golden-hour', 'night')
+    expect(entered?.noteStyle).toBe('glass')
+    expect(entered?.particle).toBe('none')
+    expect(paintPrefs().noteStyle).toBe('glass')
+
+    setKeyboardStyle('vintage')
+    setPaintPrefs({ noteStyle: 'felt' })
+    localStorage.setItem('midee.particle', 'pearl')
+    const club = adoptSceneLook('night', 'after-hours')
+    expect(club?.keyboard).toBe('synth')
+    expect(club?.particle).toBe('sparks')
+
+    const back = adoptSceneLook('after-hours', 'night')
+    expect(back?.keyboard).toBe('vintage')
+    expect(back?.noteStyle).toBe('felt')
+    expect(back?.particle).toBe('pearl')
+
+    const home = adoptSceneLook('night', 'rainy-study')
+    expect(home?.keyboard).toBe('walnut')
+    expect(home?.noteStyle).toBe('classic')
+    expect(home?.particle).toBe('sparkle')
   })
 })

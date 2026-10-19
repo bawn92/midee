@@ -79,7 +79,7 @@ import {
 } from './renderer/particleStyles'
 import { finishRangeAdjust } from './renderer/rangeOverlay'
 import { applySceneClass } from './renderer/scenes'
-import { adoptSceneLook, primeAfterHours, rememberSceneParticle } from './renderer/scenes/sceneLook'
+import { adoptSceneLook, primeSceneLook, rememberSceneParticle } from './renderer/scenes/sceneLook'
 import { accentCSS, readStoredThemeId, THEMES, type Theme, type ThemeId } from './renderer/theme'
 import type { AppMode, AppStore } from './store/state'
 import { watch } from './store/watch'
@@ -655,7 +655,7 @@ export class App {
     window.addEventListener('midee-paint', onPaint)
     this.unsubs.push(() => window.removeEventListener('midee-paint', onPaint))
 
-    const bootLook = primeAfterHours(THEMES[this.themeIndex]?.id ?? 'golden-hour')
+    const bootLook = primeSceneLook(THEMES[this.themeIndex]?.id ?? 'golden-hour')
     if (bootLook) this.applyLookParticle(bootLook.particle)
     this.noteLabelsOn = noteLabelsStore.load()
     this.renderer.setNoteLabels(this.noteLabelsOn)

@@ -1,0 +1,82 @@
+/* Night. Flat navy room, muted honey and rose, no glow and no plant shadow. */
+
+:root[data-scene="night"] {
+  color-scheme: dark;
+  --bg-top: #1c1d27;
+  --bg-bottom: #14151c;
+  --bg-vignette: rgba(0, 0, 0, 0.28);
+  --scene-shadow-img: none;
+  --surface: rgba(34, 35, 46, 0.62);
+  --surface-solid: #1e1f29;
+  --surface-sunken: rgba(237, 230, 220, 0.06);
+  --surface-hover: rgba(42, 43, 55, 0.78);
+  --surface-sunken-hover: rgba(244, 239, 232, 0.1);
+  --surface-active: rgba(237, 230, 220, 0.12);
+  --border: rgba(216, 207, 194, 0.14);
+  --border-strong: rgba(187, 175, 158, 0.28);
+  --text-1: #f3eee7;
+  --text-2: #bdb6ac;
+  --text-3: #9a938a;
+  --text-on-accent: #1a1410;
+  --accent: #e2ae63;
+  --accent-hover: #eabd7c;
+  --accent-press: #cc9750;
+  --accent-soft: #3a3024;
+  --note-rh: #dda95e;
+  --note-rh-edge: #b0823f;
+  --note-lh: #d49395;
+  --note-lh-edge: #a86a6c;
+  --particle-hot: #fff1dc;
+  --particle-glint: #ffffff;
+  --particle-rain: #afc4da;
+  --particle-mist: #bdb7cc;
+  --particle-glass-rim: #e8decf;
+  --particle-opal-1: #e7a6a8;
+  --particle-opal-2: #c8b6e0;
+  --particle-opal-3: #abc9e0;
+  --particle-opal-4: #b7d9be;
+  --particle-opal-5: #ebd290;
+  --success: #86cfa0;
+  --success-soft: #1f2e27;
+  --warning: #e6bc66;
+  --warning-soft: #342a1b;
+  --danger: #eb948e;
+  --danger-soft: #382222;
+  --focus-ring: #e2ae63;
+  --wood-light: #5a3f2d;
+  --wood-dark: #3a291e;
+  --key-ivory: #dcd4c6;
+  --key-ivory-side: #a79d8d;
+  --key-ebony: #2b211b;
+  --key-ebony-side: #19130f;
+  --felt: #5e302a;
+  --scrim: rgba(0, 0, 0, 0.55);
+  --key-gap: #14110f;
+  --key-out-of-range: #100f14;
+  --roll-lane-c: rgba(216, 207, 194, 0);
+  --roll-lane: rgba(216, 207, 194, 0);
+  --roll-fade: #1c1d27;
+  --range-glass: rgba(140, 107, 63, 0.32);
+  --range-glass-drag: rgba(160, 124, 74, 0.4);
+  --range-border: rgba(226, 174, 99, 0.7);
+  --range-dim: rgba(0, 0, 0, 0.4);
+  --range-edge: #e2ae63;
+  --range-strip: #e2ae63;
+  --range-lane: #d8cfc2;
+  --segment-lh-thumb: rgba(212, 147, 149, 0.35);
+  --segment-rh-thumb: rgba(221, 169, 94, 0.4);
+  --icon-toggled-bg: #3a3024;
+  --key-pressed-rh: #b0823f;
+  --key-pressed-lh: #a86a6c;
+  --key-wrong: #eb948e;
+  --tooltip-bg: rgba(30, 31, 41, 0.94);
+  --tooltip-fg: #f3eee7;
+  --tooltip-border: rgba(216, 207, 194, 0.18);
+  --tooltip-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+  --hit-line: rgba(226, 174, 99, 0.7);
+  --wood-highlight: #7a5a43;
+}
+
+html[data-scene="night"] {
+  color-scheme: dark;
+}

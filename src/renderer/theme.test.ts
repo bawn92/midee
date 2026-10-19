@@ -16,6 +16,7 @@ const EXPECTED_THEME_IDS: Record<ThemeId, true> = {
   'golden-hour': true,
   'rainy-study': true,
   'after-hours': true,
+  night: true,
 }
 
 const track = (colorIndex: number): MidiTrack => ({

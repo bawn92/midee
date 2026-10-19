@@ -1,16 +1,23 @@
 import { afterHoursScene } from './afterHours'
 import { applySceneFavicon } from './favicon'
 import { goldenHourScene } from './goldenHour'
+import { nightScene } from './night'
 import { rainyStudyScene } from './rainyStudy'
 import type { KeyboardMaterial, Scene } from './types'
 
 export { afterHoursScene, afterHoursTheme } from './afterHours'
 export { goldenHourScene, goldenHourTheme } from './goldenHour'
+export { nightScene, nightTheme } from './night'
 export { rainyStudyScene, rainyStudyTheme } from './rainyStudy'
 export type { KeyboardMaterial, Scene, SceneDecor } from './types'
 
 // Places. Each scene's `token` selects its colour file via data-scene.
-export const SCENES: readonly Scene[] = [goldenHourScene, rainyStudyScene, afterHoursScene]
+export const SCENES: readonly Scene[] = [
+  goldenHourScene,
+  rainyStudyScene,
+  afterHoursScene,
+  nightScene,
+]
 
 const BY_THEME = new Map(SCENES.map((scene) => [scene.themeId, scene]))
 

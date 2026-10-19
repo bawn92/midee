@@ -15,6 +15,27 @@ export function paintSceneBackdrop(
   const ctx = canvas.getContext('2d')
   if (!ctx) return
 
+  if (scene.token === 'night') {
+    const wash = ctx.createLinearGradient(0, 0, 0, h)
+    wash.addColorStop(0, scene.background.top)
+    wash.addColorStop(1, scene.background.bottom)
+    ctx.fillStyle = wash
+    ctx.fillRect(0, 0, w, h)
+    const vignette = ctx.createRadialGradient(
+      w * 0.5,
+      h * 0.42,
+      Math.min(w, h) * 0.2,
+      w * 0.5,
+      h * 0.45,
+      Math.max(w, h) * 0.72,
+    )
+    vignette.addColorStop(0, 'rgba(0,0,0,0)')
+    vignette.addColorStop(1, 'rgba(0,0,0,0.28)')
+    ctx.fillStyle = vignette
+    ctx.fillRect(0, 0, w, h)
+    return
+  }
+
   if (scene.token === 'golden-hour') {
     // 212deg, matching the Screens page: warm at the top-right, deeper at the bottom-left.
     const angle = (212 * Math.PI) / 180
