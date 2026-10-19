@@ -25,6 +25,7 @@ export interface NoteBody {
   octaves: number
   dimmed: boolean
   color: number
+  hand?: 'left' | 'right'
   notes: { pitch: number; time: number; duration: number; velocity: number }[]
 }
 

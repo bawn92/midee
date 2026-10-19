@@ -55,6 +55,7 @@ export interface HudProps {
   loopUndoVisible: () => boolean
   metroRunning: () => boolean
   metroBpm: () => number
+  registerPieceBpm: (el: HTMLElement) => void
   onPlay: () => void
   onSkipBack: () => void
   onSkipFwd: () => void
@@ -452,7 +453,11 @@ export function HudView(props: HudProps) {
               <span class="hud-piece-title" id="hud-piece-title" title={props.context?.().title}>
                 {humaniseTitle(props.context?.().title ?? '')}
               </span>
-              <span class="hud-piece-bpm">{props.metroBpm()} BPM</span>
+              <span
+                class="hud-piece-bpm"
+                id="hud-piece-bpm"
+                ref={(el) => props.registerPieceBpm(el)}
+              />
             </div>
           </Show>
           <button

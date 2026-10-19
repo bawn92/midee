@@ -564,6 +564,21 @@ describe('PlayAlongEngine', () => {
     expect(engine.state.loopRegion).toBeNull()
   })
 
+  it('seeds four bars of 3/4 at the file tempo', () => {
+    const { services, learnState } = makeServices()
+    const engine = new PlayAlongEngine({ services, learnState })
+    const midi = makeMidi()
+    midi.bpm = 100
+    midi.timeSignature = [3, 4]
+    midi.tempos = [{ time: 0, bpm: 100 }]
+    midi.timeSignatures = [{ time: 0, numerator: 3, denominator: 4 }]
+    engine.attach(midi)
+    engine.toggleLoop(10)
+    // 4 × 3 × 0.6 s = 7.2 s, not the 8 s a 4/4 bar would take.
+    expect(engine.state.loopRegion!.start).toBeCloseTo(10, 5)
+    expect(engine.state.loopRegion!.end).toBeCloseTo(17.2, 5)
+  })
+
   it('slides the seeded region back when the playhead is near the end', () => {
     const { services, learnState } = makeServices()
     const engine = new PlayAlongEngine({ services, learnState })

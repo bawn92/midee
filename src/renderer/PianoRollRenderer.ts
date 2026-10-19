@@ -1,10 +1,12 @@
 import { Application, Graphics, Sprite, Texture, type Ticker } from 'pixi.js'
 import type { MasterClock } from '../core/clock/MasterClock'
-import { getHandPractice, noteHand, noteMatchesHand } from '../core/handPractice'
+import { getHandPractice, noteHand } from '../core/handPractice'
 import { getKeyboardRange, placedPitch } from '../core/keyboardRange'
+import { noteHandOf, noteMatchesHandOf } from '../core/midi/hands'
 import type { MidiFile } from '../core/midi/types'
 import type { LiveNoteStore } from '../midi/LiveNoteStore'
 import { guideForMidi } from '../songGuide'
+import { paintPrefs } from '../ui/paint'
 import { BeatGrid } from './BeatGrid'
 import { readCssColor } from './cssColor'
 import { type EmitCadence, scheduleEmissions } from './emitSchedule'
@@ -721,14 +723,21 @@ export class PianoRollRenderer {
           const sounding = placement?.pitch ?? note.pitch
           // No key to light up or burst from — see Viewport.hasKey.
           if (!this.viewport.hasKey(sounding)) continue
-          const handDim = !track.isDrum && !noteMatchesHand(note.pitch, practiceHand)
+          const handDim = !track.isDrum && !noteMatchesHandOf(track, note.pitch, practiceHand)
           const dimmed = practiceInactive || handDim
+          const handId = noteHandOf(track, note.pitch)
+          const byHand = sceneForTheme(this.theme.id) !== null && paintPrefs().colorBy === 'hand'
+          const litColor =
+            byHand && !track.isDrum
+              ? ((handId === 'left' ? this.theme.trackColors[1] : this.theme.trackColors[0]) ??
+                trackColor)
+              : trackColor
 
           const key = keyBase + sounding
           const awaitingPracticePress = this.practiceHintPending?.has(sounding) ?? false
           if (!dimmed && !awaitingPracticePress) {
             curr.add(key)
-            if (!beforeFirstPlay) activeColors.set(sounding, trackColor)
+            if (!beforeFirstPlay) activeColors.set(sounding, litColor)
           }
 
           if (!emitParticles || dimmed || awaitingPracticePress) continue
@@ -739,9 +748,9 @@ export class PianoRollRenderer {
           geom.set(key, {
             cx,
             w,
-            color: trackColor,
+            color: litColor,
             velocity: note.velocity,
-            hand: noteHand(note.pitch) === 'left' ? 'lh' : 'rh',
+            hand: handId === 'left' ? 'lh' : 'rh',
           })
         }
       }

@@ -1,11 +1,12 @@
 import type { MasterClock } from '../core/clock/MasterClock'
-import { getHandPractice, noteMatchesHand, subscribeHandPractice } from '../core/handPractice'
+import { getHandPractice, subscribeHandPractice } from '../core/handPractice'
 import {
   getKeyboardRange,
   placedPitch,
   subscribeKeyboardRange,
   unmapControllerPitch,
 } from '../core/keyboardRange'
+import { noteHandOf, noteMatchesHandOf } from '../core/midi/hands'
 import type { MidiFile } from '../core/midi/types'
 import { jsonPersisted } from '../core/persistence'
 import type { Theme } from '../renderer/theme'
@@ -197,10 +198,17 @@ export class KeyLights {
     const pianoTracks = this.midi?.tracks.filter((track) => !track.isDrum && track.notes.length > 0)
     this.midi?.tracks.forEach((track, trackIndex) => {
       if ((pianoTracks?.length ?? 0) > 1 && track.notes.length > 0) {
-        const average = track.notes.reduce((sum, note) => sum + note.pitch, 0) / track.notes.length
         // Synthesia's one-based channels 12/13 mean left/right, unknown finger.
-        // This is the same track-pitch heuristic used by play-along's hand filter.
-        this.handChannels.set(trackIndex, average < 60 ? 11 : 12)
+        // A named or channel-assigned part wins. Otherwise the track's average
+        // pitch is the old middle-C guess, and a single piano track stays
+        // per-note (handChannels left unset).
+        if (track.hand === 'left' || track.hand === 'right') {
+          this.handChannels.set(trackIndex, track.hand === 'left' ? 11 : 12)
+        } else {
+          const average =
+            track.notes.reduce((sum, note) => sum + note.pitch, 0) / track.notes.length
+          this.handChannels.set(trackIndex, average < 60 ? 11 : 12)
+        }
       }
       if (track.isDrum || this.disabled.has(track.id)) return
       for (const note of track.notes) {
@@ -230,7 +238,8 @@ export class KeyLights {
     // A transposed file can carry pitches outside a MIDI byte. Those are not
     // notes to fold into the window.
     if (sourcePitch < 0 || sourcePitch > 127) return null
-    if (!noteMatchesHand(sourcePitch, getHandPractice().hand)) return null
+    const track = this.midi?.tracks[note.trackIndex]
+    if (!noteMatchesHandOf(track, sourcePitch, getHandPractice().hand)) return null
     const range = getKeyboardRange()
     const placed = placedPitch(sourcePitch, range)
     if (!placed) return null
@@ -243,12 +252,15 @@ export class KeyLights {
     const settings = this.settings.value
     if (settings.channelMode === 'single') return settings.channel - 1
     const handPitch = note.sourcePitch ?? note.pitch
+    const track = this.midi?.tracks[note.trackIndex]
     // Piano M littlefoot listeners (and Synthesia's LUMI script) colour
-    // channel 12 left and channel 13 right. Per-note hand keeps a single
-    // piano track split at middle C, using the written pitch.
-    if (settings.channelMode === 'pianoM') return handPitch < 60 ? 11 : 12
+    // channel 12 left and channel 13 right. An assigned track uses that hand
+    // for every note. A single unnamed piano track still splits at middle C.
+    const hand = noteHandOf(track, handPitch)
+    if (settings.channelMode === 'pianoM') return hand === 'left' ? 11 : 12
     if (settings.channelMode === 'synthesia') {
-      return this.handChannels.get(note.trackIndex) ?? (handPitch < 60 ? 11 : 12)
+      if (track?.hand === 'left' || track?.hand === 'right') return hand === 'left' ? 11 : 12
+      return this.handChannels.get(note.trackIndex) ?? (hand === 'left' ? 11 : 12)
     }
     if (settings.channelMode === 'track') return note.trackIndex % 16
     return note.channel & 0x0f

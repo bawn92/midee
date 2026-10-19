@@ -1,7 +1,8 @@
 import type { MasterClock } from '../../core/clock/MasterClock'
-import { type Hand, noteHand } from '../../core/handPractice'
+import type { Hand } from '../../core/handPractice'
 import { foldPitchIntoRange, type KeyboardRange } from '../../core/keyboardRange'
-import { MIDI_MAX, MIDI_MIN, type MidiFile } from '../../core/midi/types'
+import { noteHandOf } from '../../core/midi/hands'
+import { MIDI_MAX, MIDI_MIN, type MidiFile, type MidiTrack } from '../../core/midi/types'
 import { createEventSignal } from '../../store/eventSignal'
 
 // Minimum gap between two consecutive note-onsets to consider them a *new*
@@ -447,7 +448,7 @@ export class PracticeEngine {
       if (track.isDrum) continue
       if (this.visibleTrackIds && !this.visibleTrackIds.has(track.id)) continue
       for (const note of track.notes) {
-        const role = this.classifyNote(note.pitch)
+        const role = this.classifyNote(track, note.pitch)
         if (role.kind === 'omit') continue
         onsets.push({
           time: note.time,
@@ -533,8 +534,11 @@ export class PracticeEngine {
   // Hand identity uses the written pitch, so a left-hand note folded up across
   // middle C is still the left hand. The pitch the player must press is the
   // folded one when fit-to-range can place it on a key.
-  private classifyNote(pitch: number): { kind: 'required' | 'auto' | 'omit'; pitch: number } {
-    const matches = this.handFilter === 'both' || noteHand(pitch) === this.handFilter
+  private classifyNote(
+    track: MidiTrack,
+    pitch: number,
+  ): { kind: 'required' | 'auto' | 'omit'; pitch: number } {
+    const matches = this.handFilter === 'both' || noteHandOf(track, pitch) === this.handFilter
     const folded = this.fitToRange ? foldPitchIntoRange(pitch, this.playableWindow()) : null
     const inWindow = this.isPlayablePitch(pitch)
     const reachable = folded !== null && this.isPlayablePitch(folded.pitch)

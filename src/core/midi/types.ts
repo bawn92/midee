@@ -18,6 +18,10 @@ export function audibleDuration(n: MidiNote): number {
   return (n.releaseAt ?? n.time + n.duration) - n.time
 }
 
+// `split` means the notes are divided by pitch (middle C). A named or
+// channel-assigned part is entirely `left` or `right`.
+export type TrackHand = 'left' | 'right' | 'split'
+
 export interface MidiTrack {
   id: string
   name: string
@@ -26,6 +30,8 @@ export interface MidiTrack {
   isDrum: boolean
   notes: MidiNote[]
   colorIndex: number // index into theme.trackColors for theme-aware note/particle rendering
+  // Set by the parser. Hand-built fixtures may omit it and fall back to pitch.
+  hand?: TrackHand
 }
 
 // Size of every theme's `trackColors` palette; `colorIndex` is assigned modulo

@@ -1,6 +1,7 @@
 import { getContext, getTransport, immediate, Part, start as toneStart } from 'tone'
-import { getHandPractice, type Hand, noteHand } from '../core/handPractice'
+import { getHandPractice, type Hand } from '../core/handPractice'
 import { getKeyboardRange, placedPitch } from '../core/keyboardRange'
+import { noteHandOf } from '../core/midi/hands'
 import { audibleDuration, type MidiFile } from '../core/midi/types'
 import { createEventSignal } from '../store/eventSignal'
 import type { AudioEngine } from './AudioEngine'
@@ -209,7 +210,7 @@ export class SynthEngine implements AudioEngine {
             velocity: note.velocity,
             trackId: track.id,
             pitch: note.pitch,
-            hand: track.isDrum ? null : noteHand(note.pitch),
+            hand: track.isDrum ? null : noteHandOf(track, note.pitch),
           },
         ])
       }

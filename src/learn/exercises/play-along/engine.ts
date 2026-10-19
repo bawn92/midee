@@ -1,13 +1,10 @@
 import { batch } from 'solid-js'
 import { createStore, type SetStoreFunction } from 'solid-js/store'
-import {
-  getHandPractice,
-  type Hand,
-  noteHand,
-  subscribeHandPractice,
-} from '../../../core/handPractice'
+import { getHandPractice, type Hand, subscribeHandPractice } from '../../../core/handPractice'
 import type { BusNoteEvent } from '../../../core/input/InputBus'
 import { getKeyboardRange, subscribeKeyboardRange } from '../../../core/keyboardRange'
+import { noteHandOf } from '../../../core/midi/hands'
+import { secondsPerBar } from '../../../core/midi/tempoMap'
 import type { MidiFile } from '../../../core/midi/types'
 import type { AppServices } from '../../../core/services'
 import { watch } from '../../../store/watch'
@@ -41,10 +38,7 @@ export function cycleSpeedPreset(current: number, delta: number): number {
 // on and the user is just leaving fingers down.
 const HELD_GRACE_SEC = 0.05
 
-// Seed span when the loop is switched on, before the user trims it. Plain
-// seconds, not bars: the seed is a starting point the user immediately drags,
-// and nothing snaps the handles to bars afterwards — so bar precision here was
-// destroyed by the first drag while costing a tempo dependency.
+// Fallback seed when the file has no meter. Four bars of 4/4 at 120 BPM.
 const DEFAULT_LOOP_SEC = 8
 // ...but never less than this share of the piece. The handles sit just outside
 // the region, so the gap between them IS the loop's width on screen; on a long
@@ -349,9 +343,22 @@ export class PlayAlongEngine {
     pieceDuration: number,
     bpm: number,
   ): LoopRegion | null {
-    const region = bars === null ? null : makeRegionFromBars(playhead, bars, bpm, pieceDuration)
+    const beats = this.currentMidi?.timeSignature[0] ?? 4
+    const region =
+      bars === null ? null : makeRegionFromBars(playhead, bars, bpm, pieceDuration, beats)
     this.setState('loopRegion', region)
     return region
+  }
+
+  // Four bars of the file's meter, and never a fraction of a bar. A long piece
+  // still widens the seed so the handles stay apart, then rounds up to a bar.
+  private loopSpan(playhead: number, dur: number): number {
+    const midi = this.currentMidi
+    const bar = midi ? secondsPerBar(midi, playhead) : 0
+    if (!(bar > 0)) return Math.min(Math.max(DEFAULT_LOOP_SEC, dur * MIN_LOOP_FRACTION), dur)
+    const wanted = Math.max(bar * 4, dur * MIN_LOOP_FRACTION)
+    const bars = Math.max(1, Math.ceil(wanted / bar - 1e-9))
+    return Math.min(dur, bars * bar)
   }
 
   // Loop on/off. Turning it ON seeds a region at the playhead rather than
@@ -365,7 +372,7 @@ export class PlayAlongEngine {
     }
     const dur = this.state.duration
     if (dur <= 0) return null
-    const span = Math.min(Math.max(DEFAULT_LOOP_SEC, dur * MIN_LOOP_FRACTION), dur)
+    const span = this.loopSpan(playhead, dur)
     const start = Math.max(0, Math.min(Math.max(0, playhead), dur - span))
     const region: LoopRegion = { start, end: Math.min(dur, start + span) }
     this.setState('loopRegion', region)
@@ -491,7 +498,7 @@ export class PlayAlongEngine {
     const visible = midi.tracks
       .filter((track) => {
         if (track.isDrum) return false
-        return track.notes.some((note) => noteHand(note.pitch) === filter)
+        return track.notes.some((note) => noteHandOf(track, note.pitch) === filter)
       })
       .map((t) => t.id)
     this.practice.setHandFilter(filter, visible)

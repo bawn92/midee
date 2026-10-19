@@ -28,6 +28,7 @@ export interface SceneNoteInput {
   octaves: number
   dimmed: boolean
   color: number
+  hand: 'left' | 'right'
   note: MidiNote
 }
 
@@ -92,13 +93,13 @@ function mix(a: number, b: number, t: number): number {
 }
 
 function sceneInk(
-  pitch: number,
   classicColor: number,
   shape: NoteShapeId,
   theme: Theme,
   colorByHand: boolean,
+  hand: 'left' | 'right',
 ): Ink {
-  const lh = pitch < 60
+  const lh = hand === 'left'
   const fillToken = readCssColor(lh ? '--note-lh' : '--note-rh', {
     color: (lh ? theme.trackColors[1] : theme.trackColors[0]) ?? classicColor,
     alpha: 1,
@@ -241,6 +242,7 @@ export function paintSceneNotes(args: PaintArgs): void {
       octaves: note.octaves,
       dimmed: note.dimmed,
       color: note.color,
+      hand: note.hand,
       notes: [note.note],
     })),
     viewport.config.pixelsPerSecond,
@@ -259,7 +261,13 @@ export function paintSceneNotes(args: PaintArgs): void {
     const inset = 4 * hScale
     const w = Math.max(2, rawW - inset)
     const x = viewport.pitchToX(body.drawPitch) + inset / 2
-    const ink = sceneInk(body.pitch, body.color, shape, theme, prefs.colorBy === 'hand')
+    const ink = sceneInk(
+      body.color,
+      shape,
+      theme,
+      prefs.colorBy === 'hand',
+      body.hand ?? (body.pitch < 60 ? 'left' : 'right'),
+    )
     const next = inNextChord(body.time, args.onset)
     const active = currentTime >= body.time && currentTime < body.end
     const alpha = body.dimmed ? 0.3 : 1

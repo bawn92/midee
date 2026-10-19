@@ -1,6 +1,7 @@
 import { createSignal } from 'solid-js'
 import { createStore, type SetStoreFunction } from 'solid-js/store'
 import { render } from 'solid-js/web'
+import { formatBpm, tempoAt } from '../core/midi/tempoMap'
 import type { AppServices } from '../core/services'
 import { t } from '../i18n'
 import { isSpaceActivatedControl, isTextEntryTarget } from '../learn/core/keyboard'
@@ -79,6 +80,8 @@ export class Controls {
   private topStripEl!: HTMLElement
   private scrubber!: HTMLInputElement
   private timeDisplay!: HTMLElement
+  private pieceBpmEl: HTMLElement | null = null
+  private lastPieceBpmLabel = ''
   private durationEl!: HTMLElement
   private metroBeatEl!: HTMLElement
   private tracksBtn!: HTMLButtonElement
@@ -274,6 +277,11 @@ export class Controls {
             }}
             metroRunning={() => uiStore.metro.running}
             metroBpm={() => uiStore.metro.bpm}
+            registerPieceBpm={(el) => {
+              this.pieceBpmEl = el
+              this.lastPieceBpmLabel = ''
+              this.paintPieceBpm(opts.services.clock.currentTime)
+            }}
             onPlay={() => this.handlePlayClick()}
             onSkipBack={() => this.handleSkip(-SKIP_SECONDS)}
             onSkipFwd={() => this.handleSkip(SKIP_SECONDS)}
@@ -315,6 +323,7 @@ export class Controls {
             onScrubberInput={() => {
               const t = parseFloat(this.scrubber.value)
               this.timeDisplay.textContent = formatTime(t)
+              this.paintPieceBpm(t)
               this.updateFill(t)
             }}
             onScrubberChange={() => {
@@ -430,6 +439,8 @@ export class Controls {
         () => store.state.loadedMidi,
         (midi) => {
           setHasFile(midi !== null)
+          this.lastPieceBpmLabel = ''
+          this.paintPieceBpm(opts.services.clock.currentTime)
           this.refreshUi()
         },
       ),
@@ -459,6 +470,7 @@ export class Controls {
 
         // @reactive-scrubber-forbidden — see docs/done/SOLID_MIGRATION_PLAN.md §2 rule 4
         this.scrubber.value = String(t)
+        this.paintPieceBpm(t)
 
         const sec = Math.floor(t)
         if (sec !== this.lastDisplaySec) {
@@ -842,6 +854,26 @@ export class Controls {
     const dur = this.opts.services.store.state.duration
     const pct = dur > 0 ? Math.min((t / dur) * 100, 100) : 0
     this.scrubber.style.setProperty('--pct', `${pct}%`)
+  }
+
+  // The piece subtitle is the file's tempo map, not the metronome click.
+  private paintPieceBpm(time: number): void {
+    const el = this.pieceBpmEl
+    if (!el) return
+    const midi = this.opts.services.store.state.loadedMidi
+    if (!midi) {
+      if (this.lastPieceBpmLabel !== '') {
+        this.lastPieceBpmLabel = ''
+        el.textContent = ''
+      }
+      el.hidden = true
+      return
+    }
+    const label = `${formatBpm(tempoAt(midi, time))} BPM`
+    el.hidden = false
+    if (label === this.lastPieceBpmLabel) return
+    this.lastPieceBpmLabel = label
+    el.textContent = label
   }
 
   private invalidateTimeCache(): void {

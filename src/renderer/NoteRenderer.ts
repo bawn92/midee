@@ -1,7 +1,8 @@
 import { Container, Graphics, type Renderer, Text } from 'pixi.js'
 import { GlowFilter } from 'pixi-filters'
-import { getHandPractice, noteMatchesHand } from '../core/handPractice'
+import { getHandPractice } from '../core/handPractice'
 import { getKeyboardRange, placedPitch } from '../core/keyboardRange'
+import { noteHandOf, noteMatchesHandOf } from '../core/midi/hands'
 import { isBlackKey, MIDI_MAX, MIDI_MIN, type MidiNote, type MidiTrack } from '../core/midi/types'
 import { barAt, fingerFor } from '../songGuide/query'
 import type { SongGuide } from '../songGuide/types'
@@ -214,11 +215,14 @@ export class NoteRenderer {
         const placement = track.isDrum ? null : placedPitch(note.pitch, rangePrefs)
         const drawPitch = placement?.pitch ?? note.pitch
         const shifted = placement !== null && placement.octaves !== 0
+        const hand = noteHandOf(track, note.pitch)
         const handDim =
-          !track.isDrum && practiceHand !== 'both' && !noteMatchesHand(note.pitch, practiceHand)
+          !track.isDrum &&
+          practiceHand !== 'both' &&
+          !noteMatchesHandOf(track, note.pitch, practiceHand)
         const dimmed = practiceInactive || handDim
         const noteColor = byHand
-          ? note.pitch < 60
+          ? hand === 'left'
             ? (this.theme.trackColors[1] ?? trackColor)
             : (this.theme.trackColors[0] ?? trackColor)
           : trackColor
@@ -286,6 +290,7 @@ export class NoteRenderer {
             octaves: placement?.octaves ?? 0,
             dimmed,
             color: noteColor,
+            hand,
             note,
           })
         } else {
