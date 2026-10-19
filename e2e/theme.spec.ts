@@ -7,7 +7,7 @@ const THEME_KEY = 'midee.theme'
 const LEGACY_KEY = 'midee.themeIndex'
 
 const ACCENT = {
-  'golden-hour': '#b9773a',
+  'golden-hour': '#9c5f2b',
   'rainy-study': '#6e8494',
 } as const
 

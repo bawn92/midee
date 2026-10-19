@@ -624,7 +624,7 @@ export class KeyboardRenderer {
           fontFamily: 'Nunito Sans, system-ui, sans-serif',
           fontSize: 11,
           fontWeight: '600',
-          fill: 0xa4876f,
+          fill: 0x7e604b,
         },
       })
       const v = keyboardHeight / KBD.caseH

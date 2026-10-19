@@ -13,11 +13,11 @@
   --border-strong: rgba(122, 78, 44, 0.28);
   --text-1: #4a2f1e;
   --text-2: #7a5a44;
-  --text-3: #a4876f;
+  --text-3: #7e604b;
   --text-on-accent: #fff8ee;
-  --accent: #b9773a;
-  --accent-hover: #a86a30;
-  --accent-press: #94592a;
+  --accent: #9c5f2b;
+  --accent-hover: #8a5424;
+  --accent-press: #77481f;
   --accent-soft: #ebc99a;
   --note-rh: #e6a94f;
   --note-rh-edge: #c98a32;
@@ -57,7 +57,7 @@
   --roll-fade: #f6d6b4;
   --range-glass: rgba(235, 201, 154, 0.32);
   --range-glass-drag: rgba(235, 201, 154, 0.4);
-  --range-border: rgba(185, 119, 58, 0.7);
+  --range-border: rgba(156, 95, 43, 0.7);
   --range-dim: rgba(42, 26, 15, 0.4);
   --range-edge: #a65c28;
   --range-strip: #f2b565;
@@ -72,6 +72,6 @@
   --tooltip-fg: #fff8ee;
   --tooltip-border: rgba(255, 248, 238, 0.18);
   --tooltip-shadow: 0 8px 22px rgba(94, 59, 36, 0.28);
-  --hit-line: rgba(185, 119, 58, 0.7);
+  --hit-line: rgba(156, 95, 43, 0.7);
   --wood-highlight: rgba(255, 230, 200, 0.25);
 }

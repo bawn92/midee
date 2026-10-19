@@ -116,7 +116,7 @@ export interface KeyHintProps {
 export function TopStripView(props: TopStripProps) {
   const activeMode = (): string => {
     const m = props.mode()
-    if (m === 'play' || m === 'live' || m === 'learn') return m
+    if (m === 'play' || m === 'live' || m === 'learn' || m === 'club') return m
     return 'none'
   }
 
@@ -127,14 +127,15 @@ export function TopStripView(props: TopStripProps) {
   // own offsetLeft all share the same offsetParent (the switch), so their
   // difference is the precise translation regardless of border/padding.
   let thumbEl: HTMLSpanElement | undefined
-  const segEls: Partial<Record<'play' | 'live' | 'learn', HTMLButtonElement>> = {}
+  const segEls: Partial<Record<'play' | 'live' | 'learn' | 'club', HTMLButtonElement>> = {}
 
   // animate=false snaps without a slide — used for the first paint and for
   // resize/font reflows, where a sliding thumb would look like a glitch.
   const positionThumb = (animate = true): void => {
     if (!thumbEl) return
     const m = activeMode()
-    const seg = m === 'play' || m === 'live' || m === 'learn' ? segEls[m] : undefined
+    const seg =
+      m === 'play' || m === 'live' || m === 'learn' || m === 'club' ? segEls[m] : undefined
     if (!seg) {
       thumbEl.style.opacity = '0'
       return
@@ -300,6 +301,20 @@ export function TopStripView(props: TopStripProps) {
         >
           <span class="ts-mode-icon" aria-hidden="true" innerHTML={icons.practice()} />
           <span class="ts-mode-label">{t('topStrip.mode.learn.label')}</span>
+        </button>
+        <button
+          class="ts-mode-seg"
+          classList={{ 'is-active': props.mode() === 'club' }}
+          id="ts-mode-club"
+          ref={(el) => (segEls.club = el)}
+          type="button"
+          role="tab"
+          aria-selected={props.mode() === 'club' ? 'true' : 'false'}
+          data-tip={t('topStrip.modeClub')}
+          onClick={() => props.onMode('club')}
+        >
+          <span class="ts-mode-icon" aria-hidden="true" innerHTML={icons.modeClub()} />
+          <span class="ts-mode-label">{t('topStrip.mode.club.label')}</span>
         </button>
         <span class="ts-mode-thumb" aria-hidden="true" ref={(el) => (thumbEl = el)} />
       </div>

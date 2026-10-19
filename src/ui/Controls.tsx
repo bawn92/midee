@@ -1,6 +1,7 @@
 import { createSignal } from 'solid-js'
 import { createStore, type SetStoreFunction } from 'solid-js/store'
 import { render } from 'solid-js/web'
+import { currentMonth } from '../club/month'
 import { formatBpm, tempoAt } from '../core/midi/tempoMap'
 import type { AppServices } from '../core/services'
 import { t } from '../i18n'
@@ -818,6 +819,14 @@ export class Controls {
       this.setUi('context', {
         kicker: t('topStrip.context.play.kicker'),
         title: fileName ?? t('topStrip.context.play.fallback'),
+      })
+      return
+    }
+
+    if (mode === 'club') {
+      this.setUi('context', {
+        kicker: t('topStrip.context.club.kicker'),
+        title: currentMonth().title,
       })
       return
     }

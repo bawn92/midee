@@ -27,6 +27,28 @@ import { booleanPersisted, idPersisted, numberPersisted } from './core/persisten
 import { forgetRecent, listRecents, readRecentMidi, rememberRecent } from './core/recentMidi'
 import { fetchSampleMidi, getSample } from './core/samples'
 import type { AppServices } from './core/services'
+import {
+  type PracticePick,
+  pickForBars,
+  pickFromIds,
+  practiceTimes,
+  rememberDeadmau5,
+  resolvePractice,
+  STROBE_SAMPLE_ID,
+  selectionAfterClick,
+} from './deadmau5/sections'
+import {
+  armCountIn,
+  bindDeadmau5,
+  bumpPracticePass,
+  disarmCountIn,
+  notifyRoute,
+  practicePick,
+  setPasses,
+  setPhase,
+  setPractice,
+  takeCountIn,
+} from './deadmau5/session'
 // VideoExporter pulls Mediabunny; OfflineAudioRenderer pulls Tone + instruments.
 // Both are dynamic-imported from startExport(). Import order matters: load the
 // offline-audio module first when audio is needed — do not block Tone on the
@@ -51,31 +73,9 @@ import type { ExportStage, VideoExporter } from './export/VideoExporter'
 import { audioBufferToWav } from './export/wav'
 import { setLocale, t } from './i18n'
 import {
-  pickForBars,
-  pickFromIds,
-  practiceTimes,
-  rememberDeadmau5,
-  resolvePractice,
-  selectionAfterClick,
-  STROBE_SAMPLE_ID,
-  type PracticePick,
-} from './deadmau5/sections'
-import {
-  armCountIn,
-  bindDeadmau5,
-  bumpPracticePass,
-  disarmCountIn,
-  notifyRoute,
-  practicePick,
-  setPasses,
-  setPhase,
-  setPractice,
-  takeCountIn,
-} from './deadmau5/session'
-import {
   bootRoute,
-  deadmau5Href,
   type Deadmau5Route,
+  deadmau5Href,
   type LandingRoute,
   markStarted,
   modeHref,
@@ -465,7 +465,7 @@ export class App {
       (file, source) => {
         if (this.store.state.mode === 'learn') {
           void this.ensureLearnController().then((c) => c.loadMidiFromFile(file, source))
-        } else {
+        } else if (this.store.state.mode !== 'club') {
           void this.loadMidi(file, source)
         }
       },
@@ -473,7 +473,7 @@ export class App {
       (sampleId) => {
         if (this.store.state.mode === 'learn') {
           void this.ensureLearnController().then((c) => c.loadSample(sampleId))
-        } else {
+        } else if (this.store.state.mode !== 'club') {
           void this.loadSample(sampleId)
         }
       },
@@ -481,7 +481,7 @@ export class App {
       (recentId) => {
         if (this.store.state.mode === 'learn') {
           void this.ensureLearnController().then((c) => c.loadRecent(recentId))
-        } else {
+        } else if (this.store.state.mode !== 'club') {
           void this.loadRecent(recentId)
         }
       },
@@ -976,6 +976,11 @@ export class App {
       this.urlReplace = false
       return
     }
+    if (route.mode === 'club') {
+      this.requestMode('club', true)
+      this.urlReplace = false
+      return
+    }
     if (route.mode === 'learn') {
       this.deliverLearn(route.song, true)
       if (!route.song) this.urlReplace = false
@@ -993,12 +998,19 @@ export class App {
     if (this.urlQuiet) return
     const path = normalizePath(location.pathname)
     if (mode === 'home' && (path === '/' || path === '/welcome')) return
-    if ((mode === 'home' || mode === 'live') && practicePick()?.active) this.clearPractice()
+    if ((mode === 'home' || mode === 'live' || mode === 'club') && practicePick()?.active) {
+      this.clearPractice()
+    }
     const song = mode === 'play' ? this.playSong : mode === 'learn' ? this.learnSong : null
     const pick = practicePick()
     const next =
       (mode === 'play' || mode === 'learn') && pick?.active
-        ? deadmau5Href(pick.ids.join(','), `${pick.startBar}-${pick.endBar}`, location.search, location.hash)
+        ? deadmau5Href(
+            pick.ids.join(','),
+            `${pick.startBar}-${pick.endBar}`,
+            location.search,
+            location.hash,
+          )
         : modeHref(mode, song, location.search, location.hash)
     const current = `${path}${location.search}${location.hash}`
     if (current === next) return
@@ -1213,6 +1225,11 @@ export class App {
     }
     if (route.mode === 'live') {
       if (this.store.state.mode !== 'live') this.requestMode('live', true)
+      this.urlReplace = false
+      return
+    }
+    if (route.mode === 'club') {
+      if (this.store.state.mode !== 'club') this.requestMode('club', true)
       this.urlReplace = false
       return
     }
@@ -2393,6 +2410,10 @@ export class App {
           return
         }
         this.store.setState('mode', 'learn')
+        return
+      }
+      if (mode === 'club') {
+        this.store.setState('mode', 'club')
         return
       }
       if (this.store.state.loadedMidi) {
