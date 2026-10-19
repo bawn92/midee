@@ -41,8 +41,8 @@
   --keyboard-h: 120px;
   --hud-gap: 28px; /* gap between keyboard top and hud bottom */
 
-  --font: "Inter", system-ui, sans-serif;
-  --font-display: "Instrument Serif", ui-serif, Georgia, serif;
+  --font: "Figtree", system-ui, sans-serif;
+  --font-display: "Young Serif", Georgia, "Times New Roman", serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -51,9 +51,10 @@
 
 html:lang(zh-CN) {
   --font:
-    "Inter", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Figtree", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
     "Source Han Sans SC", system-ui, sans-serif;
-  --font-display: "Noto Serif SC", "Songti SC", "STSong", "Source Han Serif SC", ui-serif, serif;
+  --font-display: "Young Serif", "Noto Serif SC", "Songti SC", "STSong", "Source Han Serif SC", ui-serif, serif;
+  --font-ui: "Figtree", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
 }
 
 html,
@@ -222,11 +223,11 @@ body {
 
 .home-title {
   font-family: var(--font-display);
-  font-size: clamp(44px, 6vw, 76px);
+  font-size: clamp(38.72px, 5.28vw, 66.88px);
   line-height: 0.94;
   font-weight: 400;
   color: var(--text);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
 }
 
 .home-title em {
@@ -5549,7 +5550,7 @@ body.canvas-hidden #kbd-range {
   border-radius: 6px;
   background: var(--surface-solid);
   color: var(--text-1);
-  font-family: "Nunito Sans", system-ui, sans-serif;
+  font-family: "Figtree", system-ui, sans-serif;
   font-size: 12px;
   font-weight: 600;
   line-height: 16px;
@@ -7479,8 +7480,8 @@ body.canvas-hidden #kbd-range-band {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: clamp(48px, 8vw, 88px);
-  letter-spacing: -0.02em;
+  font-size: clamp(42.24px, 7.04vw, 77.44px);
+  letter-spacing: -0.025em;
   line-height: 0.96;
   color: var(--text);
 }

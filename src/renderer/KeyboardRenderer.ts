@@ -621,7 +621,7 @@ export class KeyboardRenderer {
       const text = new Text({
         text: `C${octave}`,
         style: {
-          fontFamily: 'Nunito Sans, system-ui, sans-serif',
+          fontFamily: 'Figtree, system-ui, sans-serif',
           fontSize: 11,
           fontWeight: '600',
           fill: 0x7e604b,

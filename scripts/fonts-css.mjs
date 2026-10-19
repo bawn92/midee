@@ -11,27 +11,27 @@
 // Returns:
 //   { fontFaces: '<style>…@font-face{…}…</style>',
 //     fontPreload: '<link rel="preload" as="font" …>' }
-// Both strings are HTML-ready; the body font (Inter 400) is preloaded so its
+// Both strings are HTML-ready; the body font (Figtree 400) is preloaded so its
 // fetch parallelises with HTML parse rather than waiting for the inline
 // <style> to be parsed.
 
 import { readdirSync } from 'node:fs'
 
 const FAMILY_NAME = {
-  inter: 'Inter',
-  'instrument-serif': 'Instrument Serif',
+  figtree: 'Figtree',
+  'young-serif': 'Young Serif',
   'jetbrains-mono': 'JetBrains Mono',
 }
 
 // Mirror src/main.tsx's @fontsource import set. If you add a weight there,
 // add it here so the blog renders with the same typography.
 const WEIGHTS = [
-  ['inter', 400, 'normal'],
-  ['inter', 500, 'normal'],
-  ['inter', 600, 'normal'],
-  ['inter', 700, 'normal'],
-  ['instrument-serif', 400, 'normal'],
-  ['instrument-serif', 400, 'italic'],
+  ['figtree', 400, 'normal'],
+  ['figtree', 500, 'normal'],
+  ['figtree', 600, 'normal'],
+  ['figtree', 700, 'normal'],
+  ['figtree', 800, 'normal'],
+  ['young-serif', 400, 'normal'],
   ['jetbrains-mono', 400, 'normal'],
   ['jetbrains-mono', 500, 'normal'],
   ['jetbrains-mono', 600, 'normal'],
@@ -70,9 +70,9 @@ export function renderFontTags(distAssetsDir) {
     )
   }).join('')
 
-  const inter400 = woff2.get('inter-400-normal')
-  const fontPreload = inter400
-    ? `<link rel="preload" as="font" type="font/woff2" crossorigin href="/assets/${inter400}" />`
+  const figtree400 = woff2.get('figtree-400-normal')
+  const fontPreload = figtree400
+    ? `<link rel="preload" as="font" type="font/woff2" crossorigin href="/assets/${figtree400}" />`
     : ''
 
   return {

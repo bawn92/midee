@@ -2,16 +2,21 @@
    values. Type, spacing, radii, motion, and component geometry stay here. */
 
 :root {
-  --font-display: "Fraunces Variable", Georgia, "Times New Roman", serif;
-  --font-ui: "Nunito Sans", system-ui, sans-serif;
+  --font: "Figtree", system-ui, sans-serif;
+  --font-display: "Young Serif", Georgia, "Times New Roman", serif;
+  --font-ui: "Figtree", system-ui, sans-serif;
   --font-serif: var(--font-display);
   --font-sans: var(--font-ui);
-  /* Screens set Fraunces Regular at SOFT 0, WONK 1. Weight stays on the
-     type shorthand so Display can be 500 while titles stay 400. */
-  --font-display-axes: "SOFT" 0, "WONK" 1, "opsz" 48;
+  /* Young Serif is Regular only, so display and titles share weight 400.
+     It has no optical-size axis. */
+  --font-display-axes: normal;
+  --track-serif-hero: -0.025em;
+  --track-serif-title: -0.01em;
+  --track-sans-ui: -0.005em;
 
-  --type-display: 500 32px / 40px var(--font-display);
-  --type-title: 400 22px / 28px var(--font-display);
+  /* Titles from 17px to 32px scale by 0.94. Line heights scale by the same k. */
+  --type-display: 400 30.08px / 37.6px var(--font-display);
+  --type-title: 400 20.68px / 26.32px var(--font-display);
   --type-heading: 700 16px / 22px var(--font-ui);
   --type-body: 500 15px / 22px var(--font-ui);
   --type-label: 600 13px / 18px var(--font-ui);
@@ -19,7 +24,7 @@
   --type-number-lg: 600 28px / 32px var(--font-ui);
   --type-number: 600 15px / 22px var(--font-ui);
   --type-finger: 800 11px / 11px var(--font-ui);
-  --type-transport: 400 17px / 22px var(--font-display);
+  --type-transport: 400 15.98px / 20.68px var(--font-display);
   --type-transport-title: var(--type-transport);
 
   --space-1: 4px;

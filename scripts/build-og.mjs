@@ -1,5 +1,5 @@
 // Renders the Open Graph banner (1200×630) with @resvg/resvg-js and the
-// app's real fonts (Instrument Serif, Inter from @fontsource).
+// app's real fonts (Young Serif, Figtree from @fontsource).
 //
 //   public/og.svg
 //   public/og.png
@@ -21,12 +21,11 @@ const root = process.cwd()
 // silently rendered as nothing (loadSystemFonts is off).
 const FS = resolve(root, 'node_modules/@fontsource')
 const woffFiles = [
-  `${FS}/instrument-serif/files/instrument-serif-latin-400-normal.woff`,
-  `${FS}/instrument-serif/files/instrument-serif-latin-400-italic.woff`,
-  `${FS}/inter/files/inter-latin-400-normal.woff`,
-  `${FS}/inter/files/inter-latin-500-normal.woff`,
-  `${FS}/inter/files/inter-latin-600-normal.woff`,
-  `${FS}/inter/files/inter-latin-700-normal.woff`,
+  `${FS}/young-serif/files/young-serif-latin-400-normal.woff`,
+  `${FS}/figtree/files/figtree-latin-400-normal.woff`,
+  `${FS}/figtree/files/figtree-latin-500-normal.woff`,
+  `${FS}/figtree/files/figtree-latin-600-normal.woff`,
+  `${FS}/figtree/files/figtree-latin-700-normal.woff`,
   `${FS}/jetbrains-mono/files/jetbrains-mono-latin-400-normal.woff`,
   `${FS}/jetbrains-mono/files/jetbrains-mono-latin-500-normal.woff`,
 ]
@@ -283,17 +282,17 @@ ${body}
 </svg>`
 
 const eyebrow = (label, y) =>
-  `<text x="80" y="${y}" font-family="Inter" font-size="13" font-weight="600" fill="${WALNUT}" letter-spacing="3.2">${esc(label.toUpperCase())}</text>
+  `<text x="80" y="${y}" font-family="Figtree" font-size="13" font-weight="600" fill="${WALNUT}" letter-spacing="3.2">${esc(label.toUpperCase())}</text>
 <rect x="80" y="${y + 12}" width="26" height="1.5" fill="${HONEY}" opacity="0.9"/>`
 
 function defaultBanner() {
   return FRAME(`
 ${eyebrow('Piano trainer', 168)}
-<text x="80" y="268" font-family="Instrument Serif" font-size="78" fill="${INK}" letter-spacing="-1.5">Piano Club,</text>
-<text x="80" y="352" font-family="Instrument Serif" font-size="78" fill="${INK}" letter-spacing="-1.5">see them bloom.</text>
-<text x="80" y="418" font-family="Inter" font-size="22" font-weight="500" fill="${INK_SOFT}">A piano trainer for your MIDI keyboard,</text>
-<text x="80" y="450" font-family="Inter" font-size="22" font-weight="500" fill="${INK_SOFT}">with learn mode, a range for small</text>
-<text x="80" y="482" font-family="Inter" font-size="22" font-weight="500" fill="${INK_SOFT}">keyboards, and cozy scenes.</text>
+<text x="80" y="268" font-family="Young Serif" font-size="78" fill="${INK}" letter-spacing="-1.5">Piano Club,</text>
+<text x="80" y="352" font-family="Young Serif" font-size="78" fill="${INK}" letter-spacing="-1.5">see them bloom.</text>
+<text x="80" y="418" font-family="Figtree" font-size="22" font-weight="500" fill="${INK_SOFT}">A piano trainer for your MIDI keyboard,</text>
+<text x="80" y="450" font-family="Figtree" font-size="22" font-weight="500" fill="${INK_SOFT}">with learn mode, a range for small</text>
+<text x="80" y="482" font-family="Figtree" font-size="22" font-weight="500" fill="${INK_SOFT}">keyboards, and cozy scenes.</text>
 `)
 }
 
@@ -301,7 +300,7 @@ ${eyebrow('Piano trainer', 168)}
 function render(svg, outPath) {
   const resvg = new Resvg(svg, {
     fitTo: { mode: 'width', value: 1200 },
-    font: { fontFiles, loadSystemFonts: false, defaultFontFamily: 'Inter' },
+    font: { fontFiles, loadSystemFonts: false, defaultFontFamily: 'Figtree' },
     background: '#f8e3c8',
   })
   const png = resvg.render().asPng()

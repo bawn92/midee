@@ -50,14 +50,10 @@ html[data-route="hero"] #kbd-resizer {
 
 .landing-word {
   font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 20px;
-  letter-spacing: -0.02em;
-  font-variation-settings:
-    "SOFT" 0,
-    "WONK" 1,
-    "opsz" 24,
-    "wght" 500;
+  font-weight: 400;
+  font-size: 18.8px;
+  line-height: 26px;
+  letter-spacing: var(--track-serif-title);
 }
 
 .landing-copy {
@@ -88,23 +84,18 @@ html[data-route="hero"] #kbd-resizer {
 .landing-headline {
   margin: 22px 0 0;
   font-family: var(--font-display);
-  font-weight: 520;
-  font-size: 88px;
+  font-weight: 400;
+  font-size: 77.5px;
   line-height: 1.136;
-  letter-spacing: -0.03em;
+  letter-spacing: var(--track-serif-hero);
   color: var(--text-1);
-  /* Display optical size keeps both lines inside the 528px column. */
-  font-variation-settings:
-    "SOFT" 0,
-    "WONK" 0,
-    "opsz" 144,
-    "wght" 520;
 }
 
 .landing-description {
   max-width: 430px;
   margin: 28px 0 0;
   font: 500 20px / 1.5 var(--font-ui);
+  letter-spacing: var(--track-sans-ui);
   color: var(--text-2);
 }
 
@@ -126,6 +117,7 @@ html[data-route="hero"] #kbd-resizer {
   border: 0;
   cursor: pointer;
   font: 700 16px / 1 var(--font-ui);
+  letter-spacing: var(--track-sans-ui);
 }
 
 .landing-start {
@@ -543,7 +535,8 @@ html.landing-enter .home-actions {
   }
 
   .landing-word {
-    font-size: 18px;
+    font-size: 16.92px;
+    line-height: 22px;
   }
 
   .landing-mark,
@@ -564,7 +557,7 @@ html.landing-enter .home-actions {
 
   .landing-headline {
     margin-top: 16px;
-    font-size: 48px;
+    font-size: 42.24px;
     line-height: 1.04;
   }
 

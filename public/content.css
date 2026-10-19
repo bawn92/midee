@@ -20,7 +20,7 @@ html, body {
   padding: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Figtree', system-ui, -apple-system, sans-serif;
   font-size: 17px;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
@@ -74,7 +74,7 @@ a:hover { text-decoration: underline; }
 }
 
 .page-main h1 {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: 'Young Serif', Georgia, serif;
   font-weight: 400;
   font-size: clamp(2rem, 4vw, 2.75rem);
   line-height: 1.15;

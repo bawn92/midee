@@ -464,7 +464,7 @@ export class NoteRenderer {
       label = new Text({
         text: '',
         style: {
-          fontFamily: 'Nunito Sans, system-ui, sans-serif',
+          fontFamily: 'Figtree, system-ui, sans-serif',
           fontWeight: '800',
           fill: 0xfff8ee,
         },
