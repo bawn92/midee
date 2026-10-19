@@ -1,0 +1,244 @@
+/* Keyboard range card. Collapsed it is a content-sized chip. Open, the
+   header and the scrolling body share one glass card. Both scenes use the
+   same surface tokens. */
+
+html[data-scene] #kbd-range:not(.kbd-range--open) {
+  width: max-content;
+  max-width: 100%;
+  align-items: flex-end;
+}
+
+html[data-scene] #kbd-range:not(.kbd-range--open) .kbd-range-bar {
+  flex-direction: row;
+  align-items: center;
+  gap: 0;
+  width: max-content;
+  max-width: min(420px, calc(100vw - 48px));
+  height: 44px;
+  padding: 0;
+  border-radius: var(--radius-md);
+}
+
+html[data-scene] #kbd-range:not(.kbd-range--open) .kbd-range-label {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  width: max-content;
+  height: 44px;
+  padding: 0 10px 0 12px;
+}
+
+html[data-scene] .kbd-range-mark {
+  display: none;
+  flex: none;
+  color: var(--text-2);
+}
+
+html[data-scene] .kbd-range-mark svg {
+  display: block;
+}
+
+html[data-scene] #kbd-range:not(.kbd-range--open) .kbd-range-mark {
+  display: inline-flex;
+}
+
+html[data-scene] .kbd-range-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+html[data-scene] #kbd-range:not(.kbd-range--open) .kbd-range-copy {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+html[data-scene] .kbd-range-kicker {
+  display: block;
+  max-height: 0;
+  max-width: 0;
+  min-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  font: var(--type-heading);
+  font-variation-settings: normal;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-1);
+}
+
+html[data-scene] .kbd-range-kicker > span {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+html[data-scene] #kbd-range.kbd-range--open .kbd-range-kicker {
+  max-width: 100%;
+  max-height: 24px;
+  opacity: 1;
+}
+
+html[data-scene] #kbd-range.kbd-range--open .kbd-range-bar {
+  height: auto;
+  gap: 0;
+  width: 100%;
+  padding: 12px 12px 10px 14px;
+}
+
+html[data-scene] #kbd-range.kbd-range--open .kbd-range-label {
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  height: auto;
+  padding: 0;
+}
+
+html[data-scene] .kbd-range-chevron {
+  margin-top: 4px;
+}
+
+html[data-scene] #kbd-range:not(.kbd-range--open) .kbd-range-chevron {
+  margin-top: 0;
+}
+
+html[data-scene] #kbd-range:not(.kbd-range--open) .kbd-range-summary {
+  color: var(--text-1);
+  font: var(--type-label);
+}
+
+html[data-scene] #kbd-range:not(.kbd-range--open) .kbd-range-cal-badge {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  margin: 0;
+  padding: 0;
+  border-radius: var(--radius-pill);
+  background: var(--warning);
+  box-shadow: none;
+  overflow: hidden;
+  flex: none;
+}
+
+html[data-scene] #kbd-range:not(.kbd-range--open) .kbd-range-cal-badge.is-set {
+  background: var(--success);
+  color: transparent;
+  box-shadow: none;
+}
+
+html[data-scene] #kbd-range:not(.kbd-range--open) .kbd-range-cal-badge::before,
+html[data-scene] #kbd-range:not(.kbd-range--open) .kbd-range-cal-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  border: 0;
+  animation: none;
+}
+
+html[data-scene] #kbd-range.kbd-range--open .kbd-range-cal-badge {
+  align-self: flex-start;
+  margin: 2px 0 0;
+}
+
+html[data-scene] .kbd-range-label:has(.kbd-range-cal-badge:hover)::after {
+  opacity: 0;
+}
+
+html[data-scene] .kbd-range-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  padding: 0;
+  overflow: hidden;
+  opacity: 0;
+  border-width: 0;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+html[data-scene] #kbd-range:not(.kbd-range--open) .kbd-range-panel {
+  display: grid;
+  position: absolute;
+  width: 0;
+  min-width: 0;
+  margin: 0;
+  min-height: 0;
+}
+
+html[data-scene] #kbd-range.kbd-range--open .kbd-range-panel {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  border-width: 1px;
+  border-style: solid;
+  box-shadow: var(--elev-2);
+  pointer-events: auto;
+  animation: none;
+}
+
+html[data-scene] .kbd-range-scroll {
+  min-height: 0;
+  overflow: hidden;
+}
+
+html[data-scene] #kbd-range.kbd-range--open .kbd-range-scroll {
+  overflow: auto;
+  padding: 12px 16px 16px;
+  /* Header sits near 172px. Leave the keyboard and a gap under the card. */
+  max-height: calc(100svh - 320px - var(--keyboard-h, 180px));
+}
+
+html[data-scene] .kbd-range-panel,
+html[data-scene] .kbd-range-kicker {
+  transition:
+    grid-template-rows 240ms cubic-bezier(0.2, 0, 0, 1),
+    opacity 240ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (min-width: 1000px) {
+  html[data-scene] #lower-left:has(#kbd-range:not(.kbd-range--open)) .kbd-range-mount {
+    width: max-content;
+    max-width: min(420px, calc(100vw - 48px));
+  }
+
+  html[data-scene] #lower-left:has(#kbd-range:not(.kbd-range--open)) #kbd-range {
+    width: max-content;
+    align-items: flex-end;
+  }
+}
+
+@media (max-width: 640px) {
+  html[data-scene][data-phone-sheet="range"] #kbd-range .kbd-range-panel,
+  html[data-scene][data-phone-sheet="range"] #kbd-range:not(.kbd-range--open) .kbd-range-panel {
+    display: block;
+    grid-template-rows: 1fr;
+    opacity: 1;
+    border-width: 1px;
+    max-height: none;
+    box-shadow: var(--elev-2);
+    pointer-events: auto;
+  }
+
+  html[data-scene][data-phone-sheet="range"] .kbd-range-scroll {
+    overflow: auto;
+    max-height: none;
+    padding: 12px 16px 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-scene] .kbd-range-panel,
+  html[data-scene] .kbd-range-kicker {
+    transition: opacity 120ms linear;
+  }
+}

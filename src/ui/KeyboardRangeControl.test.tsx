@@ -170,4 +170,32 @@ describe('KeyboardRangeControl', () => {
     mount('home')
     expect(host.querySelector('#kbd-range')!.classList.contains('kbd-range--hidden')).toBe(true)
   })
+
+  it('starts collapsed after calibration until the player opens it', () => {
+    localStorage.removeItem('midee.kbdRangeExpanded')
+    setKeyboardRange({ start: 48, size: 24, controllerLow: 48, calibrated: true })
+    mount()
+    const root = host.querySelector('#kbd-range')!
+    expect(root.classList.contains('kbd-range--open')).toBe(false)
+    expect(host.querySelector('.kbd-range-mark')).not.toBeNull()
+    expect(host.querySelector('#kbd-range-cal-badge')!.textContent).toBe('Calibrated C3')
+    expect(host.querySelector('#kbd-range-cal-badge')!.getAttribute('data-tip')).toBe(
+      'Calibrated C3',
+    )
+
+    host.querySelector<HTMLButtonElement>('#kbd-range-label')!.click()
+    expect(root.classList.contains('kbd-range--open')).toBe(true)
+    expect(localStorage.getItem('midee.kbdRangeExpanded')).toBe('1')
+
+    host.querySelector<HTMLButtonElement>('#kbd-range-label')!.click()
+    expect(root.classList.contains('kbd-range--open')).toBe(false)
+    expect(localStorage.getItem('midee.kbdRangeExpanded')).toBe('0')
+  })
+
+  it('keeps an explicit open choice after calibration', () => {
+    localStorage.setItem('midee.kbdRangeExpanded', '1')
+    setKeyboardRange({ start: 48, size: 24, controllerLow: 48, calibrated: true })
+    mount()
+    expect(host.querySelector('#kbd-range')!.classList.contains('kbd-range--open')).toBe(true)
+  })
 })
