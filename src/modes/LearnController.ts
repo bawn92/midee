@@ -83,6 +83,12 @@ export class LearnController {
         void this.launchExercise(descriptor)
       },
       onOpenFilePicker: () => this.openLearnFilePicker(),
+      onOpenFile: (file, source) => {
+        void this.loadMidiFromFile(file, source)
+      },
+      onOpenRecent: (id) => {
+        void this.loadRecent(id)
+      },
     }
   }
 
