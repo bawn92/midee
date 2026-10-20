@@ -3,6 +3,7 @@ import {
   BLACK_KEY_RADIUS,
   heroCaseShadow,
   heroEbonyGradient,
+  heroHandGradient,
   heroIvoryGradient,
   heroSheenBackground,
   heroWhiteShadow,
@@ -74,7 +75,10 @@ export function HeroArt(props: { rush: boolean }) {
         const spec = frame.lights[lane]
         if (!light || !spec) continue
         light.style.opacity = (spec.amount * 0.92).toFixed(3)
-        light.dataset.hand = spec.hand
+        if (light.dataset.hand !== spec.hand) {
+          light.dataset.hand = spec.hand
+          light.style.background = heroHandGradient(spec.hand)
+        }
       }
       if (glowEl) {
         const pulse = reduced ? 0.7 : breath(time)
@@ -135,7 +139,11 @@ export function HeroArt(props: { rush: boolean }) {
                   'border-radius': `0 0 ${WHITE_KEY_RADIUS}px ${WHITE_KEY_RADIUS}px`,
                 }}
               >
-                <span class="hero-white-light" ref={(el) => (keyLights[lane] = el)} />
+                <span
+                  class="hero-white-light"
+                  style={{ background: heroHandGradient('rh') }}
+                  ref={(el) => (keyLights[lane] = el)}
+                />
               </div>
             )}
           </For>

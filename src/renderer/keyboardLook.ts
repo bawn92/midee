@@ -1,16 +1,17 @@
-import { KBD } from './keyboardMetrics'
-import { type KeyboardPalette, keyboardHighlightAlpha } from './keyboardStyle'
+import { KBD, type KeyFrame } from './keyboardMetrics'
+import type { KeyboardPalette } from './keyboardStyle'
 
-// Shared with the landing hero (HeroArt + landing.css). The hero paints these
-// stops through CSS variables; the play keyboard bakes the same stops into
-// static canvases. Pressed keys reuse the same crown / front / lip split.
+// The landing hero and the play piano share these stops. The hero paints
+// them with CSS variables. The play piano bakes the same stops once.
 
 export const IVORY_MID_STOP = 0.28
 export const SHEEN_HEIGHT = 0.46
 export const SHEEN_ALPHA = 0.45
 export const IVORY_CROWN = '#fffaf3'
-export const WHITE_KEY_RADIUS = 4
-export const BLACK_KEY_RADIUS = 3
+export const WHITE_KEY_RADIUS = KBD.whiteRadius
+export const BLACK_KEY_RADIUS = KBD.blackRadius
+export const HONEY = 0xdda95e
+export const ROSE = 0xd9908f
 
 const GH_IVORY = 0xf6ebda
 
@@ -35,6 +36,11 @@ export function heroCaseShadow(): string {
   return '0 18px 36px color-mix(in srgb, var(--wood-dark) 28%, transparent), inset 0 2px 0 rgba(255, 236, 214, 0.18)'
 }
 
+export function heroHandGradient(hand: 'rh' | 'lh'): string {
+  if (hand === 'rh') return 'linear-gradient(#f6d7a4, #e6a94f 28%, #dda95e)'
+  return 'linear-gradient(#f3c6c4, #d9908f 28%, #c47b7a)'
+}
+
 export interface KeyPaint {
   x: number
   y: number
@@ -42,12 +48,14 @@ export interface KeyPaint {
   h: number
 }
 
-export function cssHex(color: number): string {
-  return `#${color.toString(16).padStart(6, '0')}`
+export interface HandStops {
+  top: number
+  mid: number
+  toe: number
 }
 
-export function mixHex(a: number, b: number, amount: number): string {
-  return cssHex(mixColor(a, b, amount))
+export function cssHex(color: number): string {
+  return `#${color.toString(16).padStart(6, '0')}`
 }
 
 export function mixColor(a: number, b: number, amount: number): number {
@@ -57,6 +65,10 @@ export function mixColor(a: number, b: number, amount: number): number {
     return Math.round(from + (to - from) * amount)
   }
   return (ch(16) << 16) | (ch(8) << 8) | ch(0)
+}
+
+function mixHex(a: number, b: number, amount: number): string {
+  return cssHex(mixColor(a, b, amount))
 }
 
 function rgba(color: number, alpha: number): string {
@@ -71,22 +83,15 @@ export function ivoryCrown(ivory: number): number {
   return mixColor(ivory, 0xffffff, 0.62)
 }
 
-export function keySpecularAlpha(palette: KeyboardPalette): number {
-  if (palette.hairline || !palette.shade) return 0
-  if (palette.id === 'synth') return 0.1
-  if (palette.lacquer) return 0.42
-  return 0.32
-}
-
-function traceCase(ctx: CanvasRenderingContext2D, w: number, h: number, r: number): void {
-  ctx.beginPath()
-  ctx.moveTo(0, r)
-  ctx.arcTo(0, 0, r, 0, r)
-  ctx.lineTo(w - r, 0)
-  ctx.arcTo(w, 0, w, r, r)
-  ctx.lineTo(w, h)
-  ctx.lineTo(0, h)
-  ctx.closePath()
+// One gradient for a pressed key. Golden Hour lands on the hero's honey and rose.
+export function handStops(hand: number, left: boolean, themeId: string): HandStops {
+  if (themeId === 'golden-hour' && !left) return { top: 0xf6d7a4, mid: 0xe6a94f, toe: HONEY }
+  if (themeId === 'golden-hour' && left) return { top: 0xf3c6c4, mid: 0xd9908f, toe: 0xc47b7a }
+  return {
+    top: mixColor(hand, 0xffffff, 0.38),
+    mid: hand,
+    toe: mixColor(hand, 0x000000, 0.16),
+  }
 }
 
 function traceBottomRound(
@@ -112,108 +117,87 @@ function traceBottomRound(
   ctx.closePath()
 }
 
-// Case, lid sheen, cheeks, grain, and felt. Keys are drawn on top, inset by
-// the cheeks, so the rounded corners stay the wood.
+function roundBox(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+): void {
+  const rad = Math.max(0, Math.min(r, w / 2, h / 2))
+  ctx.beginPath()
+  ctx.roundRect(x, y, w, h, rad)
+}
+
+// Compact walnut case: smooth gradient, 1px top highlight, thin felt,
+// rounded ends, and a soft shadow in the outer margin. No grain.
 export function paintCase(
   canvas: HTMLCanvasElement,
   palette: KeyboardPalette,
-  frame: {
-    v: number
-    caseR: number
-    cheek: number
-    feltY: number
-    feltH: number
-  },
+  frame: KeyFrame,
 ): void {
   const ctx = canvas.getContext('2d')
   if (!ctx) return
   const w = canvas.width
   const h = canvas.height
   ctx.clearRect(0, 0, w, h)
-  const r = Math.min(frame.caseR, h / 2, w / 2)
-  traceCase(ctx, w, h, r)
-  ctx.fillStyle = cssHex(palette.caseDark)
-  ctx.fill()
-  if (!palette.hairline) {
-    ctx.save()
-    traceCase(ctx, w, h, r)
-    ctx.clip()
-    const wood = ctx.createLinearGradient(0, 0, 0, h)
-    wood.addColorStop(0, cssHex(palette.caseLight))
-    wood.addColorStop(SHEEN_HEIGHT, mixHex(palette.caseLight, palette.caseDark, 0.45))
-    wood.addColorStop(1, cssHex(palette.caseDark))
-    ctx.fillStyle = wood
-    ctx.fillRect(0, 0, w, h)
 
-    const sheenH = h * SHEEN_HEIGHT
-    const sheen = ctx.createLinearGradient(0, 0, 0, sheenH)
-    sheen.addColorStop(0, rgba(palette.caseLight, SHEEN_ALPHA))
-    sheen.addColorStop(1, rgba(palette.caseLight, 0))
-    ctx.fillStyle = sheen
-    ctx.fillRect(0, 0, w, sheenH)
-    if (palette.lacquer) {
-      const lacquer = ctx.createLinearGradient(0, 0, 0, 40 * frame.v)
-      lacquer.addColorStop(0, 'rgba(255,255,255,0.22)')
-      lacquer.addColorStop(1, 'rgba(255,255,255,0)')
-      ctx.fillStyle = lacquer
-      ctx.fillRect(0, 0, w, 40 * frame.v)
-    }
-    if (palette.grain > 0) {
-      ctx.save()
-      ctx.globalAlpha = palette.grain
-      ctx.translate(w / 2, h / 2)
-      ctx.rotate((-2.3 * Math.PI) / 180)
-      ctx.translate(-w / 2, -h / 2)
-      const grain = ctx.createLinearGradient(0, 0, w, 0)
-      for (let i = 0; i <= 24; i++) {
-        const alpha = i % 3 === 0 ? 0.18 : i % 2 === 1 ? 0.04 : 0.1
-        grain.addColorStop(i / 24, `rgba(0,0,0,${alpha})`)
-      }
-      ctx.fillStyle = grain
-      ctx.fillRect(-h, -h, w + h * 2, h * 3)
-      ctx.restore()
-    }
-    const cheek = Math.max(1, frame.cheek)
-    const left = ctx.createLinearGradient(0, 0, cheek, 0)
-    left.addColorStop(0, 'rgba(255,255,255,0.14)')
-    left.addColorStop(0.7, 'rgba(255,255,255,0)')
-    left.addColorStop(1, 'rgba(0,0,0,0.2)')
-    ctx.fillStyle = left
-    ctx.fillRect(0, 0, cheek, h)
-    const right = ctx.createLinearGradient(w, 0, w - cheek, 0)
-    right.addColorStop(0, 'rgba(255,255,255,0.1)')
-    right.addColorStop(0.7, 'rgba(255,255,255,0)')
-    right.addColorStop(1, 'rgba(0,0,0,0.24)')
-    ctx.fillStyle = right
-    ctx.fillRect(w - cheek, 0, cheek, h)
-    ctx.restore()
-  }
+  const outer = KBD.outer * frame.h
+  const shadow = KBD.shadow * frame.v
+  const caseX = outer
+  const caseY = 0
+  const caseW = Math.max(1, w - outer * 2)
+  const caseH = Math.max(1, h - shadow)
+  const radius = Math.min(frame.caseR, caseH / 2, caseW / 2)
+
   if (!palette.hairline) {
-    const hi = Math.max(1, frame.v)
-    ctx.fillStyle = cssHex(palette.highlight)
-    ctx.globalAlpha = keyboardHighlightAlpha(palette.id)
-    ctx.fillRect(0, hi, w, hi * 2)
+    for (let i = 5; i >= 1; i--) {
+      const spread = i * 1.4 * frame.h
+      const drop = shadow * (0.25 + (i / 5) * 0.55)
+      ctx.globalAlpha = 0.05
+      ctx.fillStyle = cssHex(palette.caseDark)
+      roundBox(ctx, caseX - spread * 0.35, caseY + drop, caseW + spread * 0.7, caseH, radius)
+      ctx.fill()
+    }
     ctx.globalAlpha = 1
   }
-  const feltH = Math.max(palette.hairline ? 1 : frame.v, palette.feltPx * frame.v)
+
+  const wood = ctx.createLinearGradient(0, caseY, 0, caseY + caseH)
+  if (palette.hairline) {
+    wood.addColorStop(0, cssHex(palette.caseDark))
+    wood.addColorStop(1, cssHex(palette.caseDark))
+  } else if (palette.id === 'synth') {
+    wood.addColorStop(0, cssHex(palette.caseLight))
+    wood.addColorStop(1, cssHex(palette.caseDark))
+  } else {
+    wood.addColorStop(0, mixHex(palette.caseLight, palette.caseDark, 0.42))
+    wood.addColorStop(1, cssHex(palette.caseDark))
+  }
+  ctx.fillStyle = wood
+  roundBox(ctx, caseX, caseY, caseW, caseH, radius)
+  ctx.fill()
+
+  if (!palette.hairline) {
+    ctx.save()
+    roundBox(ctx, caseX, caseY, caseW, caseH, radius)
+    ctx.clip()
+    ctx.strokeStyle = rgba(palette.highlight, palette.id === 'synth' ? 0.28 : 0.7)
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(caseX + radius, caseY + 1.5)
+    ctx.lineTo(caseX + caseW - radius, caseY + 1.5)
+    ctx.stroke()
+    ctx.restore()
+  }
+
   const feltX = frame.cheek
   const feltW = Math.max(0, w - frame.cheek * 2)
-  ctx.fillStyle = cssHex(palette.felt)
+  const feltH = Math.max(palette.hairline ? 1 : 2, frame.feltH)
+  ctx.fillStyle = cssHex(palette.led ? palette.strip : palette.felt)
   ctx.beginPath()
-  ctx.roundRect(feltX, frame.feltY, feltW, feltH, Math.min(2, feltH / 2))
+  ctx.roundRect(feltX, frame.feltY, feltW, feltH, Math.min(1.5, feltH / 2))
   ctx.fill()
-  if (!palette.hairline && feltH > 2) {
-    ctx.fillStyle = 'rgba(255,255,255,0.16)'
-    ctx.fillRect(feltX + 2, frame.feltY, feltW - 4, Math.max(1, frame.v * 0.45))
-  }
-  if (palette.led) {
-    const stripH = Math.max(2, 6 * frame.v)
-    const stripY = 18 * frame.v
-    ctx.fillStyle = cssHex(palette.strip)
-    ctx.beginPath()
-    ctx.roundRect(frame.cheek, stripY, w - frame.cheek * 2, stripH, stripH / 2)
-    ctx.fill()
-  }
 }
 
 export function paintWhiteKeys(
@@ -222,10 +206,9 @@ export function paintWhiteKeys(
   palette: KeyboardPalette,
   v: number,
 ): void {
-  const spec = keySpecularAlpha(palette)
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i]!
-    paintWhiteKey(ctx, key.x, key.y, key.w, key.h, v, palette, spec)
+    paintWhiteKey(ctx, key.x, key.y, key.w, key.h, v, palette)
   }
 }
 
@@ -235,10 +218,9 @@ export function paintBlackKeys(
   palette: KeyboardPalette,
   v: number,
 ): void {
-  const spec = keySpecularAlpha(palette)
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i]!
-    paintBlackKey(ctx, key.x, key.y, key.w, key.h, v, palette, spec)
+    paintBlackKey(ctx, key.x, key.y, key.w, key.h, v, palette)
   }
 }
 
@@ -250,13 +232,10 @@ function paintWhiteKey(
   h: number,
   v: number,
   palette: KeyboardPalette,
-  spec: number,
 ): void {
   const radius = palette.hairline
     ? 0
-    : Math.min(WHITE_KEY_RADIUS * Math.max(v, 0.55), w / 2, h * 0.22)
-  const front = Math.min(h * 0.2, Math.max(2, KBD.whiteFront * v))
-  const topH = Math.max(1, h - front)
+    : Math.min(KBD.whiteRadius * Math.max(v, 0.65), w / 2, h * 0.3)
   ctx.save()
   traceBottomRound(ctx, x, y, w, h, radius)
   ctx.clip()
@@ -266,29 +245,17 @@ function paintWhiteKey(
     ctx.restore()
     return
   }
-  const top = ctx.createLinearGradient(x, y, x, y + topH)
+  const top = ctx.createLinearGradient(x, y, x, y + h)
   top.addColorStop(0, cssHex(ivoryCrown(palette.ivory)))
   top.addColorStop(IVORY_MID_STOP, cssHex(palette.ivory))
-  top.addColorStop(1, mixHex(palette.ivory, palette.ivorySide, 0.72))
+  top.addColorStop(1, cssHex(palette.ivorySide))
   ctx.fillStyle = top
-  ctx.fillRect(x, y, w, topH)
-  const face = ctx.createLinearGradient(x, y + topH, x, y + h)
-  face.addColorStop(0, cssHex(palette.ivorySide))
-  face.addColorStop(1, mixHex(palette.ivorySide, palette.caseDark, 0.32))
-  ctx.fillStyle = face
-  ctx.fillRect(x, y + topH, w, front)
-  ctx.fillStyle = rgba(0xffffff, spec)
-  ctx.fillRect(x + 1, y + topH, Math.max(0, w - 2), Math.max(1, v * 0.65))
-  ctx.fillRect(x + radius, y + 0.5, Math.max(0, w - radius * 2), Math.max(1, v * 0.7))
-  ctx.fillStyle = 'rgba(255,255,255,0.26)'
-  ctx.fillRect(x, y, Math.max(1, v * 0.65), h - radius)
-  ctx.fillStyle = rgba(palette.caseDark, 0.2)
-  ctx.fillRect(x + w - Math.max(1, v * 0.75), y, Math.max(1, v * 0.75), h - radius)
-  const shade = ctx.createLinearGradient(x, y + h - 9 * v, x, y + h)
+  ctx.fillRect(x, y, w, h)
+  const shade = ctx.createLinearGradient(x, y + h - 8 * v, x, y + h)
   shade.addColorStop(0, rgba(palette.caseDark, 0))
-  shade.addColorStop(1, rgba(palette.caseDark, 0.18))
+  shade.addColorStop(1, rgba(palette.caseDark, 0.08))
   ctx.fillStyle = shade
-  ctx.fillRect(x, y + h - 9 * v, w, 9 * v)
+  ctx.fillRect(x, y + h - 8 * v, w, 8 * v)
   ctx.restore()
 }
 
@@ -300,13 +267,10 @@ function paintBlackKey(
   h: number,
   v: number,
   palette: KeyboardPalette,
-  spec: number,
 ): void {
   const radius = palette.hairline
     ? 0
-    : Math.min(BLACK_KEY_RADIUS * Math.max(v, 0.55), w / 2, h * 0.2)
-  const front = Math.min(h * 0.16, Math.max(2, KBD.blackFront * v))
-  const topH = Math.max(1, h - front)
+    : Math.min(KBD.blackRadius * Math.max(v, 0.65), w / 2, h * 0.28)
   ctx.save()
   traceBottomRound(ctx, x, y, w, h, radius)
   ctx.clip()
@@ -316,24 +280,10 @@ function paintBlackKey(
     ctx.restore()
     return
   }
-  const body = ctx.createLinearGradient(x, y, x, y + topH)
-  body.addColorStop(
-    0,
-    mixHex(palette.ebony, palette.highlight, palette.id === 'synth' ? 0.08 : 0.18),
-  )
-  body.addColorStop(0.4, cssHex(palette.ebony))
+  const body = ctx.createLinearGradient(x, y, x, y + h)
+  body.addColorStop(0, cssHex(palette.ebony))
   body.addColorStop(1, cssHex(palette.ebonySide))
   ctx.fillStyle = body
-  ctx.fillRect(x, y, w, topH)
-  ctx.fillStyle = mixHex(palette.ebonySide, 0x000000, 0.35)
-  ctx.fillRect(x, y + topH, w, front)
-  ctx.fillStyle = rgba(palette.highlight, spec)
-  ctx.fillRect(x + 1, y, Math.max(0, w - 2), Math.max(1, v * 0.8))
-  ctx.fillStyle = rgba(0xffffff, palette.id === 'synth' ? 0.08 : 0.16)
-  ctx.fillRect(x + 1, y + topH, Math.max(0, w - 2), Math.max(1, v * 0.5))
-  ctx.fillStyle = 'rgba(255,255,255,0.22)'
-  ctx.fillRect(x, y + 1, Math.max(1, v * 0.55), topH)
-  ctx.fillStyle = 'rgba(0,0,0,0.35)'
-  ctx.fillRect(x + w - Math.max(1, v * 0.6), y + 1, Math.max(1, v * 0.6), topH)
+  ctx.fillRect(x, y, w, h)
   ctx.restore()
 }

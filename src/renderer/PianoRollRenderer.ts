@@ -13,7 +13,7 @@ import { type EmitCadence, scheduleEmissions } from './emitSchedule'
 import { EmberMistStrike } from './forLater/EmberMistStrike'
 import { ENABLE_FOR_LATER_VISUALS } from './forLater/visuals'
 import { KeyboardRenderer } from './KeyboardRenderer'
-import { KBD, keyFrame, proportionalKeyboardHeight, whiteKeyCount } from './keyboardMetrics'
+import { keyFrame, proportionalKeyboardHeight, whiteKeyCount } from './keyboardMetrics'
 import { subscribeKeyboardStyle } from './keyboardStyle'
 import { LiveNoteRenderer } from './LiveNoteRenderer'
 import { makeMaterialAtmosphere } from './materialAtmosphere'
@@ -379,9 +379,11 @@ export class PianoRollRenderer {
       }
     }
 
-    // Separator line between roll and keyboard
-    g.rect(0, rollHeight, canvasWidth, 1)
-    g.fill({ color: scene ? 0x000000 : this.theme.keyBorder, alpha: scene ? 0.08 : 1 })
+    // The walnut case is the boundary. A stroke here reads as a second rail.
+    if (!scene) {
+      g.rect(0, rollHeight, canvasWidth, 1)
+      g.fill({ color: this.theme.keyBorder, alpha: 1 })
+    }
   }
 
   private syncSceneBackdrop(
@@ -516,19 +518,16 @@ export class PianoRollRenderer {
     const warm = sceneForTheme(this.theme.id) !== null
     const lift = warm ? 3 : 1
 
-    // Hit line sits 4px (scaled) above the key bed, with a 24px honey glow.
+    // Notes meet the case. A soft glow sits in the roll; the felt is the only line.
     if (warm) {
+      if (this.theme.id === 'night') return
       const { pitchMin, pitchMax } = this.viewport.config
       const frame = keyFrame(w, whiteKeyCount(pitchMin ?? 21, pitchMax ?? 108), this.keyboardHeight)
-      const lineY = y - KBD.hitGap * frame.v
       const x = frame.cheek
       const span = Math.max(1, w - frame.cheek * 2)
-      if (this.theme.id !== 'night') {
-        g.rect(x, lineY + 2 * frame.v, span, 24 * frame.v)
-        g.fill({ color: glow, alpha: 0.18 })
-      }
-      g.rect(x, lineY, span, Math.max(1, 2 * frame.v))
-      g.fill({ color: this.theme.nowLine, alpha: this.theme.nowLineAlpha })
+      const glowH = Math.max(8, 18 * frame.v)
+      g.rect(x, y - glowH, span, glowH)
+      g.fill({ color: glow, alpha: 0.2 })
       return
     }
     g.rect(0, y - 18, w, 18)
