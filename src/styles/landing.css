@@ -218,10 +218,6 @@ html[data-route="hero"] #kbd-resizer {
   height: clamp(112px, 12vw, 170px);
   margin-top: -2px;
   border-radius: 16px;
-  background: var(--wood-dark, #5e3b24);
-  box-shadow:
-    0 18px 36px rgba(94, 59, 36, 0.28),
-    0 2px 0 rgba(255, 236, 214, 0.18) inset;
   overflow: hidden;
 }
 
@@ -230,8 +226,6 @@ html[data-route="hero"] #kbd-resizer {
   left: 0;
   right: 0;
   top: 0;
-  height: 46%;
-  background: linear-gradient(to bottom, rgba(154, 102, 64, 0.45), transparent);
   pointer-events: none;
 }
 
@@ -258,13 +252,6 @@ html[data-route="hero"] #kbd-resizer {
 .hero-white {
   position: relative;
   flex: 1;
-  border-radius: 0 0 4px 4px;
-  background: linear-gradient(
-    #fffaf3,
-    var(--key-ivory, #f6ebda) 28%,
-    var(--key-ivory-side, #dccbb2)
-  );
-  box-shadow: inset 0 -8px 8px rgba(94, 59, 36, 0.08);
 }
 
 .hero-white-light {
@@ -289,8 +276,6 @@ html[data-route="hero"] #kbd-resizer {
   position: absolute;
   top: 0;
   height: 60%;
-  border-radius: 0 0 3px 3px;
-  background: linear-gradient(var(--key-ebony, #3e2a1f), var(--key-ebony-side, #2e1f17));
 }
 
 .landing-kicker,

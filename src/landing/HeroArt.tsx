@@ -1,4 +1,14 @@
 import { createEffect, createSignal, For, onCleanup, onMount } from 'solid-js'
+import {
+  BLACK_KEY_RADIUS,
+  heroCaseShadow,
+  heroEbonyGradient,
+  heroIvoryGradient,
+  heroSheenBackground,
+  heroWhiteShadow,
+  SHEEN_HEIGHT,
+  WHITE_KEY_RADIUS,
+} from '../renderer/keyboardLook'
 import { blackKeyAfter, frameAt, type HeroSize, layoutFor, PARKED_TIME_S } from './notes'
 
 const PHONE_QUERY = '(max-width: 759px)'
@@ -102,13 +112,29 @@ export function HeroArt(props: { rush: boolean }) {
         </div>
         <div class="hero-glow" ref={glowEl} />
       </div>
-      <div class="hero-kb">
-        <div class="hero-kb-sheen" />
+      <div
+        class="hero-kb"
+        style={{ background: 'var(--wood-dark, #5e3b24)', 'box-shadow': heroCaseShadow() }}
+      >
+        <div
+          class="hero-kb-sheen"
+          style={{
+            height: `${Math.round(SHEEN_HEIGHT * 100)}%`,
+            background: heroSheenBackground(),
+          }}
+        />
         <div class="hero-felt" />
         <div class="hero-whites">
           <For each={Array.from({ length: size() === 'phone' ? 10 : 14 }, (_, i) => i)}>
             {(lane) => (
-              <div class="hero-white">
+              <div
+                class="hero-white"
+                style={{
+                  background: heroIvoryGradient(),
+                  'box-shadow': heroWhiteShadow(),
+                  'border-radius': `0 0 ${WHITE_KEY_RADIUS}px ${WHITE_KEY_RADIUS}px`,
+                }}
+              >
                 <span class="hero-white-light" ref={(el) => (keyLights[lane] = el)} />
               </div>
             )}
@@ -121,6 +147,8 @@ export function HeroArt(props: { rush: boolean }) {
                   style={{
                     left: `${((after + 1 - 0.29) / (size() === 'phone' ? 10 : 14)) * 100}%`,
                     width: `${(0.58 / (size() === 'phone' ? 10 : 14)) * 100}%`,
+                    background: heroEbonyGradient(),
+                    'border-radius': `0 0 ${BLACK_KEY_RADIUS}px ${BLACK_KEY_RADIUS}px`,
                   }}
                 />
               )}
