@@ -1,17 +1,49 @@
 import type { Application, Ticker } from 'pixi.js'
-import { Container, Graphics, RenderTexture, Sprite, Text, Texture, TilingSprite } from 'pixi.js'
+import {
+  Container,
+  FillGradient,
+  Graphics,
+  RenderTexture,
+  Sprite,
+  Text,
+  Texture,
+  TilingSprite,
+} from 'pixi.js'
 import { isBlackKey, MIDI_MAX, MIDI_MIN } from '../core/midi/types'
 import { shimmerStrength, whiteKeyColumn } from '../ui/liveEntrance'
 import { paintPrefs } from '../ui/paint'
 import { readCssColor } from './cssColor'
-import { type KeyPaint, mixColor, paintBlackKeys, paintCase, paintWhiteKeys } from './keyboardLook'
+import {
+  type HandStops,
+  handStops,
+  IVORY_MID_STOP,
+  type KeyPaint,
+  paintBlackKeys,
+  paintCase,
+  paintWhiteKeys,
+} from './keyboardLook'
 import { KBD, keyFrame, whiteKeyCount } from './keyboardMetrics'
-import { type KeyboardPalette, keyboardPalette } from './keyboardStyle'
+import { keyboardPalette } from './keyboardStyle'
 import { keyRect } from './keyGeometry'
 import { rangeLayerAlpha, rangeOverlay } from './rangeOverlay'
 import { keyboardMaterial } from './scenes'
 import { liveNoteColor, type Theme } from './theme'
 import type { Viewport } from './viewport'
+
+function handGradient(stops: HandStops): FillGradient {
+  return new FillGradient({
+    type: 'linear',
+    start: { x: 0, y: 0 },
+    end: { x: 0, y: 1 },
+    textureSpace: 'local',
+    textureSize: 16,
+    colorStops: [
+      { offset: 0, color: stops.top },
+      { offset: IVORY_MID_STOP, color: stops.mid },
+      { offset: 1, color: stops.toe },
+    ],
+  })
+}
 
 function collectKeys(
   positions: Map<number, { x: number; width: number }>,
@@ -322,14 +354,15 @@ export class KeyboardRenderer {
     //   blackSprite, blackPracticeHintLayer, blackActiveLayer, rangeLayer
     this.whiteSprite = new Sprite(this.whiteTexture ?? Texture.EMPTY)
     this.whiteSprite.y = yOffset
-    const whiteIndex = this.caseSprite ? 1 : 0
-    if (this.caseSprite) this.container.addChildAt(this.caseSprite, 0)
-    this.container.addChildAt(this.whiteSprite, whiteIndex)
+    if (this.caseSprite) {
+      this.caseSprite.y = yOffset
+      this.container.addChild(this.caseSprite)
+    }
+    this.container.addChild(this.whiteSprite)
 
     this.blackSprite = new Sprite(this.blackTexture ?? Texture.EMPTY)
     this.blackSprite.y = yOffset
-    // Case, white sprite, white hint, white active, then the black sprite.
-    this.container.addChildAt(this.blackSprite, whiteIndex + 3)
+    this.container.addChild(this.blackSprite)
 
     this.whitePracticeHintLayer.y = yOffset
     this.whiteActiveLayer.y = yOffset
@@ -341,10 +374,8 @@ export class KeyboardRenderer {
     this.rangeSatLayer.y = yOffset
     this.rangeLayer.y = yOffset
     this.pressLiftLayer.y = yOffset
-    this.container.addChildAt(this.shadowLayer, 0)
     this.paintArrivalLight(canvasWidth, keyboardHeight, yOffset)
-    this.container.addChild(this.lampLayer)
-    this.container.addChild(this.shimmerLayer)
+    this.stackKeyboard()
     this.rangeSignature = ''
     // Force a redraw of the hint layer on the next setPracticeHints call —
     // the geometry depends on the freshly-built viewport.
@@ -365,139 +396,69 @@ export class KeyboardRenderer {
     this.whiteActiveLayer.clear()
     this.blackActiveLayer.clear()
 
-    const { keyboardHeight, canvasWidth, pitchMin, pitchMax } = viewport.config
+    const { keyboardHeight } = viewport.config
     const positions = viewport.getAllKeyPositions()
     const fallback = liveNoteColor(this.theme)
     const walnut = keyboardMaterial(this.theme.id) === 'upright-walnut'
     const palette = keyboardPalette(this.theme.id)
-    const frame = keyFrame(
-      canvasWidth,
-      whiteKeyCount(pitchMin ?? MIDI_MIN, pitchMax ?? MIDI_MAX),
-      keyboardHeight,
-    )
-
-    if (!walnut) {
-      const halos: readonly [number, number][] = [
-        [10, 0.05],
-        [6, 0.1],
-        [3, 0.18],
-      ]
-      for (const [pitch, color] of activeByPitch) {
-        const pos = positions.get(pitch)
-        if (!pos) continue
-        const tint = color || fallback
-        const isBlack = isBlackKey(pitch)
-        const layer = isBlack ? this.blackActiveLayer : this.whiteActiveLayer
-        const { x, y, w, h, radius } = keyRect(pitch, pos, keyboardHeight)
-        for (const [expand, alpha] of halos) {
-          layer.roundRect(x - expand, y - expand, w + expand * 2, h + expand * 2, radius + expand)
-          layer.fill({ color: tint, alpha })
-        }
-        layer.roundRect(x, y, w, h, radius)
-        layer.fill({ color: tint, alpha: isBlack ? 0.92 : 0.78 })
-      }
-      return
-    }
 
     for (const [pitch, color] of activeByPitch) {
       const pos = positions.get(pitch)
       if (!pos) continue
       const tint = color || fallback
-      const left = tint === palette.noteLh || (tint !== palette.noteRh && pitch < 60)
       const isBlack = isBlackKey(pitch)
       const layer = isBlack ? this.blackActiveLayer : this.whiteActiveLayer
-      const { x, y, w, h } = keyRect(pitch, pos, keyboardHeight)
-      const hand = left ? palette.noteLh : palette.noteRh
-      const darker = left ? palette.pressLh : palette.pressRh
-      if (isBlack) this.paintPressedBlack(layer, x, y, w, h, frame.v, palette, hand, darker)
-      else this.paintPressedWhite(layer, x, y, w, h, frame.v, palette, hand, darker)
-      if (palette.led) {
-        const stripH = Math.max(2, 6 * frame.v)
-        const stripY = 18 * frame.v
-        layer.roundRect(x, stripY, w, stripH, stripH / 2)
-        layer.fill({ color: hand })
-        layer.roundRect(x - 2, stripY - 2, w + 4, stripH + 4, stripH)
-        layer.fill({ color: hand, alpha: 0.35 })
-      }
+      const { x, y, w, h, radius } = keyRect(pitch, pos, keyboardHeight)
+      const left = tint === palette.noteLh || (tint !== palette.noteRh && pitch < 60)
+      const fill = walnut
+        ? this.handFill(left ? palette.noteLh : palette.noteRh, left)
+        : { color: tint, alpha: 1 }
+      this.fillKey(layer, x, y, w, h, palette.hairline ? 0 : radius, fill)
     }
   }
 
-  // Slot, shortened key, hand-coloured crown, and a darker front face.
-  // Solid fills only — the chord redraws when the pitch set changes, and a
-  // filter here would run over the moving roll.
-  private paintPressedWhite(
+  // One clipped key. White presses sit under the black-key sprite, so a
+  // black key stays black where it overlaps. Rebuilt only when the chord changes.
+  private fillKey(
     layer: Graphics,
     x: number,
     y: number,
     w: number,
     h: number,
-    v: number,
-    palette: KeyboardPalette,
-    hand: number,
-    darker: number,
+    radius: number,
+    fill: FillGradient | { color: number; alpha?: number },
   ): void {
-    const drop = Math.min(h * 0.32, KBD.pressDrop * v)
-    const slot = mixColor(palette.gap, 0x000000, 0.22)
-    const crown = mixColor(hand, 0xffffff, 0.38)
-    const edge = Math.max(1, v)
-    layer.rect(x, y, w, drop).fill({ color: slot })
-    layer.rect(x, y, w, Math.max(1, drop * 0.42)).fill({ color: 0x000000, alpha: 0.42 })
-    layer.rect(x, y, edge, drop).fill({ color: palette.caseLight, alpha: 0.28 })
-    layer.rect(x + w - edge, y, edge, drop).fill({ color: 0x000000, alpha: 0.38 })
-
-    const ky = y + drop
-    const kh = Math.max(8, h - drop)
-    const front = Math.min(kh - 4, Math.max(2, KBD.whiteFront * v))
-    const topH = kh - front
-    const radius = palette.hairline ? 0 : Math.min(front / 2, (KBD.whiteFrontR / 25) * w)
-    if (radius > 0.5) {
-      layer.roundRect(x, ky + topH - radius, w, front + radius, radius).fill({ color: darker })
+    const r = Math.max(0, Math.min(radius, w / 2, h / 2))
+    layer.moveTo(x, y)
+    layer.lineTo(x + w, y)
+    if (r < 0.5) {
+      layer.lineTo(x + w, y + h)
+      layer.lineTo(x, y + h)
     } else {
-      layer.rect(x, ky + topH, w, front).fill({ color: darker })
+      layer.lineTo(x + w, y + h - r)
+      layer.arcTo(x + w, y + h, x + w - r, y + h, r)
+      layer.arcTo(x, y + h, x, y + h - r, r)
     }
-    layer.rect(x, ky, w, topH).fill({ color: hand })
-    layer.rect(x, ky, w, Math.max(2, topH * 0.24)).fill({ color: crown, alpha: 0.9 })
-    layer.rect(x, ky + topH * 0.62, w, topH * 0.38).fill({ color: darker, alpha: 0.42 })
-    layer.rect(x, ky, w, edge).fill({ color: crown })
-    layer.rect(x, ky, edge, topH).fill({ color: 0xffffff, alpha: 0.18 })
-    layer.rect(x + w - edge, ky, edge, topH).fill({ color: 0x000000, alpha: 0.22 })
-    layer.rect(x, ky + kh - edge, w, edge).fill({ color: 0x000000, alpha: 0.32 })
+    layer.closePath()
+    layer.fill(fill)
   }
 
-  private paintPressedBlack(
-    layer: Graphics,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    v: number,
-    palette: KeyboardPalette,
-    hand: number,
-    darker: number,
-  ): void {
-    const drop = Math.min(h * 0.28, KBD.pressDrop * v)
-    const crown = mixColor(hand, 0xffffff, 0.2)
-    const toe = mixColor(darker, palette.ebonySide, 0.35)
-    const edge = Math.max(1, v * 0.6)
-    layer.rect(x, y, w, drop + 1).fill({ color: palette.ivory })
-    layer.rect(x, y, w, Math.max(1, v)).fill({ color: 0x000000, alpha: 0.28 })
+  private handFills = new Map<string, FillGradient>()
 
-    const ky = y + drop
-    const kh = Math.max(6, h - drop)
-    const front = Math.min(kh - 3, Math.max(2, KBD.blackFront * v))
-    const topH = kh - front
-    const topR = palette.hairline ? 0 : (KBD.blackTopR / KBD.blackW) * w
-    const frontR = palette.hairline ? 0 : (KBD.blackFrontR / KBD.blackW) * w
-    layer.roundRect(x, ky, w, topH, topR).fill({ color: hand })
-    layer.rect(x, ky, w, Math.max(1, v)).fill({ color: crown, alpha: 0.75 })
-    layer.rect(x, ky + topH * 0.58, w, topH * 0.42).fill({ color: darker, alpha: 0.38 })
-    layer.roundRect(x, ky + topH, w, front, frontR).fill({ color: toe })
-    layer.rect(x, ky + 1, edge, topH).fill({ color: 0xffffff, alpha: 0.16 })
-    layer.rect(x + w - edge, ky + 1, edge, topH).fill({ color: 0x000000, alpha: 0.32 })
+  private handFill(hand: number, left: boolean): FillGradient {
+    const key = `${this.theme.id}:${hand}:${left ? 'l' : 'r'}`
+    const cached = this.handFills.get(key)
+    if (cached) return cached
+    const stops = handStops(hand, left, this.theme.id)
+    const fill = handGradient(stops)
+    this.handFills.set(key, fill)
+    return fill
   }
 
   updateTheme(theme: Theme): void {
     this.theme = theme
+    for (const fill of this.handFills.values()) fill.destroy()
+    this.handFills.clear()
     // Colors baked into the active-key fill changed — force a redraw.
     this.activeLayerDirty = true
     // Practice hint colours follow the active theme accent.
@@ -529,8 +490,7 @@ export class KeyboardRenderer {
       const v = keyboardHeight / KBD.caseH
       text.anchor.set(0.5, 0.5)
       text.x = pos.x + pos.width / 2
-      // Caption sits 8px above the front face (key-bed y 106 of 140).
-      text.y = yOffset + KBD.keysY * v + 106 * v + 8 * v
+      text.y = yOffset + (KBD.keysY + KBD.keysH * 0.82) * v
       text.style.fontSize = Math.max(8, 12 * (pos.width / KBD.pitch))
       this.container.addChild(text)
       this.keyLabels.push(text)
@@ -614,25 +574,22 @@ export class KeyboardRenderer {
   private paintPressLift(viewport: Viewport, dimAlpha: number): void {
     this.pressLiftLayer.clear()
     if (dimAlpha < 0.02 || this.pressedPitches.size === 0) return
-    const { canvasWidth, keyboardHeight, pitchMin, pitchMax } = viewport.config
+    const { keyboardHeight } = viewport.config
     const positions = viewport.getAllKeyPositions()
-    const frame = keyFrame(
-      canvasWidth,
-      whiteKeyCount(pitchMin ?? MIDI_MIN, pitchMax ?? MIDI_MAX),
-      keyboardHeight,
-    )
+    const palette = keyboardPalette(this.theme.id)
+    const walnut = keyboardMaterial(this.theme.id) === 'upright-walnut'
+    const fallback = liveNoteColor(this.theme)
     for (const [pitch, color] of this.pressedPitches) {
       if (pitch >= this.playStart && pitch <= this.playEnd) continue
       const pos = positions.get(pitch)
       if (!pos) continue
-      const { x, y, w, h } = keyRect(pitch, pos, keyboardHeight)
-      const black = isBlackKey(pitch)
-      const drop = Math.min(h * 0.32, KBD.pressDrop * frame.v)
-      const body = black
-        ? (KBD.blackTop / KBD.blackH) * (h - drop)
-        : (KBD.whiteTopH / KBD.keysH) * (h - drop)
-      this.pressLiftLayer.roundRect(x, y + drop, w, Math.max(1, body), black ? 2 * frame.h : 0)
-      this.pressLiftLayer.fill({ color: color || 0xffffff, alpha: 0.92 })
+      const tint = color || fallback
+      const left = tint === palette.noteLh || (tint !== palette.noteRh && pitch < 60)
+      const { x, y, w, h, radius } = keyRect(pitch, pos, keyboardHeight)
+      const fill = walnut
+        ? this.handFill(left ? palette.noteLh : palette.noteRh, left)
+        : { color: tint, alpha: 1 }
+      this.fillKey(this.pressLiftLayer, x, y, w, h, palette.hairline ? 0 : radius, fill)
     }
   }
 
@@ -640,6 +597,31 @@ export class KeyboardRenderer {
   // empty so a theme swap can clear an older fallboard without a leftover.
   private drawCase(_canvasWidth: number, _keyboardHeight: number, _walnut: boolean): void {
     this.caseLayer.clear()
+  }
+
+  // White presses sit under the black-key sprite, so a lit white key cannot
+  // paint over the ebony that overlaps it.
+  private stackKeyboard(): void {
+    const order = [
+      this.shadowLayer,
+      this.caseSprite,
+      this.whiteSprite,
+      this.whitePracticeHintLayer,
+      this.whiteActiveLayer,
+      this.blackSprite,
+      this.blackPracticeHintLayer,
+      this.blackActiveLayer,
+      this.caseLayer,
+      this.rangeSatLayer,
+      this.rangeLayer,
+      this.pressLiftLayer,
+      ...this.keyLabels,
+      this.lampLayer,
+      this.shimmerLayer,
+    ]
+    for (const child of order) {
+      if (child) this.container.addChild(child)
+    }
   }
 
   // Contact shadow on the wall and a small pool of hand-coloured light.
@@ -693,9 +675,8 @@ export class KeyboardRenderer {
       const pos = positions.get(pitch)
       if (!pos) continue
       const rect = keyRect(pitch, pos, keyboardHeight)
-      const dip = 2
       this.shimmerLayer
-        .roundRect(rect.x, rect.y + dip, rect.w, Math.max(1, rect.h - dip), rect.radius)
+        .roundRect(rect.x, rect.y, rect.w, rect.h, rect.radius)
         .fill({ color: pitch < 60 ? palette.noteLh : palette.noteRh, alpha })
     }
   }

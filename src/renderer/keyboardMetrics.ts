@@ -1,40 +1,37 @@
 import { isBlackKey, MIDI_MAX, MIDI_MIN } from '../core/midi/types'
 
-// Walnut upright, node 28:21911, at a 26px white-key pitch. Focus zoom scales
-// every length from that pitch. The case height stays in the same proportion
-// unless the player has dragged the keyboard taller or shorter.
+// Hero case, node-matched to the landing keyboard at a 26px white-key pitch.
+// The case is a slim rim, a thin felt line, and a short foot — the keys are
+// the body. `outer` and `shadow` are the transparent margin that lets the
+// rounded ends and the drop shadow sit on the scene.
 export const KBD = {
   pitch: 26,
-  cheek: 44,
-  caseH: 198,
-  caseR: 18,
-  keysY: 46,
-  keysH: 140,
-  feltY: 40,
-  feltH: 6,
-  whiteTopH: 130,
-  whiteFront: 10,
-  whiteGap: 1,
-  whiteFrontR: 6,
-  blackW: 16,
-  blackOff: 17.5,
-  blackH: 88,
-  blackTop: 80,
-  blackFront: 8,
-  blackTopR: 2,
-  blackFrontR: 3,
-  glassTop: 38,
-  glassH: 148,
+  outer: 12,
+  side: 16,
+  cheek: 28,
+  caseH: 164,
+  caseR: 16,
+  keysY: 18,
+  keysH: 110,
+  foot: 22,
+  shadow: 14,
+  feltY: 14,
+  feltH: 3,
+  whiteGap: 3,
+  whiteRadius: 4,
+  blackW: 15.08,
+  blackOff: 18.46,
+  blackH: 66,
+  blackRadius: 3,
+  glassTop: 18,
+  glassH: 110,
   hitGap: 4,
-  // Travel of a pressed key, in the 198px case. At the 120px play height
-  // this is about 8px — enough to show the slot and the shaded front.
-  pressDrop: 14,
 } as const
 
 export interface KeyFrame {
   /** Horizontal scale. 1 means a 26px white key. */
   h: number
-  /** Vertical scale. 1 means a 198px case. */
+  /** Vertical scale. 1 means a 164px case. */
   v: number
   pitch: number
   cheek: number
@@ -56,7 +53,8 @@ export function whiteKeyCount(pitchMin: number, pitchMax: number): number {
   return count
 }
 
-// canvas = whiteKeys * pitch + two cheeks, with cheek / pitch = 44 / 26.
+// canvas = whiteKeys * pitch + two cheeks. Cheek is the outer margin plus
+// the 16px wood beside the keys.
 export function horizontalScale(canvasWidth: number, whites: number): number {
   const units = Math.max(1, whites) + (KBD.cheek * 2) / KBD.pitch
   return canvasWidth / units / KBD.pitch
