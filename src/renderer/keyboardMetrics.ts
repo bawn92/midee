@@ -26,7 +26,9 @@ export const KBD = {
   glassTop: 38,
   glassH: 148,
   hitGap: 4,
-  pressDrop: 3,
+  // Travel of a pressed key, in the 198px case. At the 120px play height
+  // this is about 8px — enough to show the slot and the shaded front.
+  pressDrop: 14,
 } as const
 
 export interface KeyFrame {
