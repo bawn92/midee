@@ -1420,7 +1420,8 @@ export class App {
   }
 
   // Transpose a hardware note so the controller's lowest key plays the
-  // window's lowest key. Uncalibrated 24- and 25-key windows assume middle C.
+  // window's lowest key. Uncalibrated Piano M spans (24, 48, 72) and 25-key
+  // windows assume middle C.
   // Note-off uses the pitch chosen at note-on.
   private takeMidiPitch(raw: number, down: boolean): number {
     if (!down) {

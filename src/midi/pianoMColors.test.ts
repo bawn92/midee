@@ -32,6 +32,21 @@ describe('Piano M theme colours', () => {
     ])
   })
 
+  it('sends one shared lowest note for two Piano M boards', () => {
+    const range = {
+      ...FULL_PIANO_RANGE,
+      start: 60,
+      size: 48,
+      followMidi: false,
+      calibrated: false,
+      controllerLow: null,
+      fitToRange: true,
+    }
+    expect(pianoMPaletteMessages(themeHandLights(goldenHourTheme), range)[0]).toEqual([
+      0xbb, 23, 60,
+    ])
+  })
+
   it('follows a calibrated lowest key', () => {
     const range = {
       ...FULL_PIANO_RANGE,

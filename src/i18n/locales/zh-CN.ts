@@ -8,7 +8,7 @@ const zhCN: Messages = {
     '左手和右手使用通道 12/13。根据音轨音高估计左右手；单音轨文件在中央 C 处分开。不提供指法提示。',
   'keyLights.pianoM': 'ROLI Piano M',
   'keyLights.pianoMHint':
-    'Piano M 的出厂固件不会点亮收到的音符。请下载主题灯光脚本，并在 ROLI Dashboard 中把它拖到设备上。如果已经装了 Synthesia 脚本，用这个文件覆盖它。通道 12 和 13 仍是左手和右手。场景的左右手颜色从这些通道发出——左手玫瑰色、右手蜜色——更换场景时会再发一次。灯光跟随“适配你的音域”、正在练习的手以及键盘校准。在 Dashboard 中恢复出厂设置可还原原固件。',
+    'Piano M 的出厂固件不会点亮收到的音符。用 DNA 接口拼在一起的两台是一个 48 键键盘，共用一个 USB 口；三台是 72 键。在键盘音域卡片上选择 24、48 或 72，这些音域会吸附到 C。请下载 piano-m-theme-lights.littlefoot，并在 ROLI Dashboard 中把这个文件拖到 Piano M 上。如果设备上已有 Synthesia 脚本或旧的 piano-m-theme-lights.littlefoot，把这个文件拖到它上面以替换。每台拼在一起的键盘运行同一份脚本：每台只点亮自己的 24 个键，依据它在这一排中的位置和共用的最低音。通道 12 和 13 仍是左手和右手。场景的左右手颜色从这些通道发出——左手玫瑰色、右手蜜色——更换场景时会再发一次。灯光跟随“适配你的音域”、正在练习的手以及键盘校准。在 Dashboard 中恢复出厂设置可还原原固件。',
   'keyLights.pianoMScript': '下载 piano-m-theme-lights.littlefoot',
   'keyLights.keeziHint':
     'KEEZI：通过 KEENEKT 连接。手部颜色使用 Visualizer → Synthesia，文件或音轨通道使用 → DAW。',

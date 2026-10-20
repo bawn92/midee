@@ -47,6 +47,15 @@ describe('KeyboardRangeControl', () => {
     expect(getKeyboardRange()).toMatchObject({ start: 48, size: 24 })
     expect(root.querySelector('.kbd-range-notes')!.textContent).toBe('C3–B4')
 
+    const pair = [...host.querySelectorAll<HTMLButtonElement>('.kbd-range-preset')].find(
+      (b) => b.textContent === '48',
+    )!
+    pair.click()
+    // Two Piano M boards snap to a 48-key C span. The middle of the piano lands on C2.
+    expect(getKeyboardRange()).toMatchObject({ start: 36, size: 48 })
+    expect(root.querySelector('.kbd-range-notes')!.textContent).toBe('C2–B5')
+    preset.click()
+
     host.querySelector<HTMLButtonElement>('#kbd-range-up')!.click()
     expect(getKeyboardRange().start).toBe(49)
     expect(root.querySelector('.kbd-range-notes')!.textContent).toBe('C#3–C5')
