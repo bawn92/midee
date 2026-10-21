@@ -8,7 +8,7 @@ const script = readFileSync(
 )
 
 describe('Piano M littlefoot script', () => {
-  it('keeps hand colours on channels 12 and 13 and one shared lowest note', () => {
+  it('keeps hand colours on channels 12 and 13 and this board’s lowest note', () => {
     expect(script).toContain('const int keysPerBlock = 24')
     expect(script).toContain('channel == 11')
     expect(script).toContain('channel == 12')
@@ -28,13 +28,13 @@ describe('Piano M littlefoot script', () => {
     expect(script).not.toContain('return -1')
   })
 
-  it('lights this board from the DNA position and never stays dark', () => {
-    expect(script).toContain('getHorizontalDistFromMaster()')
-    expect(script).toContain('getClusterXpos()')
-    expect(script).toContain('isMasterBlock()')
-    expect(script).toContain('if (isMasterBlock()) return 0')
-    expect(script).toContain('return 1')
-    expect(script).toContain('raw / 6')
+  it('lights only this board from the lowest note Piano Club sends', () => {
+    expect(script).toContain('int note = baseNote + key')
+    expect(script).not.toContain('getHorizontalDistFromMaster')
+    expect(script).not.toContain('getClusterXpos')
+    expect(script).not.toContain('isMasterBlock')
+    expect(script).not.toContain('boardIndex')
+    expect(script).not.toContain('boardSteps')
   })
 
   it('records a held key for lighting and keeps guide notes on top', () => {

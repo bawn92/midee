@@ -20,8 +20,14 @@ export const en = {
     'Uses channels 12/13 for left/right hands. Hands are estimated by track pitch; single-track files split at middle C. No finger hints.',
   'keyLights.pianoM': 'ROLI Piano M',
   'keyLights.pianoMHint':
-    'Factory Piano M firmware does not light incoming notes. Two boards snapped together with the DNA connectors are one 48-key keyboard on a single USB port; three boards are 72. On the Keyboard range card, choose 24, 48, or 72 — those spans snap to C. Download piano-m-theme-lights.littlefoot and drag that file onto every Piano M in ROLI Dashboard, including each snapped board. If the Synthesia script or an older piano-m-theme-lights.littlefoot is already on the device, drop this file on top of it so Dashboard replaces it. Each board runs this script on its own and lights only its own 24 keys. Channels 12 and 13 stay left and right. The scene’s hand colours go out on those channels — rose on the left and honey on the right — and they are sent again when you change scene. Lights follow Fit to your range, the hand you are practising, and your keyboard calibration. The board on the USB cable lights the low 24 keys. The next board lights the following 24, even when the grid does not report a position, so a board does not stay dark. Playing and the octave buttons stay with the factory key handler. Reload this file on both boards. If the right board still plays the same notes as the left, press both octave buttons to reset the octave.  The factory handler then puts the right board 24 semitones higher. Holding all three top buttons restores the factory program and removes these lights. A key you are holding lights in the hand colour, and a guide note stays brighter on top.',
+    'Factory Piano M firmware does not light incoming notes. Each board is its own MIDI port, often with the same name. Two boards are 48 keys and three are 72. Choose All Piano M boards so each guide note goes only to the board that plays it. That board is told its own lowest note, and hand colours go to every board. On the Keyboard range card, choose 24, 48, or 72 — those spans snap to C. Download piano-m-theme-lights.littlefoot and drag that file onto every Piano M in ROLI Dashboard. If the Synthesia script or an older copy is already on the device, drop this file on top of it. Reload this file on every board. Each board lights only its own 24 keys. Channels 12 and 13 stay left and right. The scene’s hand colours go out on those channels — rose on the left and honey on the right — and they are sent again when you change scene. Lights follow Fit to your range, the hand you are practising, and your keyboard calibration. Playing and the octave buttons stay with the factory key handler. Identify flashes board 1, then board 2. If the right board flashes first, swap the boards. The order is remembered. If both boards play the same notes, press both octave buttons to reset the octave. The factory handler then puts the right board 24 semitones higher. Holding all three top buttons restores the factory program and removes these lights. A key you are holding lights in the hand colour, and a guide note stays brighter on top.',
   'keyLights.pianoMScript': 'Download piano-m-theme-lights.littlefoot',
+  'keyLights.pianoMAll': 'All Piano M boards ({count})',
+  'keyLights.pianoMBoard': 'Piano M board {n}',
+  'keyLights.pianoMIdentify': 'Identify',
+  'keyLights.pianoMSwap': 'Swap boards',
+  'keyLights.pianoMOrder':
+    'Identify flashes board 1, then board 2. Swap if the right board flashes first. The order is remembered.',
   'keyLights.keeziHint':
     'KEEZI: connect through KEENEKT. Use Visualizer → Synthesia for hand colors, or → DAW for file/track channels.',
   'keyLights.title': 'Key Lights',
@@ -46,9 +52,9 @@ export const en = {
   'pianoM.guide.title': 'How many Piano Ms are snapped together?',
   'pianoM.guide.dismiss': 'Dismiss',
   'pianoM.guide.together':
-    'Snapped boards act as one keyboard on a single USB port. The board on the cable plays the low 24 keys. Each board to the right continues 24 semitones higher.',
+    'Snapped boards act as one keyboard. Each board is its own MIDI port, often with the same name. The left board plays the low 24 keys. Each board to the right continues 24 semitones higher.',
   'pianoM.guide.script':
-    'Load the key-lights script on every board. Drop piano-m-theme-lights.littlefoot onto each Piano M in ROLI Dashboard, including each snapped board. If an older copy is already there, drop this file on top of it.',
+    'Load the key-lights script on every board. Choose All Piano M boards. Each guide note goes only to the board that plays it, and that board is told its own lowest note. Hand colours go to every board. Identify flashes board 1, then board 2. If the right board flashes first, swap the boards. The order is remembered. Drop piano-m-theme-lights.littlefoot onto each Piano M in ROLI Dashboard. If an older copy is already there, drop this file on top of it.',
   'pianoM.guide.octave':
     'If both boards play the same notes, press both octave buttons to reset the octave. The right board then sits 24 semitones higher.',
   'pianoM.guide.suggest': 'A note arrived past the first 24 keys. That is a second Piano M.',

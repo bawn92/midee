@@ -16,8 +16,14 @@ const pl: Messages & Record<PolishPluralKey, string> = {
     'Kanały 12/13 dla lewej/prawej ręki. Ręce są szacowane z wysokości dźwięków ścieżki; pliki z jedną ścieżką są dzielone przy środkowym C. Bez wskazówek palców.',
   'keyLights.pianoM': 'ROLI Piano M',
   'keyLights.pianoMHint':
-    'Fabryczne oprogramowanie Piano M nie zapala nut przychodzących. Dwa instrumenty spięte złączami DNA to jedna klawiatura 48-klawiszowa na jednym porcie USB; trzy to 72 klawisze. Na karcie zakresu wybierz 24, 48 albo 72 — te zakresy przylegają do C. Pobierz piano-m-theme-lights.littlefoot i upuść ten plik na każde Piano M w ROLI Dashboard. Jeśli skrypt Synthesia albo starsza kopia jest już wgrana, upuść ten plik na nią. Każda klawiatura uruchamia skrypt osobno i zapala tylko swoje 24 klawisze. Kanały 12 i 13 zostają lewą i prawą ręką — róż po lewej i miód po prawej — i są wysyłane ponownie po zmianie sceny. Światła idą za Dopasuj do zakresu, ćwiczoną ręką i kalibracją klawiatury. Klawiatura na kablu USB zapala dolne 24 klawisze. Następna zapala kolejne 24, nawet gdy siatka nie poda pozycji, więc nie zostaje ciemna. Gra i przyciski oktawy zostają przy fabrycznej obsłudze. Wgraj ten plik ponownie na obie klawiatury. Jeśli prawa nadal gra te same nuty co lewa, naciśnij oba przyciski oktawy, aby zresetować oktawę.  Fabryczna obsługa ustawia wtedy prawą o 24 półtony wyżej. Przytrzymanie wszystkich trzech górnych przycisków przywraca program fabryczny i usuwa te światła. Przytrzymany klawisz świeci kolorem ręki, a nuta wskazówki zostaje jaśniejsza na wierzchu.',
+    'Fabryczne oprogramowanie Piano M nie zapala nut przychodzących. Każda klawiatura ma własny port MIDI, często pod tą samą nazwą. Dwie klawiatury to 48 klawiszy, trzy to 72. Wybierz Wszystkie Piano M, aby każda nuta wskazówki szła tylko do klawiatury, która ją gra. Ta klawiatura dostaje własny najniższy dźwięk, a kolory rąk idą do każdej. Na karcie zakresu wybierz 24, 48 albo 72 — te zakresy przylegają do C. Pobierz piano-m-theme-lights.littlefoot i upuść ten plik na każde Piano M w ROLI Dashboard. Jeśli skrypt Synthesia albo starsza kopia jest już wgrana, upuść ten plik na nią. Wgraj ten plik ponownie na każdą klawiaturę. Każda zapala tylko swoje 24 klawisze. Kanały 12 i 13 zostają lewą i prawą ręką — róż po lewej i miód po prawej — i są wysyłane ponownie po zmianie sceny. Światła idą za Dopasuj do zakresu, ćwiczoną ręką i kalibracją klawiatury. Gra i przyciski oktawy zostają przy fabrycznej obsłudze. Rozpoznaj miga klawiaturą 1, potem 2. Zamień, jeśli prawa miga pierwsza. Kolejność zostaje zapamiętana. Jeśli prawa nadal gra te same nuty co lewa, naciśnij oba przyciski oktawy, aby zresetować oktawę. Fabryczna obsługa ustawia wtedy prawą o 24 półtony wyżej. Przytrzymanie wszystkich trzech górnych przycisków przywraca program fabryczny i usuwa te światła. Przytrzymany klawisz świeci kolorem ręki, a nuta wskazówki zostaje jaśniejsza na wierzchu.',
   'keyLights.pianoMScript': 'Pobierz piano-m-theme-lights.littlefoot',
+  'keyLights.pianoMAll': 'Wszystkie Piano M ({count})',
+  'keyLights.pianoMBoard': 'Piano M {n}',
+  'keyLights.pianoMIdentify': 'Rozpoznaj',
+  'keyLights.pianoMSwap': 'Zamień klawiatury',
+  'keyLights.pianoMOrder':
+    'Rozpoznaj miga klawiaturą 1, potem 2. Zamień, jeśli prawa miga pierwsza. Kolejność zostaje zapamiętana.',
   'keyLights.keeziHint':
     'KEEZI: połącz przez KEENEKT. Użyj Visualizer → Synthesia dla kolorów rąk lub → DAW dla kanałów pliku/ścieżek.',
   'keyLights.title': 'Podświetlenie klawiszy',
@@ -43,9 +49,9 @@ const pl: Messages & Record<PolishPluralKey, string> = {
   'pianoM.guide.title': 'Ile Piano M jest spiętych razem?',
   'pianoM.guide.dismiss': 'Zamknij',
   'pianoM.guide.together':
-    'Spięte klawiatury działają jak jedna klawiatura na jednym porcie USB. Ta na kablu gra dolne 24 klawisze. Każda po prawej jest o 24 półtony wyżej.',
+    'Spięte klawiatury działają jak jedna klawiatura. Każda ma własny port MIDI, często pod tą samą nazwą. Lewa gra dolne 24 klawisze. Każda po prawej jest o 24 półtony wyżej.',
   'pianoM.guide.script':
-    'Wgraj skrypt świateł na każdą klawiaturę. Upuść piano-m-theme-lights.littlefoot na każde Piano M w ROLI Dashboard, także na każdą spiętą. Jeśli jest już starsza kopia, upuść ten plik na nią.',
+    'Wgraj skrypt świateł na każdą klawiaturę. Wybierz Wszystkie Piano M. Każda nuta wskazówki idzie tylko do klawiatury, która ją gra, a ta dostaje własny najniższy dźwięk. Kolory rąk idą do każdej. Rozpoznaj miga klawiaturą 1, potem 2. Zamień, jeśli prawa miga pierwsza. Kolejność zostaje zapamiętana. Upuść piano-m-theme-lights.littlefoot na każde Piano M w ROLI Dashboard. Jeśli jest już starsza kopia, upuść ten plik na nią.',
   'pianoM.guide.octave':
     'Jeśli obie klawiatury grają te same nuty, naciśnij oba przyciski oktawy, aby zresetować oktawę. Prawa jest wtedy o 24 półtony wyżej.',
   'pianoM.guide.suggest': 'Przyszła nuta poza pierwszymi 24 klawiszami. To drugi Piano M.',

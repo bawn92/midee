@@ -3,11 +3,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { MasterClock } from '../core/clock/MasterClock'
 import { KeyLights } from '../midi/KeyLights'
 import { MidiInputManager } from '../midi/MidiInputManager'
+import { PIANO_M_ALL_ID, resetPianoMPortsForTests } from '../midi/pianoMPorts'
 import { KeyLightsSettings } from './KeyLightsSettings'
 
 afterEach(() => {
   vi.unstubAllGlobals()
   localStorage.clear()
+  resetPianoMPortsForTests()
 })
 
 describe('Key Lights settings', () => {
@@ -71,6 +73,59 @@ describe('Key Lights settings', () => {
     const script = screen.getByRole('link', { name: /piano-m-theme-lights\.littlefoot/ })
     expect(script.getAttribute('href')).toBe('/piano-m-theme-lights.littlefoot')
     expect(script.getAttribute('download')).toBe('piano-m-theme-lights.littlefoot')
+    lights.dispose()
+    view.unmount()
+  })
+
+  it('offers every Piano M and distinct board names when the ports match', () => {
+    localStorage.clear()
+    resetPianoMPortsForTests()
+    vi.stubGlobal('navigator', { requestMIDIAccess: vi.fn() })
+    const clock = { subscribeTransport: () => () => {}, playing: false } as unknown as MasterClock
+    const lights = new KeyLights(clock)
+    const midiInput = new MidiInputManager(clock)
+    const left = {
+      id: 'lumi-a',
+      name: 'LUMI Keys BLOCK',
+      manufacturer: 'ROLI',
+      state: 'connected',
+      send: vi.fn(),
+    }
+    const right = {
+      id: 'lumi-b',
+      name: 'LUMI Keys BLOCK',
+      manufacturer: 'ROLI',
+      state: 'connected',
+      send: vi.fn(),
+    }
+    const access = {
+      outputs: new Map([
+        [left.id, left],
+        [right.id, right],
+      ]),
+    } as unknown as MIDIAccess
+    const view = render(() => <KeyLightsSettings lights={lights} midiInput={midiInput} />)
+    lights.setAccess(access)
+    midiInput.midiAccess.set(access)
+    const device = screen.getByLabelText('Light device') as HTMLSelectElement
+    expect(device.value).toBe(PIANO_M_ALL_ID)
+    expect(screen.getByRole('option', { name: 'All Piano M boards (2)' })).toBeTruthy()
+    expect(
+      (screen.getByRole('option', { name: 'Piano M board 1' }) as HTMLOptionElement).value,
+    ).toBe('lumi-a')
+    expect(
+      (screen.getByRole('option', { name: 'Piano M board 2' }) as HTMLOptionElement).value,
+    ).toBe('lumi-b')
+    expect(screen.queryByRole('option', { name: 'LUMI Keys BLOCK' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Swap boards' }))
+    expect(
+      (screen.getByRole('option', { name: 'Piano M board 1' }) as HTMLOptionElement).value,
+    ).toBe('lumi-b')
+    expect(
+      screen.getByText(
+        'Identify flashes board 1, then board 2. Swap if the right board flashes first. The order is remembered.',
+      ),
+    ).toBeTruthy()
     lights.dispose()
     view.unmount()
   })

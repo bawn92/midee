@@ -8,8 +8,14 @@ const ptBR: Messages = {
     'Canais 12/13 para mão esquerda/direita. As mãos são estimadas pela altura das faixas; arquivos de uma faixa são divididos no dó central. Sem indicação de dedos.',
   'keyLights.pianoM': 'ROLI Piano M',
   'keyLights.pianoMHint':
-    'O firmware de fábrica do Piano M não acende as notas recebidas. Dois teclados unidos pelos conectores DNA formam um teclado contínuo de 48 teclas em uma única porta USB; três formam 72. No cartão de alcance, escolha 24, 48 ou 72 — esses trechos se alinham em Dó. Baixe piano-m-theme-lights.littlefoot e arraste esse arquivo para cada Piano M no ROLI Dashboard. Se o script do Synthesia ou uma cópia antiga já estiver no aparelho, solte este arquivo por cima. Cada teclado executa o script sozinho e acende só as suas 24 teclas. Os canais 12 e 13 continuam sendo esquerda e direita — rosa à esquerda e mel à direita — e são enviados de novo quando você muda de cena. As luzes seguem Ajustar ao alcance, a mão que você pratica e a calibração do teclado. O teclado do cabo USB acende as 24 teclas graves. O seguinte acende as próximas 24, mesmo quando a grade não informa a posição, para não ficar apagado. Tocar e os botões de oitava ficam com o controlador de fábrica. Recarregue este arquivo nos dois teclados. Se o da direita ainda tocar as mesmas notas que o da esquerda, pressione os dois botões de oitava para redefinir a oitava.  O controlador de fábrica deixa então o da direita 24 semitons acima. Segurar os três botões de cima restaura o programa de fábrica e remove estas luzes. Uma tecla que você segura acende na cor da mão, e a nota guia fica mais brilhante por cima.',
+    'O firmware de fábrica do Piano M não acende as notas recebidas. Cada teclado é a sua própria porta MIDI, muitas vezes com o mesmo nome. Dois teclados são 48 teclas e três são 72. Escolha Todos os Piano M para que cada nota guia vá só ao teclado que a toca. Esse teclado recebe a sua própria nota mais grave, e as cores das mãos vão a todos. No cartão de alcance, escolha 24, 48 ou 72 — esses trechos se alinham em Dó. Baixe piano-m-theme-lights.littlefoot e arraste esse arquivo para cada Piano M no ROLI Dashboard. Se o script do Synthesia ou uma cópia antiga já estiver no aparelho, solte este arquivo por cima. Recarregue este arquivo em cada teclado. Cada teclado acende só as suas 24 teclas. Os canais 12 e 13 continuam sendo esquerda e direita — rosa à esquerda e mel à direita — e são enviados de novo quando você muda de cena. As luzes seguem Ajustar ao alcance, a mão que você pratica e a calibração do teclado. Tocar e os botões de oitava ficam com o controlador de fábrica. Identificar pisca o teclado 1 e depois o 2. Se o da direita piscar primeiro, troque os teclados. A ordem fica salva. Se o da direita ainda tocar as mesmas notas que o da esquerda, pressione os dois botões de oitava para redefinir a oitava. O controlador de fábrica deixa então o da direita 24 semitons acima. Segurar os três botões de cima restaura o programa de fábrica e remove estas luzes. Uma tecla que você segura acende na cor da mão, e a nota guia fica mais brilhante por cima.',
   'keyLights.pianoMScript': 'Baixar piano-m-theme-lights.littlefoot',
+  'keyLights.pianoMAll': 'Todos os Piano M ({count})',
+  'keyLights.pianoMBoard': 'Piano M {n}',
+  'keyLights.pianoMIdentify': 'Identificar',
+  'keyLights.pianoMSwap': 'Trocar teclados',
+  'keyLights.pianoMOrder':
+    'Identificar pisca o teclado 1 e depois o 2. Troque se o da direita piscar primeiro. A ordem fica salva.',
   'keyLights.keeziHint':
     'KEEZI: conecte via KEENEKT. Use Visualizer → Synthesia para cores por mão, ou → DAW para canais do arquivo/faixas.',
   'keyLights.title': 'Luzes do teclado',
@@ -36,9 +42,9 @@ const ptBR: Messages = {
   'pianoM.guide.title': 'Quantos Piano M estão encaixados?',
   'pianoM.guide.dismiss': 'Fechar',
   'pianoM.guide.together':
-    'Teclados encaixados funcionam como um só teclado em uma única porta USB. O do cabo toca as 24 teclas graves. Cada teclado à direita continua 24 semitons acima.',
+    'Teclados encaixados funcionam como um só teclado. Cada um é a sua própria porta MIDI, muitas vezes com o mesmo nome. O da esquerda toca as 24 teclas graves. Cada teclado à direita continua 24 semitons acima.',
   'pianoM.guide.script':
-    'Carregue o script de luzes em cada teclado. Arraste piano-m-theme-lights.littlefoot para cada Piano M no ROLI Dashboard, inclusive cada teclado encaixado. Se já houver uma cópia antiga, solte este arquivo por cima.',
+    'Carregue o script de luzes em cada teclado. Escolha Todos os Piano M. Cada nota guia vai só ao teclado que a toca, e esse teclado recebe a sua própria nota mais grave. As cores das mãos vão a todos. Identificar pisca o teclado 1 e depois o 2. Se o da direita piscar primeiro, troque os teclados. A ordem fica salva. Arraste piano-m-theme-lights.littlefoot para cada Piano M no ROLI Dashboard. Se já houver uma cópia antiga, solte este arquivo por cima.',
   'pianoM.guide.octave':
     'Se os dois teclados tocarem as mesmas notas, pressione os dois botões de oitava para redefinir a oitava. O da direita fica então 24 semitons acima.',
   'pianoM.guide.suggest':

@@ -32,7 +32,7 @@ describe('Piano M theme colours', () => {
     ])
   })
 
-  it('sends one shared lowest note for two Piano M boards', () => {
+  it('gives each board its own lowest note', () => {
     const range = {
       ...FULL_PIANO_RANGE,
       start: 60,
@@ -42,9 +42,10 @@ describe('Piano M theme colours', () => {
       controllerLow: null,
       fitToRange: true,
     }
-    expect(pianoMPaletteMessages(themeHandLights(goldenHourTheme), range)[0]).toEqual([
-      0xbb, 23, 60,
-    ])
+    const colors = themeHandLights(goldenHourTheme)
+    expect(pianoMPaletteMessages(colors, range, 0)[0]).toEqual([0xbb, 23, 60])
+    expect(pianoMPaletteMessages(colors, range, 1)[0]).toEqual([0xbb, 23, 84])
+    expect(pianoMPaletteMessages(colors, range, 2)[0]).toEqual([0xbb, 23, 108])
   })
 
   it('follows a calibrated lowest key', () => {

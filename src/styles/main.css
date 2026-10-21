@@ -8543,6 +8543,12 @@ body.appearance-open #top-strip.strip--dim {
   font-size: 12px;
 }
 
+.key-lights-board-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .key-lights-field select {
   width: 100%;
   min-width: 0;

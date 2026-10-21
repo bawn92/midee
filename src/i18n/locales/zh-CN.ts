@@ -8,8 +8,13 @@ const zhCN: Messages = {
     '左手和右手使用通道 12/13。根据音轨音高估计左右手；单音轨文件在中央 C 处分开。不提供指法提示。',
   'keyLights.pianoM': 'ROLI Piano M',
   'keyLights.pianoMHint':
-    'Piano M 的出厂固件不会点亮收到的音符。用 DNA 接口拼在一起的两台是一个 48 键键盘，共用一个 USB 口；三台是 72 键。在键盘音域卡片上选择 24、48 或 72，这些音域会吸附到 C。请下载 piano-m-theme-lights.littlefoot，并在 ROLI Dashboard 中把这个文件拖到每一台 Piano M 上。如果设备上已有 Synthesia 脚本或旧脚本，把这个文件拖到它上面以替换。每台各自运行这份脚本，只点亮自己的 24 个键。通道 12 和 13 仍是左手和右手——左手玫瑰色、右手蜜色，更换场景时会重新发送。灯光跟随适配你的音域、正在练习的手，以及键盘校准。插着 USB 线的那台点亮较低的 24 个键。旁边那台点亮接下来的 24 个键；即使网格没有报出位置，也不会一直不亮。演奏和八度按钮仍由出厂按键处理负责。请把这个文件重新载入两台琴。如果右边那台仍然弹出和左边相同的音，请同时按下两个八度按钮来重置八度。出厂处理会让右边那台高 24 个半音。同时按住顶部三个按钮会恢复出厂程序并去掉这些灯光。按住的键以手的颜色点亮，引导音符在其上方更亮。',
+    'Piano M 的出厂固件不会点亮收到的音符。每台琴都是自己的 MIDI 端口，名字常常相同。两台是 48 键，三台是 72 键。选择全部 Piano M 后，每个引导音符只发给弹出它的那一台。那一台会收到自己的最低音，手的颜色会发给每一台。在键盘音域卡片上选择 24、48 或 72，这些音域会吸附到 C。请下载 piano-m-theme-lights.littlefoot，并在 ROLI Dashboard 中把这个文件拖到每一台 Piano M 上。如果设备上已有 Synthesia 脚本或旧脚本，把这个文件拖到它上面。请把这个文件重新载入每一台琴。每台只点亮自己的 24 个键。通道 12 和 13 仍是左手和右手——左手玫瑰色、右手蜜色，更换场景时会重新发送。灯光跟随适配你的音域、正在练习的手，以及键盘校准。演奏和八度按钮仍由出厂按键处理负责。识别会先闪键盘 1，再闪键盘 2。如果右边先闪，就对调。这个顺序会被记住。如果右边那台仍然弹出和左边相同的音，请同时按下两个八度按钮来重置八度。出厂处理会让右边那台高 24 个半音。同时按住顶部三个按钮会恢复出厂程序并去掉这些灯光。按住的键以手的颜色点亮，引导音符在其上方更亮。',
   'keyLights.pianoMScript': '下载 piano-m-theme-lights.littlefoot',
+  'keyLights.pianoMAll': '全部 Piano M（{count}）',
+  'keyLights.pianoMBoard': 'Piano M {n}',
+  'keyLights.pianoMIdentify': '识别',
+  'keyLights.pianoMSwap': '对调键盘',
+  'keyLights.pianoMOrder': '识别会先闪键盘 1，再闪键盘 2。如果右边先闪，就对调。这个顺序会被记住。',
   'keyLights.keeziHint':
     'KEEZI：通过 KEENEKT 连接。手部颜色使用 Visualizer → Synthesia，文件或音轨通道使用 → DAW。',
   'keyLights.title': '琴键灯光',
@@ -34,9 +39,9 @@ const zhCN: Messages = {
   'pianoM.guide.title': '拼在一起的 Piano M 有几台？',
   'pianoM.guide.dismiss': '关闭',
   'pianoM.guide.together':
-    '拼在一起的键盘是同一个键盘，共用一个 USB 口。插着线的那台弹较低的 24 个键。右边每一台再高 24 个半音。',
+    '拼在一起的键盘是同一个键盘。每台都是自己的 MIDI 端口，名字常常相同。左边那台弹较低的 24 个键。右边每一台再高 24 个半音。',
   'pianoM.guide.script':
-    '请在每一台上载入琴键灯光脚本。在 ROLI Dashboard 里把 piano-m-theme-lights.littlefoot 拖到每一台 Piano M 上，包括拼上去的每一台。如果已有旧脚本，把这个文件拖到它上面。',
+    '请在每一台上载入琴键灯光脚本。选择全部 Piano M。每个引导音符只发给弹出它的那一台，那一台会收到自己的最低音。手的颜色会发给每一台。识别会先闪键盘 1，再闪键盘 2。如果右边先闪，就对调。这个顺序会被记住。在 ROLI Dashboard 里把 piano-m-theme-lights.littlefoot 拖到每一台 Piano M 上。如果已有旧脚本，把这个文件拖到它上面。',
   'pianoM.guide.octave':
     '如果两台弹出相同的音，请同时按下两个八度按钮来重置八度。右边那台就会高 24 个半音。',
   'pianoM.guide.suggest': '有音符超出了前 24 个键。这是第二台 Piano M。',

@@ -1,6 +1,6 @@
-// ROLI Piano M and LUMI Keys share one USB MIDI port when boards are snapped
-// together. Each board is 24 keys. Detection is the port name and manufacturer
-// only — a Roland keyboard contains the letters "roli" and must stay quiet.
+// Each ROLI Piano M or LUMI board is its own Web MIDI port. Each board is 24
+// keys. Detection is the port name and manufacturer only — a Roland keyboard
+// contains the letters "roli" and must stay quiet.
 
 import {
   controllerKeyLow,
