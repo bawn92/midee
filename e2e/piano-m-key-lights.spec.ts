@@ -68,8 +68,8 @@ test('Piano M lights the physical key for the sounding note', async ({ page }) =
   const colors = page.getByLabel('Colors')
   await expect(colors).toHaveValue('pianoM')
   await page.getByText('Setup help').click()
-  await expect(page.getByText(/Power\/Mode/)).toBeVisible()
-  await expect(page.getByText(/Octave up/)).toBeVisible()
+  await expect(page.getByText(/factory key handler/)).toBeVisible()
+  await expect(page.getByText(/Octave to 0/)).toBeVisible()
   const script = page.getByRole('link', { name: /piano-m-theme-lights\.littlefoot/ })
   await expect(script).toBeVisible()
   await expect(script).toHaveAttribute('href', '/piano-m-theme-lights.littlefoot')
@@ -83,32 +83,26 @@ test('Piano M lights the physical key for the sounding note', async ({ page }) =
   const sent = () =>
     page.evaluate(() => (window as unknown as { __midiSent: number[][] }).__midiSent)
   // Golden Hour default: left #d9908f → 108,72,71 and right #e6a94f → 115,84,39.
-  // CC 23 is the factory lowest key, MIDI 60.
+  // CC 23 is the factory lowest key, MIDI 60. The palette goes out as one send.
   const goldenPalette = [
-    [0xbb, 23, 60],
-    [0xbb, 20, 108],
-    [0xbb, 21, 72],
-    [0xbb, 22, 71],
-    [0xbc, 20, 115],
-    [0xbc, 21, 84],
-    [0xbc, 22, 39],
+    0xbb, 23, 60, 0xbb, 20, 108, 0xbb, 21, 72, 0xbb, 22, 71, 0xbc, 20, 115, 0xbc, 21, 84, 0xbc,
+    22, 39,
   ]
-  await expect.poll(sent).toEqual(expect.arrayContaining([...goldenPalette, [0x9b, 60, 100]]))
+  await expect.poll(sent).toEqual(expect.arrayContaining([goldenPalette, [0x9b, 60, 100]]))
 
   await openAppearance(page)
   await page.getByRole('button', { name: 'Rainy Study scene', exact: true }).click()
   // Rainy Study: left #c4897a → 98,68,61 and right #7ba3b0 → 61,81,88.
   await expect.poll(sent).toEqual(
     expect.arrayContaining([
-      [0xbb, 20, 98],
-      [0xbb, 21, 68],
-      [0xbb, 22, 61],
-      [0xbc, 20, 61],
-      [0xbc, 21, 81],
-      [0xbc, 22, 88],
+      [
+        0xbb, 23, 60, 0xbb, 20, 98, 0xbb, 21, 68, 0xbb, 22, 61, 0xbc, 20, 61, 0xbc, 21, 81,
+        0xbc, 22, 88,
+      ],
     ]),
   )
 
+  await page.locator('#ts-appearance-panel .panel-close-btn').click()
   await page.locator('#hud-play').click()
   await expect.poll(sent).toEqual(expect.arrayContaining([[0x8b, 60, 0]]))
 })

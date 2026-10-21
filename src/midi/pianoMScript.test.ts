@@ -15,25 +15,29 @@ describe('Piano M littlefoot script', () => {
     expect(script).toContain('byte1 == 23')
   })
 
-  it('derives the board index from the DNA grid and stays dark when that index is unknown', () => {
-    expect(script).toContain('setClusteringActive(true)')
-    expect(script).toContain('getClusterXpos()')
-    expect(script).toContain('getClusterWidth()')
+  it('leaves notes and octave buttons to the factory handler', () => {
+    expect(script).toContain('setUseDefaultKeyHandler(true, false)')
+    expect(script).not.toContain('handleButtonDown')
+    expect(script).not.toContain('handleButtonUp')
+    expect(script).not.toContain('setClusteringActive')
+    expect(script).not.toContain('sendNoteOn(')
+    expect(script).not.toContain('sendNoteOff(')
+    expect(script).not.toContain('sendMIDI(')
+    expect(script).not.toContain('touchStart')
+    expect(script).not.toContain('onControlPress')
+    expect(script).not.toContain('return -1')
+  })
+
+  it('lights this board from the DNA position and never stays dark', () => {
     expect(script).toContain('getHorizontalDistFromMaster()')
+    expect(script).toContain('getClusterXpos()')
     expect(script).toContain('isMasterBlock()')
-    expect(script).toContain('return -1')
-    expect(script).toContain('xpos / unit')
+    expect(script).toContain('if (isMasterBlock()) return 0')
+    expect(script).toContain('return 1')
+    expect(script).toContain('raw / 6')
   })
 
-  it('saves a manual board index and the light mode on the board', () => {
-    expect(script).toContain('setLocalConfig(configIndex, savedIndex)')
-    expect(script).toContain('setLocalConfig(configMode, lightMode)')
-    expect(script).toContain('setLocalConfigActiveState(configManual, true, true)')
-    expect(script).toContain('toggleIndex')
-    expect(script).toContain('index == 2')
-  })
-
-  it('lights a held key from the key callbacks and keeps guide notes on top', () => {
+  it('records a held key for lighting and keeps guide notes on top', () => {
     expect(script).toContain('void keyStrike')
     expect(script).toContain('void keyPress')
     expect(script).toContain('void keyLift')
@@ -41,15 +45,6 @@ describe('Piano M littlefoot script', () => {
     expect(script).toContain('downKey[keyIndex] = 0')
     expect(script).toContain('guided == 1')
     expect(script).toContain('guided == 2')
-  })
-
-  it('cycles stock light modes from Power/Mode without taking the octave arrows', () => {
-    expect(script).toContain('index == 0')
-    expect(script).toContain('cycleMode(1)')
-    expect(script).toContain('cycleMode(-1)')
-    expect(script).toContain('setUseDefaultKeyHandler(true, false)')
-    expect(script).toContain('if (lightMode == 1)')
-    expect(script).toContain('if (lightMode == 2)')
-    expect(script).toContain('lightMode != 4')
+    expect(script).toContain('guided != 0 && held == 1')
   })
 })
