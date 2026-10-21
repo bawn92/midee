@@ -41,6 +41,23 @@ export const en = {
   'keyLights.blocked': 'Allow MIDI devices in your browser’s site settings, then try again.',
   'keyLights.error': 'Could not send MIDI. Reconnect or reselect your light device.',
 
+  'pianoM.board': 'Board {n}',
+  'pianoM.band': '{range}, {count} Piano M boards',
+  'pianoM.guide.title': 'How many Piano Ms are snapped together?',
+  'pianoM.guide.dismiss': 'Dismiss',
+  'pianoM.guide.together':
+    'Snapped boards act as one keyboard on a single USB port. The board on the cable plays the low 24 keys. Each board to the right continues 24 semitones higher.',
+  'pianoM.guide.script':
+    'Load the key-lights script on every board. Drop piano-m-theme-lights.littlefoot onto each Piano M in ROLI Dashboard, including each snapped board. If an older copy is already there, drop this file on top of it.',
+  'pianoM.guide.cyan':
+    'One cyan key marks the USB board. Two cyan keys mark the board on its right. This script does not flash those keys, so the octave buttons stay with the factory handler. If the right board still plays the same notes as the left, set Octave to 0 on each board in ROLI Dashboard. The factory handler then puts the right board 24 semitones higher.',
+  'pianoM.guide.power':
+    'Power/Mode and the octave arrows stay with the factory firmware. This script does not cycle light modes. Holding all three top buttons restores the factory program and removes these lights. A key you hold lights in the hand colour, rose on the left and honey on the right.',
+  'pianoM.guide.suggest': 'A note arrived past the first 24 keys. That is a second Piano M.',
+  'pianoM.guide.use48': 'Switch to 48',
+  'pianoM.guide.notNow': 'Not now',
+  'pianoM.guide.reopen': 'Piano M setup',
+
   'songGuide.open': 'Song guide',
   'songGuide.title': 'Song guide',
   'songGuide.hide': 'Hide',

@@ -38,6 +38,23 @@ const pl: Messages & Record<PolishPluralKey, string> = {
   'keyLights.blocked': 'Zezwól na urządzenia MIDI w ustawieniach witryny i spróbuj ponownie.',
   'keyLights.error': 'Nie udało się wysłać MIDI. Podłącz ponownie lub wybierz urządzenie.',
 
+  'pianoM.board': 'Klawiatura {n}',
+  'pianoM.band': '{range}, {count} Piano M',
+  'pianoM.guide.title': 'Ile Piano M jest spiętych razem?',
+  'pianoM.guide.dismiss': 'Zamknij',
+  'pianoM.guide.together':
+    'Spięte klawiatury działają jak jedna klawiatura na jednym porcie USB. Ta na kablu gra dolne 24 klawisze. Każda po prawej jest o 24 półtony wyżej.',
+  'pianoM.guide.script':
+    'Wgraj skrypt świateł na każdą klawiaturę. Upuść piano-m-theme-lights.littlefoot na każde Piano M w ROLI Dashboard, także na każdą spiętą. Jeśli jest już starsza kopia, upuść ten plik na nią.',
+  'pianoM.guide.cyan':
+    'Jeden cyjanowy klawisz oznacza klawiaturę USB. Dwa cyjanowe klawisze oznaczają klawiaturę po jej prawej. Ten skrypt nie miga tymi klawiszami, więc przyciski oktawy zostają przy fabrycznej obsłudze. Jeśli prawa nadal gra te same nuty co lewa, ustaw Oktawę na 0 na każdej w ROLI Dashboard. Fabryczna obsługa ustawia wtedy prawą o 24 półtony wyżej.',
+  'pianoM.guide.power':
+    'Power/Mode i strzałki oktawy zostają przy fabrycznym oprogramowaniu. Ten skrypt nie przełącza trybów światła. Przytrzymanie wszystkich trzech górnych przycisków przywraca program fabryczny i usuwa te światła. Przytrzymany klawisz świeci kolorem ręki, róż po lewej i miód po prawej.',
+  'pianoM.guide.suggest': 'Przyszła nuta poza pierwszymi 24 klawiszami. To drugi Piano M.',
+  'pianoM.guide.use48': 'Przełącz na 48',
+  'pianoM.guide.notNow': 'Nie teraz',
+  'pianoM.guide.reopen': 'Ustawienia Piano M',
+
   'songGuide.open': 'Przewodnik utworu',
   'songGuide.title': 'Przewodnik utworu',
   'songGuide.hide': 'Ukryj',

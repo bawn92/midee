@@ -31,6 +31,24 @@ const ptBR: Messages = {
   'keyLights.error':
     'Não foi possível enviar MIDI. Reconecte ou selecione seu dispositivo novamente.',
 
+  'pianoM.board': 'Teclado {n}',
+  'pianoM.band': '{range}, {count} Piano M',
+  'pianoM.guide.title': 'Quantos Piano M estão encaixados?',
+  'pianoM.guide.dismiss': 'Fechar',
+  'pianoM.guide.together':
+    'Teclados encaixados funcionam como um só teclado em uma única porta USB. O do cabo toca as 24 teclas graves. Cada teclado à direita continua 24 semitons acima.',
+  'pianoM.guide.script':
+    'Carregue o script de luzes em cada teclado. Arraste piano-m-theme-lights.littlefoot para cada Piano M no ROLI Dashboard, inclusive cada teclado encaixado. Se já houver uma cópia antiga, solte este arquivo por cima.',
+  'pianoM.guide.cyan':
+    'Uma tecla ciano marca o teclado USB. Duas teclas ciano marcam o teclado à direita dele. Este script não pisca essas teclas, então os botões de oitava ficam com o controlador de fábrica. Se o da direita ainda tocar as mesmas notas que o da esquerda, defina Oitava como 0 em cada teclado no ROLI Dashboard. O controlador de fábrica deixa então o da direita 24 semitons acima.',
+  'pianoM.guide.power':
+    'Power/Mode e as setas de oitava ficam com o firmware de fábrica. Este script não troca o modo de luz. Segurar os três botões de cima restaura o programa de fábrica e remove estas luzes. Uma tecla que você segura acende na cor da mão, rosa à esquerda e mel à direita.',
+  'pianoM.guide.suggest':
+    'Chegou uma nota além das primeiras 24 teclas. Isso é um segundo Piano M.',
+  'pianoM.guide.use48': 'Mudar para 48',
+  'pianoM.guide.notNow': 'Agora não',
+  'pianoM.guide.reopen': 'Ajuste do Piano M',
+
   'songGuide.open': 'Guia da música',
   'songGuide.title': 'Guia da música',
   'songGuide.hide': 'Ocultar',

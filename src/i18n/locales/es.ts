@@ -30,6 +30,24 @@ const es: Messages = {
   'keyLights.blocked': 'Permite dispositivos MIDI en los ajustes del sitio y vuelve a intentarlo.',
   'keyLights.error': 'No se pudo enviar MIDI. Reconecta o vuelve a seleccionar tu dispositivo.',
 
+  'pianoM.board': 'Teclado {n}',
+  'pianoM.band': '{range}, {count} Piano M',
+  'pianoM.guide.title': '¿Cuántos Piano M están unidos?',
+  'pianoM.guide.dismiss': 'Cerrar',
+  'pianoM.guide.together':
+    'Los teclados unidos actúan como un solo teclado en un único puerto USB. El del cable toca las 24 teclas graves. Cada teclado a la derecha sigue 24 semitonos más arriba.',
+  'pianoM.guide.script':
+    'Carga el script de luces en cada teclado. Arrastra piano-m-theme-lights.littlefoot a cada Piano M en ROLI Dashboard, incluido cada teclado unido. Si ya hay una copia anterior, suelta este archivo encima.',
+  'pianoM.guide.cyan':
+    'Una tecla cian marca el teclado USB. Dos teclas cian marcan el teclado de su derecha. Este script no hace parpadear esas teclas, así que los botones de octava siguen en el controlador de fábrica. Si el derecho sigue tocando las mismas notas que el izquierdo, pon Octava en 0 en cada teclado dentro de ROLI Dashboard. El controlador de fábrica deja entonces el derecho 24 semitonos más arriba.',
+  'pianoM.guide.power':
+    'Power/Mode y las flechas de octava se quedan en el firmware de fábrica. Este script no cambia de modo de luz. Mantener los tres botones superiores restaura el programa de fábrica y quita estas luces. Una tecla que mantienes se enciende con el color de la mano, rosa a la izquierda y miel a la derecha.',
+  'pianoM.guide.suggest':
+    'Llegó una nota más allá de las primeras 24 teclas. Es un segundo Piano M.',
+  'pianoM.guide.use48': 'Pasar a 48',
+  'pianoM.guide.notNow': 'Ahora no',
+  'pianoM.guide.reopen': 'Ajuste de Piano M',
+
   'songGuide.open': 'Guía del tema',
   'songGuide.title': 'Guía del tema',
   'songGuide.hide': 'Ocultar',

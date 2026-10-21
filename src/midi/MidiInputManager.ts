@@ -1,5 +1,6 @@
 import type { MasterClock } from '../core/clock/MasterClock'
 import { createEventSignal } from '../store/eventSignal'
+import { isPianoMPortName, setPianoMDetected } from './pianoM'
 
 export interface MidiNoteEvent {
   pitch: number
@@ -74,6 +75,8 @@ export class MidiInputManager {
       : 'unavailable',
   )
   readonly deviceName = createEventSignal<string>('')
+  // True when a connected input is a Piano M or LUMI Keys. Other keyboards stay false.
+  readonly pianoM = createEventSignal(false)
 
   // Fires on every note-on / note-off — subscribers are called synchronously.
   // Since JS is single-threaded, rapid-fire events are processed sequentially.
@@ -113,6 +116,7 @@ export class MidiInputManager {
       }
       this.status.set('blocked')
       this.deviceName.set('')
+      this.syncPianoM()
       return false
     }
   }
@@ -148,6 +152,7 @@ export class MidiInputManager {
 
     this.status.set(anyConnected ? 'connected' : 'disconnected')
     this.deviceName.set(names.join(', '))
+    this.syncPianoM()
 
     // No device means no pedal source — clear any stuck state so subscribers
     // can release sustained notes instead of leaving them ringing forever.
@@ -183,6 +188,22 @@ export class MidiInputManager {
     this.midiAccess.set(null)
     this.status.set('disconnected')
     this.deviceName.set('')
+    this.syncPianoM()
     if (this.pedal.value) this.pedal.set(false)
+  }
+
+  private syncPianoM(): void {
+    let found = false
+    if (this.access) {
+      for (const input of this.access.inputs.values()) {
+        if (input.state !== 'connected') continue
+        if (isPianoMPortName(input.name ?? '', input.manufacturer ?? '')) {
+          found = true
+          break
+        }
+      }
+    }
+    this.pianoM.set(found)
+    setPianoMDetected(found)
   }
 }

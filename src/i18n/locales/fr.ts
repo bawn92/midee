@@ -34,6 +34,24 @@ const fr: Messages = {
   'keyLights.error':
     'Impossible d’envoyer du MIDI. Reconnectez ou sélectionnez à nouveau votre appareil.',
 
+  'pianoM.board': 'Clavier {n}',
+  'pianoM.band': '{range}, {count} Piano M',
+  'pianoM.guide.title': 'Combien de Piano M sont assemblés ?',
+  'pianoM.guide.dismiss': 'Fermer',
+  'pianoM.guide.together':
+    'Les claviers assemblés forment un seul clavier sur un seul port USB. Celui du câble joue les 24 touches graves. Chaque clavier à droite continue 24 demi-tons plus haut.',
+  'pianoM.guide.script':
+    'Chargez le script de lumières sur chaque clavier. Déposez piano-m-theme-lights.littlefoot sur chaque Piano M dans ROLI Dashboard, y compris chaque clavier assemblé. Si une copie plus ancienne est déjà là, déposez ce fichier par-dessus.',
+  'pianoM.guide.cyan':
+    'Une touche cyan marque le clavier USB. Deux touches cyan marquent le clavier à sa droite. Ce script ne fait pas clignoter ces touches, donc les boutons d’octave restent au gestionnaire d’usine. Si le clavier de droite joue encore les mêmes notes que celui de gauche, réglez Octave sur 0 pour chaque clavier dans ROLI Dashboard. Le gestionnaire d’usine place alors le clavier de droite 24 demi-tons plus haut.',
+  'pianoM.guide.power':
+    'Power/Mode et les flèches d’octave restent au firmware d’usine. Ce script ne change pas de mode de lumière. Maintenir les trois boutons du haut restaure le programme d’usine et retire ces lumières. Une touche maintenue s’allume dans la couleur de la main, rose à gauche et miel à droite.',
+  'pianoM.guide.suggest':
+    'Une note est arrivée au-delà des 24 premières touches. C’est un second Piano M.',
+  'pianoM.guide.use48': 'Passer à 48',
+  'pianoM.guide.notNow': 'Pas maintenant',
+  'pianoM.guide.reopen': 'Réglage Piano M',
+
   'songGuide.open': 'Guide du morceau',
   'songGuide.title': 'Guide du morceau',
   'songGuide.hide': 'Masquer',

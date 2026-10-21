@@ -30,6 +30,23 @@ const ja: Messages = {
   'keyLights.blocked': 'ブラウザーのサイト設定でMIDIデバイスを許可してから、再試行してください。',
   'keyLights.error': 'MIDIを送信できませんでした。デバイスを再接続または再選択してください。',
 
+  'pianoM.board': 'ボード {n}',
+  'pianoM.band': '{range}、Piano M {count} 台',
+  'pianoM.guide.title': 'Piano M は何台つながっていますか？',
+  'pianoM.guide.dismiss': '閉じる',
+  'pianoM.guide.together':
+    'つながったボードは、USB ポート 1 つの 1 台のキーボードとして動きます。ケーブル側が低い 24 鍵です。右のボードはそれぞれ 24 半音高く続きます。',
+  'pianoM.guide.script':
+    'キーライトのスクリプトをすべてのボードに読み込みます。piano-m-theme-lights.littlefoot を ROLI Dashboard の各 Piano M にドロップしてください。つながったボードも含みます。古いコピーがある場合は、その上にドロップします。',
+  'pianoM.guide.cyan':
+    'シアンの鍵が 1 つなら USB のボード、2 つならその右のボードです。このスクリプトはそれらの鍵を点滅させないので、オクターブボタンは工場出荷時の処理のままです。右のボードが左と同じ音を出すときは、ROLI Dashboard で各ボードの Octave を 0 にしてください。工場出荷時の処理が右のボードを 24 半音高くします。',
+  'pianoM.guide.power':
+    'Power/Mode とオクターブの矢印は工場出荷時のファームウェアのままです。このスクリプトはライトのモードを切り替えません。上の 3 つのボタンを長押しすると工場出荷時のプログラムに戻り、このライトは消えます。押している鍵は手の色で点灯します。左はローズ、右はハニーです。',
+  'pianoM.guide.suggest': '最初の 24 鍵を超えたノートが届きました。2 台目の Piano M です。',
+  'pianoM.guide.use48': '48 鍵に切り替える',
+  'pianoM.guide.notNow': '今はしない',
+  'pianoM.guide.reopen': 'Piano M の設定',
+
   'songGuide.open': '曲ガイド',
   'songGuide.title': '曲ガイド',
   'songGuide.hide': '隠す',

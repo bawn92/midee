@@ -2,6 +2,7 @@ import { For, Show } from 'solid-js'
 import { t } from '../i18n'
 import type { KeyLights, KeyLightsSettings as Settings } from '../midi/KeyLights'
 import type { MidiInputManager } from '../midi/MidiInputManager'
+import { reopenPianoMGuide } from '../midi/pianoM'
 
 export function KeyLightsSettings(props: { lights: KeyLights; midiInput: MidiInputManager }) {
   const available = () => props.midiInput.status.value !== 'unavailable'
@@ -117,6 +118,15 @@ export function KeyLightsSettings(props: { lights: KeyLights; midiInput: MidiInp
             </Show>
             <Show when={props.lights.settings.value.channelMode === 'synthesia'}>
               <p class="customize-toggle-sub">{t('keyLights.synthesiaHint')}</p>
+            </Show>
+            <Show when={props.midiInput.pianoM.value}>
+              <button
+                type="button"
+                class="customize-locale-chip"
+                onClick={() => reopenPianoMGuide()}
+              >
+                {t('pianoM.guide.reopen')}
+              </button>
             </Show>
           </div>
         </details>

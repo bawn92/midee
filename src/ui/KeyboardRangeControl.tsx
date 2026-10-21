@@ -26,6 +26,7 @@ import {
 } from '../core/keyboardRange'
 import { isBlackKey, MIDI_MAX, MIDI_MIN, pitchToNoteName } from '../core/midi/types'
 import { t } from '../i18n'
+import { isPianoMDetected, pianoMSegmentCount, subscribePianoMDetected } from '../midi/pianoM'
 import {
   keyboardFocusEnabled,
   setKeyboardFocusEnabled,
@@ -94,6 +95,13 @@ const PIANO_PITCHES = Array.from({ length: KEYBOARD_SIZE_MAX }, (_, i) => MIDI_M
 
 type RangeDrag = { mode: 'move' | 'start' | 'end'; grab: number; pointerId: number }
 
+function boardStyle(board: number, count: number): { left: string; width: string } {
+  return {
+    left: `${((board - 1) / count) * 100}%`,
+    width: `${100 / count}%`,
+  }
+}
+
 function windowStyle(start: number, size: number): { left: string; width: string } {
   return {
     left: `${((start - MIDI_MIN) / KEYBOARD_SIZE_MAX) * 100}%`,
@@ -128,6 +136,7 @@ function KeyboardRangeView(props: { store: AppStore }) {
   const [focus, setFocus] = createSignal(keyboardFocusEnabled())
   const [armed, setArmed] = createSignal(isControllerCalibrateArmed())
   const [prefs, setPrefs] = createSignal(getKeyboardRange())
+  const [pianoM, setPianoM] = createSignal(isPianoMDetected())
   const [overlay, setOverlay] = createSignal(rangeOverlay())
   let root!: HTMLDivElement
   let pickerEl!: HTMLDivElement
@@ -135,6 +144,7 @@ function KeyboardRangeView(props: { store: AppStore }) {
 
   onMount(() => {
     const off = subscribeKeyboardRange(setPrefs)
+    const offPiano = subscribePianoMDetected(setPianoM)
     const offArm = subscribeControllerCalibrate(setArmed)
     const offFocus = subscribeKeyboardFocus(setFocus)
     const offOverlay = subscribeRangeOverlay(() => setOverlay(rangeOverlay()))
@@ -188,6 +198,7 @@ function KeyboardRangeView(props: { store: AppStore }) {
     window.addEventListener(CLOSE_MODE_POPOVERS, onModeChange)
     onCleanup(() => {
       off()
+      offPiano()
       offArm()
       offFocus()
       offOverlay()
@@ -298,6 +309,10 @@ function KeyboardRangeView(props: { store: AppStore }) {
   })
 
   const range = () => prefs()
+  const boards = () => {
+    const count = pianoMSegmentCount(range().size, pianoM())
+    return Array.from({ length: count }, (_, index) => index + 1)
+  }
   const lowName = () => pitchToNoteName(range().start)
   const highName = () => pitchToNoteName(rangeEnd(range()))
   const calibrated = () => range().calibrated && range().controllerLow != null
@@ -489,6 +504,24 @@ function KeyboardRangeView(props: { store: AppStore }) {
       >
         <div class="kbd-range-scroll">
           <div class="kbd-range-face">
+            <Show when={boards().length >= 2}>
+              <div
+                class="kbd-range-boards-mini"
+                role="img"
+                aria-label={t('pianoM.band', {
+                  range: formatKeyboardRange(range()),
+                  count: boards().length,
+                })}
+              >
+                <For each={boards()}>
+                  {(board) => (
+                    <span class="kbd-range-boards-mini-board" data-board={board}>
+                      {t('pianoM.board', { n: board })}
+                    </span>
+                  )}
+                </For>
+              </div>
+            </Show>
             <div class="kbd-range-ends">
               <div>
                 <span class="gh-caption">{t('kbdRange.start')}</span>
@@ -733,6 +766,7 @@ export interface KeyboardRangeBandLayout {
 
 function KeyboardRangeBandView(props: { store: AppStore; layout: KeyboardRangeBandLayout }) {
   const [prefs, setPrefs] = createSignal(getKeyboardRange())
+  const [pianoM, setPianoM] = createSignal(isPianoMDetected())
   const [overlay, setOverlay] = createSignal(rangeOverlay())
   const [box, setBox] = createSignal<KeyBandRect | null>(null)
   const [dragging, setDragging] = createSignal(false)
@@ -847,6 +881,7 @@ function KeyboardRangeBandView(props: { store: AppStore; layout: KeyboardRangeBa
       setPrefs(getKeyboardRange())
       measure()
     })
+    const offPiano = subscribePianoMDetected(setPianoM)
     const offOverlay = subscribeRangeOverlay(() => {
       setOverlay(rangeOverlay())
       syncAdjust()
@@ -867,6 +902,7 @@ function KeyboardRangeBandView(props: { store: AppStore; layout: KeyboardRangeBa
     window.addEventListener('resize', measure)
     onCleanup(() => {
       off()
+      offPiano()
       offOverlay()
       offFocus()
       window.clearTimeout(settleTimer)
@@ -884,6 +920,14 @@ function KeyboardRangeBandView(props: { store: AppStore; layout: KeyboardRangeBa
   })
 
   const placed = () => box()
+  const boards = () => {
+    const count = pianoMSegmentCount(prefs().size, pianoM())
+    return Array.from({ length: count }, (_, index) => index + 1)
+  }
+  const bandText = () => {
+    const label = formatKeyboardRange(prefs())
+    return boards().length >= 2 ? t('pianoM.band', { range: label, count: boards().length }) : label
+  }
 
   return (
     <div
@@ -925,6 +969,21 @@ function KeyboardRangeBandView(props: { store: AppStore; layout: KeyboardRangeBa
         <i class="kbd-range-cap kbd-range-cap--start" />
         <i class="kbd-range-cap kbd-range-cap--end" />
       </div>
+      <Show when={boards().length >= 2}>
+        <div class="kbd-range-boards" aria-hidden="true">
+          <For each={boards()}>
+            {(board) => (
+              <div
+                class="kbd-range-board"
+                data-board={board}
+                style={boardStyle(board, boards().length)}
+              >
+                <span class="kbd-range-board-label">{t('pianoM.board', { n: board })}</span>
+              </div>
+            )}
+          </For>
+        </div>
+      </Show>
       <div class="kbd-range-band-tip">{formatKeyboardRange(prefs())}</div>
       <div
         class="kbd-range-band-move"
@@ -935,7 +994,7 @@ function KeyboardRangeBandView(props: { store: AppStore; layout: KeyboardRangeBa
         aria-valuemin={MIDI_MIN}
         aria-valuemax={MIDI_MAX - prefs().size + 1}
         aria-valuenow={prefs().start}
-        aria-valuetext={formatKeyboardRange(prefs())}
+        aria-valuetext={bandText()}
         onPointerDown={onDown}
         onKeyDown={onKey}
       >

@@ -29,6 +29,23 @@ const zhCN: Messages = {
   'keyLights.blocked': '请在浏览器的网站设置中允许 MIDI 设备，然后重试。',
   'keyLights.error': '无法发送 MIDI。请重新连接或选择灯光设备。',
 
+  'pianoM.board': '键盘 {n}',
+  'pianoM.band': '{range}，{count} 台 Piano M',
+  'pianoM.guide.title': '拼在一起的 Piano M 有几台？',
+  'pianoM.guide.dismiss': '关闭',
+  'pianoM.guide.together':
+    '拼在一起的键盘是同一个键盘，共用一个 USB 口。插着线的那台弹较低的 24 个键。右边每一台再高 24 个半音。',
+  'pianoM.guide.script':
+    '请在每一台上载入琴键灯光脚本。在 ROLI Dashboard 里把 piano-m-theme-lights.littlefoot 拖到每一台 Piano M 上，包括拼上去的每一台。如果已有旧脚本，把这个文件拖到它上面。',
+  'pianoM.guide.cyan':
+    '一个青色键表示 USB 那台，两个青色键表示它右边那台。这份脚本不会闪这些键，所以八度按钮仍由出厂按键处理负责。如果右边那台仍然弹出和左边相同的音，请在 ROLI Dashboard 里把每台的 Octave 设为 0。出厂处理会让右边那台高 24 个半音。',
+  'pianoM.guide.power':
+    'Power/Mode 和八度箭头仍由出厂固件负责。这份脚本不会切换灯光模式。同时按住顶部三个按钮会恢复出厂程序并去掉这些灯光。按住的键以手的颜色点亮，左手玫瑰色，右手蜜色。',
+  'pianoM.guide.suggest': '有音符超出了前 24 个键。这是第二台 Piano M。',
+  'pianoM.guide.use48': '切换到 48 键',
+  'pianoM.guide.notNow': '暂时不用',
+  'pianoM.guide.reopen': 'Piano M 设置',
+
   'songGuide.open': '乐曲指南',
   'songGuide.title': '乐曲指南',
   'songGuide.hide': '隐藏',

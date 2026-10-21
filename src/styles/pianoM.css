@@ -1,0 +1,272 @@
+/* Piano M boards. Hidden entirely unless a Piano M or LUMI input is connected.
+   Segments sit on the range highlight; the guide is a calm Golden Hour card. */
+
+.piano-m-guide-mount {
+  position: absolute;
+  inset: 0;
+  z-index: 16;
+  pointer-events: none;
+}
+
+.piano-m-guide {
+  position: fixed;
+  z-index: 16;
+  top: calc(76px + env(safe-area-inset-top));
+  left: calc(16px + env(safe-area-inset-left));
+  width: min(380px, calc(100vw - 32px));
+  max-height: min(72vh, calc(100vh - var(--keyboard-h, 140px) - 108px));
+  overflow: auto;
+  pointer-events: none;
+  color: var(--text-1);
+  font-family: var(--font);
+}
+
+.piano-m-guide-card {
+  pointer-events: auto;
+  padding: 24px;
+  border-radius: 24px;
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  box-shadow: var(--elev-2);
+}
+
+.piano-m-guide-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.piano-m-guide-title {
+  margin: 0;
+  font: var(--type-title);
+  font-weight: 400;
+  color: var(--text-1);
+}
+
+.piano-m-guide-dismiss,
+.piano-m-guide-later,
+.piano-m-guide-use,
+.piano-m-guide-choice,
+.piano-m-guide-cal,
+.piano-m-guide-script {
+  font: var(--type-label);
+  cursor: pointer;
+}
+
+.piano-m-guide-dismiss,
+.piano-m-guide-later {
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  padding: 0;
+}
+
+.piano-m-guide-dismiss:focus-visible,
+.piano-m-guide-later:focus-visible,
+.piano-m-guide-use:focus-visible,
+.piano-m-guide-choice:focus-visible,
+.piano-m-guide-cal:focus-visible,
+.piano-m-guide-script:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.piano-m-guide-choices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 16px 0 4px;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+
+.piano-m-guide-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 8px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--surface-sunken);
+  color: var(--text-1);
+}
+
+.piano-m-guide-choice[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.piano-m-guide-choice-n {
+  font: var(--type-title);
+  font-weight: 400;
+}
+
+.piano-m-guide-choice-keys {
+  font: var(--type-label);
+  color: var(--text-2);
+}
+
+.piano-m-guide-choice[aria-pressed="true"] .piano-m-guide-choice-keys {
+  color: var(--text-on-accent);
+}
+
+.piano-m-guide-copy {
+  margin: 12px 0 0;
+  font: var(--type-body);
+  color: var(--text-1);
+}
+
+.piano-m-guide-script,
+.piano-m-guide-cal,
+.piano-m-guide-use {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 12px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-1);
+  text-decoration: none;
+}
+
+.piano-m-guide-cal,
+.piano-m-guide-use {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.piano-m-guide-cal[aria-pressed="true"] {
+  background: var(--accent-press);
+}
+
+.piano-m-guide-suggest,
+.piano-m-suggest-card {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--note-rh) 16%, var(--surface-solid));
+}
+
+.piano-m-guide-suggest p,
+.piano-m-suggest-card p {
+  margin: 0;
+  font: var(--type-body);
+}
+
+.piano-m-guide-suggest-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.piano-m-suggest {
+  width: min(320px, calc(100vw - 32px));
+}
+
+.piano-m-suggest-card {
+  margin-top: 0;
+}
+
+.kbd-range-boards,
+.kbd-range-boards-mini {
+  pointer-events: none;
+}
+
+.kbd-range-boards {
+  position: absolute;
+  inset: 0;
+}
+
+.kbd-range-board {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  box-sizing: border-box;
+  background-clip: padding-box;
+  pointer-events: none;
+}
+
+.kbd-range-board:not(:last-child) {
+  border-right: 4px solid transparent;
+}
+
+.kbd-range-board:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 12%;
+  bottom: 12%;
+  right: -2px;
+  width: 1px;
+  background: color-mix(in srgb, var(--text-1) 22%, transparent);
+}
+
+.kbd-range-board[data-board="1"],
+.kbd-range-boards-mini-board[data-board="1"] {
+  background-color: color-mix(in srgb, var(--note-lh) 14%, transparent);
+}
+
+.kbd-range-board[data-board="2"],
+.kbd-range-boards-mini-board[data-board="2"] {
+  background-color: color-mix(in srgb, var(--note-rh) 14%, transparent);
+}
+
+.kbd-range-board[data-board="3"],
+.kbd-range-boards-mini-board[data-board="3"] {
+  background-color: color-mix(in srgb, var(--note-lh) 8%, transparent);
+}
+
+.kbd-range-board-label,
+.kbd-range-boards-mini-board {
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 14px;
+  letter-spacing: 0.01em;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.kbd-range-board-label {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--surface-solid) 88%, transparent);
+  color: var(--text-1);
+}
+
+.kbd-range-boards-mini {
+  display: flex;
+  gap: 4px;
+  margin: 0 0 12px;
+}
+
+.kbd-range-boards-mini-board {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 6px;
+  border-radius: 8px;
+  background-clip: padding-box;
+  color: var(--text-1);
+}
+
+.kbd-range-boards-mini-board:not(:last-child) {
+  box-shadow: inset -2px 0 0 color-mix(in srgb, var(--text-1) 16%, transparent);
+}
+
+@media (max-width: 720px) {
+  .piano-m-guide {
+    top: auto;
+    bottom: calc(var(--keyboard-h, 140px) + 12px + env(safe-area-inset-bottom));
+    max-height: 46vh;
+  }
+}
