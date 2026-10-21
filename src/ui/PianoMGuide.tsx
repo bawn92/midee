@@ -119,8 +119,7 @@ function PianoMGuideView(props: { store: AppStore }) {
             >
               {t('keyLights.pianoMScript')}
             </a>
-            <p class="piano-m-guide-copy">{t('pianoM.guide.cyan')}</p>
-            <p class="piano-m-guide-copy">{t('pianoM.guide.power')}</p>
+            <p class="piano-m-guide-copy">{t('pianoM.guide.octave')}</p>
             <button
               type="button"
               class="piano-m-guide-cal"

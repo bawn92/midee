@@ -74,8 +74,9 @@ test('Piano M guide, board segments, and range diagram', async ({ page }) => {
   const guide = page.locator('#piano-m-guide')
   await expect(guide).toBeVisible()
   await expect(guide).toContainText('How many Piano Ms are snapped together?')
-  await expect(guide).toContainText('One cyan key marks the USB board')
-  await expect(guide).toContainText('does not cycle light modes')
+  await expect(guide).toContainText('press both octave buttons to reset the octave')
+  await expect(guide).not.toContainText('cyan')
+  await expect(guide).not.toContainText('Power/Mode')
   await page.screenshot({
     path: '/opt/cursor/artifacts/screenshots/piano_m_guide.png',
   })
