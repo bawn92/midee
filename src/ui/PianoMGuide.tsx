@@ -11,6 +11,8 @@ import {
   subscribeKeyboardRange,
 } from '../core/keyboardRange'
 import { t } from '../i18n'
+import type { KeyLights } from '../midi/KeyLights'
+import type { MidiInputManager } from '../midi/MidiInputManager'
 import {
   dismissPianoMGuide,
   dismissPianoMSuggest,
@@ -23,6 +25,7 @@ import {
 } from '../midi/pianoM'
 import { pulseRangeAdjust } from '../renderer/rangeOverlay'
 import type { AppStore } from '../store/state'
+import { PianoMScriptLinks, PianoMSetup } from './PianoMSetup'
 
 const BOARD_CHOICES: readonly PianoMBoards[] = [1, 2, 3]
 
@@ -33,7 +36,11 @@ function applyBoards(boards: PianoMBoards): void {
   pulseRangeAdjust()
 }
 
-function PianoMGuideView(props: { store: AppStore }) {
+function PianoMGuideView(props: {
+  store: AppStore
+  midi: MidiInputManager | null
+  lights: KeyLights | null
+}) {
   const [connected, setConnected] = createSignal(isPianoMDetected())
   const [guide, setGuide] = createSignal(getPianoMGuide())
   const [range, setRange] = createSignal(getKeyboardRange())
@@ -110,15 +117,10 @@ function PianoMGuideView(props: { store: AppStore }) {
                 </div>
               </div>
             </Show>
+            <PianoMSetup midi={props.midi} lights={props.lights} boards={selected()} />
             <p class="piano-m-guide-copy">{t('pianoM.guide.together')}</p>
             <p class="piano-m-guide-copy">{t('pianoM.guide.script')}</p>
-            <a
-              class="piano-m-guide-script"
-              href={`${import.meta.env.BASE_URL}piano-m-theme-lights.littlefoot`}
-              download="piano-m-theme-lights.littlefoot"
-            >
-              {t('keyLights.pianoMScript')}
-            </a>
+            <PianoMScriptLinks />
             <p class="piano-m-guide-copy">{t('pianoM.guide.octave')}</p>
             <button
               type="button"
@@ -162,11 +164,19 @@ export class PianoMGuide {
   private disposeRoot: (() => void) | null = null
   private wrapper: HTMLDivElement | null = null
 
-  constructor(container: HTMLElement, store: AppStore) {
+  constructor(
+    container: HTMLElement,
+    store: AppStore,
+    midi: MidiInputManager | null = null,
+    lights: KeyLights | null = null,
+  ) {
     this.wrapper = document.createElement('div')
     this.wrapper.className = 'piano-m-guide-mount'
     container.appendChild(this.wrapper)
-    this.disposeRoot = render(() => <PianoMGuideView store={store} />, this.wrapper)
+    this.disposeRoot = render(
+      () => <PianoMGuideView store={store} midi={midi} lights={lights} />,
+      this.wrapper,
+    )
   }
 
   dispose(): void {

@@ -1,8 +1,7 @@
 // Each snapped Piano M or LUMI board is its own Web MIDI output, often with
-// the same name. The browser lists those ports in its own order. On a DNA
-// chain that is usually the USB board first, then each board to the right.
-// That order was not checked on hardware, so Identify and Swap let the
-// player confirm it. The saved order is the left-to-right board index.
+// the same name. The browser lists those ports in its own order. The setup
+// flow, or Swap, stores the left-to-right order. Unplugged ids stay so a
+// replug keeps that order.
 
 import { jsonPersisted } from '../core/persistence'
 import { isPianoMPortName } from './pianoM'
@@ -99,6 +98,18 @@ export function rememberPianoMPorts(connectedIds: readonly string[]): string[] {
 
 export function pianoMDisplayOrder(connectedIds: readonly string[]): string[] {
   return orderedIds(connectedIds, prefs.order)
+}
+
+export function setPianoMPortOrder(next: readonly string[]): string[] {
+  const seen = new Set<string>()
+  const order: string[] = []
+  for (const id of [...next, ...prefs.order]) {
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    order.push(id)
+  }
+  commit({ ...prefs, order })
+  return order
 }
 
 export function swapPianoMPorts(connectedIds: readonly string[]): string[] {

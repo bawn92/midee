@@ -117,13 +117,15 @@ describe('Key Lights settings', () => {
       (screen.getByRole('option', { name: 'Piano M board 2' }) as HTMLOptionElement).value,
     ).toBe('lumi-b')
     expect(screen.queryByRole('option', { name: 'LUMI Keys BLOCK' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Set up your boards' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Identify' })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Swap boards' }))
     expect(
       (screen.getByRole('option', { name: 'Piano M board 1' }) as HTMLOptionElement).value,
     ).toBe('lumi-b')
     expect(
       screen.getByText(
-        'Identify flashes board 1, then board 2. Swap if the right board flashes first. The order is remembered.',
+        'Set up your boards learns which port is left and which is right. Swap boards if you already know they are reversed. The order is remembered.',
       ),
     ).toBeTruthy()
     lights.dispose()

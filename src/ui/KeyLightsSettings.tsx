@@ -2,8 +2,9 @@ import { For, Show } from 'solid-js'
 import { t } from '../i18n'
 import type { KeyLights, KeyLightsSettings as Settings } from '../midi/KeyLights'
 import type { MidiInputManager } from '../midi/MidiInputManager'
-import { isPianoMPortName, reopenPianoMGuide } from '../midi/pianoM'
+import { isPianoMPortName, requestPianoMSetup } from '../midi/pianoM'
 import { PIANO_M_ALL_ID, type PianoMPortInfo, pianoMPortsShareName } from '../midi/pianoMPorts'
+import { PianoMScriptLinks } from './PianoMSetup'
 
 function outputLabel(
   output: PianoMPortInfo,
@@ -100,24 +101,20 @@ export function KeyLightsSettings(props: { lights: KeyLights; midiInput: MidiInp
             </option>
           </select>
         </label>
+        <Show when={pianoOutputs().length >= 2 || props.midiInput.pianoM.value}>
+          <button class="customize-locale-chip" type="button" onClick={() => requestPianoMSetup()}>
+            {t('keyLights.pianoMSetup')}
+          </button>
+        </Show>
         <Show when={pianoOutputs().length >= 2}>
-          <div class="key-lights-board-actions">
-            <button
-              class="customize-locale-chip"
-              type="button"
-              onClick={() => props.lights.identifyPianoMBoards()}
-            >
-              {t('keyLights.pianoMIdentify')}
-            </button>
-            <button
-              class="customize-locale-chip"
-              type="button"
-              onClick={() => props.lights.swapPianoMBoards()}
-            >
-              {t('keyLights.pianoMSwap')}
-            </button>
-          </div>
           <p class="customize-toggle-sub">{t('keyLights.pianoMOrder')}</p>
+          <button
+            class="key-lights-advanced"
+            type="button"
+            onClick={() => props.lights.swapPianoMBoards()}
+          >
+            {t('keyLights.pianoMSwap')}
+          </button>
         </Show>
         <Show when={props.midiInput.midiAccess.value && props.lights.outputs.value.length === 0}>
           <p role="status">{t('keyLights.noDevices')}</p>
@@ -168,13 +165,34 @@ export function KeyLightsSettings(props: { lights: KeyLights; midiInput: MidiInp
             <p class="customize-toggle-sub">{t('keyLights.keeziHint')}</p>
             <Show when={props.lights.settings.value.channelMode === 'pianoM'}>
               <p class="customize-toggle-sub">{t('keyLights.pianoMHint')}</p>
-              <a
-                class="key-lights-script"
-                href={`${import.meta.env.BASE_URL}piano-m-theme-lights.littlefoot`}
-                download="piano-m-theme-lights.littlefoot"
+              <PianoMScriptLinks />
+            </Show>
+            <Show when={props.lights.outputs.value.length > 0}>
+              <p class="customize-toggle-sub">{t('keyLights.pianoMDebug')}</p>
+              <ul class="key-lights-debug">
+                <For each={props.lights.outputs.value}>
+                  {(output) => (
+                    <li>
+                      {output.name} · {output.id}
+                    </li>
+                  )}
+                </For>
+              </ul>
+              <Show
+                when={props.lights.sentLog.value.length > 0}
+                fallback={<p class="customize-toggle-sub">{t('keyLights.pianoMDebugEmpty')}</p>}
               >
-                {t('keyLights.pianoMScript')}
-              </a>
+                <ul class="key-lights-debug">
+                  <For each={props.lights.sentLog.value}>
+                    {(row) => (
+                      <li>
+                        {row.portName}: {row.bytes.join(' ')}
+                        {row.truncated ? ' …' : ''}
+                      </li>
+                    )}
+                  </For>
+                </ul>
+              </Show>
             </Show>
             <Show when={props.lights.settings.value.channelMode === 'synthesia'}>
               <p class="customize-toggle-sub">{t('keyLights.synthesiaHint')}</p>
@@ -183,7 +201,7 @@ export function KeyLightsSettings(props: { lights: KeyLights; midiInput: MidiInp
               <button
                 type="button"
                 class="customize-locale-chip"
-                onClick={() => reopenPianoMGuide()}
+                onClick={() => requestPianoMSetup()}
               >
                 {t('pianoM.guide.reopen')}
               </button>

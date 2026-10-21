@@ -640,7 +640,7 @@ export class App {
       rect: (start, end) => this.renderer.keyBandRect(start, end),
       pitchAt: (clientX) => this.renderer.pitchFromClientX(clientX),
     })
-    this.pianoMGuide = new PianoMGuide(overlay, this.store)
+    this.pianoMGuide = new PianoMGuide(overlay, this.store, this.midiInput, this.keyLights)
     this.songGuide = new SongGuideController(overlay, this.store, this.clock, this.synth, (pitch) =>
       this.renderer.keyClientBox(pitch),
     )

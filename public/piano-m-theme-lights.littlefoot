@@ -2,34 +2,39 @@
 <metadata description="Piano M theme lights" target="LUMI Keys" tags="MIDI;Light;" insertModes="false">
 </metadata>
 
-Theme lights for one ROLI Piano M or LUMI board. Drop this file on every
-board in ROLI Dashboard. Two boards are one 48-key keyboard. Three are 72.
-Each board is its own MIDI port. Piano Club sends this board's lowest MIDI
-note on CC 23 and sends a guide note only to the board that plays it. This
-program lights these 24 keys from that note. It does not look at the DNA
-grid or guess which board it is.
+This file is the left-board program. It stays so an older link still
+loads. Prefer the named files: piano-m-lights-left.littlefoot on the left
+board, piano-m-lights-right.littlefoot on the right board, and
+piano-m-lights-board-3.littlefoot on a third board.
 
-Reload this file on every board. An older copy added 24 keys for each board
-it thought it was, which shifts the right board again.
+Theme lights for the left ROLI Piano M or LUMI board. Drop this file on the left board in ROLI Dashboard.
+
+Piano Club sends one shared stream. CC 23 is the lowest MIDI note of the
+whole window, the same value on every board. This file lights only the 24
+keys that belong to board 0: that lowest note, plus 0.
+Notes outside those 24 keys are ignored. The same note-on can arrive twice;
+storing the hand for that note is enough, and a note-off clears it.
 
 Playing and the octave buttons stay with the factory key handler. This
-program does not define a button handler, so it cannot move the octave.
-The key callbacks below only remember which key is held for the lights.
-They do not send notes.
+program does not define a button handler, so it cannot move the octave
+from a button. The key callbacks below only remember which key is held
+for the lights. They do not transmit notes.
 
-If the right board still plays the same notes as the left, press both
-octave buttons to reset the octave. The factory handler then puts the right
-board 24 semitones higher. Holding all three top buttons restores the
-factory program and removes these lights.
+This file does not change the octave. If the right board plays the
+same notes as the left, load the right-board file, or press both octave
+buttons to reset the octave.
+Holding all three top buttons restores the factory program and removes
+these lights.
 
-Channels 12 and 13 are the left and right hands. CC 20/21/22 are red, green,
-and blue. CC 23 on channel 12 or 13 is this board's lowest MIDI note.
+Channels 12 and 13 are the left and right hands. CC 20/21/22 are red,
+green, and blue. CC 23 on channel 12 or 13 is the window lowest note.
 CC 121 and CC 123 clear the guide notes.
 */
 
 #heapsize: 128
 
 const int keysPerBlock = 24;
+const int boardIndex = 0;
 const int midiNoteOff = 0x8;
 const int midiNoteOn = 0x9;
 const int midiCC = 0xB;
@@ -73,9 +78,8 @@ void markUp(int keyIndex) {
 }
 
 void initialise() {
-    // Factory handler sends the notes, including the DNA octave offset.
-    // Lighting stays here. Do not turn clustering on: that replaces the
-    // factory octave map and both boards then play the same notes.
+    // Factory handler sends the notes. Do not turn clustering on: that
+    // replaces the factory octave map and both boards then play the same notes.
     setUseDefaultKeyHandler(true, false);
     baseNote = 60;
     leftR = 0;
@@ -143,7 +147,8 @@ void keyLift(int keyIndex, int unused, int velocity) {
 
 void repaint() {
     for (int key = 0; key < keysPerBlock; key = key + 1) {
-        int note = baseNote + key;
+        int origin = baseNote + boardIndex * keysPerBlock;
+        int note = origin + key;
         int guided = 0;
         if (note >= 0 && note < 128) guided = handFor[note];
         int held = downKey[key];

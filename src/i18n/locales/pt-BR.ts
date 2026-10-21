@@ -8,14 +8,19 @@ const ptBR: Messages = {
     'Canais 12/13 para mão esquerda/direita. As mãos são estimadas pela altura das faixas; arquivos de uma faixa são divididos no dó central. Sem indicação de dedos.',
   'keyLights.pianoM': 'ROLI Piano M',
   'keyLights.pianoMHint':
-    'O firmware de fábrica do Piano M não acende as notas recebidas. Cada teclado é a sua própria porta MIDI, muitas vezes com o mesmo nome. Dois teclados são 48 teclas e três são 72. Escolha Todos os Piano M para que cada nota guia vá só ao teclado que a toca. Esse teclado recebe a sua própria nota mais grave, e as cores das mãos vão a todos. No cartão de alcance, escolha 24, 48 ou 72 — esses trechos se alinham em Dó. Baixe piano-m-theme-lights.littlefoot e arraste esse arquivo para cada Piano M no ROLI Dashboard. Se o script do Synthesia ou uma cópia antiga já estiver no aparelho, solte este arquivo por cima. Recarregue este arquivo em cada teclado. Cada teclado acende só as suas 24 teclas. Os canais 12 e 13 continuam sendo esquerda e direita — rosa à esquerda e mel à direita — e são enviados de novo quando você muda de cena. As luzes seguem Ajustar ao alcance, a mão que você pratica e a calibração do teclado. Tocar e os botões de oitava ficam com o controlador de fábrica. Identificar pisca o teclado 1 e depois o 2. Se o da direita piscar primeiro, troque os teclados. A ordem fica salva. Se o da direita ainda tocar as mesmas notas que o da esquerda, pressione os dois botões de oitava para redefinir a oitava. O controlador de fábrica deixa então o da direita 24 semitons acima. Segurar os três botões de cima restaura o programa de fábrica e remove estas luzes. Uma tecla que você segura acende na cor da mão, e a nota guia fica mais brilhante por cima.',
+    'O firmware de fábrica do Piano M não acende as notas recebidas. Cada teclado é a sua própria porta MIDI, muitas vezes com o mesmo nome. Dois teclados são 48 teclas e três são 72. Escolha Todos os Piano M. O Piano Club envia as mesmas notas, e a mesma nota mais grave, para cada teclado. O arquivo da esquerda acende só as 24 teclas graves. O da direita acende as 24 seguintes, e o terceiro arquivo as 24 depois dessas. Solte piano-m-lights-left.littlefoot no teclado esquerdo, piano-m-lights-right.littlefoot no direito e piano-m-lights-board-3.littlefoot num terceiro. No cartão de alcance, escolha 24, 48 ou 72 — esses trechos se alinham em Dó. Os canais 12 e 13 continuam sendo esquerda e direita — rosa à esquerda e mel à direita — e são enviados de novo quando você muda de cena. As luzes seguem Ajustar ao alcance, a mão que você pratica e a calibração do teclado. Tocar e os botões de oitava ficam com o controlador de fábrica. Configure os teclados para saber qual porta é a esquerda e qual é a direita. Se os dois teclados tocarem as mesmas notas, pressione os dois botões de oitava para redefinir a oitava. O arquivo da direita também sobe a oitava em duas quando o teclado ainda não está deslocado. Segurar os três botões de cima restaura o programa de fábrica e remove estas luzes. Uma tecla que você segura acende na cor da mão, e a nota guia fica mais brilhante por cima.',
   'keyLights.pianoMScript': 'Baixar piano-m-theme-lights.littlefoot',
+  'keyLights.pianoMScriptLeft': 'Teclado esquerdo: piano-m-lights-left.littlefoot',
+  'keyLights.pianoMScriptRight': 'Teclado direito: piano-m-lights-right.littlefoot',
+  'keyLights.pianoMScriptBoard3': 'Terceiro teclado: piano-m-lights-board-3.littlefoot',
   'keyLights.pianoMAll': 'Todos os Piano M ({count})',
   'keyLights.pianoMBoard': 'Piano M {n}',
-  'keyLights.pianoMIdentify': 'Identificar',
+  'keyLights.pianoMSetup': 'Configurar os teclados',
   'keyLights.pianoMSwap': 'Trocar teclados',
   'keyLights.pianoMOrder':
-    'Identificar pisca o teclado 1 e depois o 2. Troque se o da direita piscar primeiro. A ordem fica salva.',
+    'Configurar os teclados descobre qual porta é a esquerda e qual é a direita. Troque os teclados se você já sabe que estão invertidos. A ordem fica salva.',
+  'keyLights.pianoMDebug': 'Saídas MIDI e mensagens recentes',
+  'keyLights.pianoMDebugEmpty': 'Nada foi enviado ainda.',
   'keyLights.keeziHint':
     'KEEZI: conecte via KEENEKT. Use Visualizer → Synthesia para cores por mão, ou → DAW para canais do arquivo/faixas.',
   'keyLights.title': 'Luzes do teclado',
@@ -44,7 +49,7 @@ const ptBR: Messages = {
   'pianoM.guide.together':
     'Teclados encaixados funcionam como um só teclado. Cada um é a sua própria porta MIDI, muitas vezes com o mesmo nome. O da esquerda toca as 24 teclas graves. Cada teclado à direita continua 24 semitons acima.',
   'pianoM.guide.script':
-    'Carregue o script de luzes em cada teclado. Escolha Todos os Piano M. Cada nota guia vai só ao teclado que a toca, e esse teclado recebe a sua própria nota mais grave. As cores das mãos vão a todos. Identificar pisca o teclado 1 e depois o 2. Se o da direita piscar primeiro, troque os teclados. A ordem fica salva. Arraste piano-m-theme-lights.littlefoot para cada Piano M no ROLI Dashboard. Se já houver uma cópia antiga, solte este arquivo por cima.',
+    'Carregue o arquivo da esquerda no teclado esquerdo e o da direita no teclado direito. Escolha Todos os Piano M. Todos os teclados ouvem as mesmas notas. Cada arquivo acende só as suas 24 teclas. Um terceiro teclado usa o terceiro arquivo.',
   'pianoM.guide.octave':
     'Se os dois teclados tocarem as mesmas notas, pressione os dois botões de oitava para redefinir a oitava. O da direita fica então 24 semitons acima.',
   'pianoM.guide.suggest':
@@ -52,6 +57,33 @@ const ptBR: Messages = {
   'pianoM.guide.use48': 'Mudar para 48',
   'pianoM.guide.notNow': 'Agora não',
   'pianoM.guide.reopen': 'Ajuste do Piano M',
+  'pianoM.setup.title': 'Configurar os teclados',
+  'pianoM.setup.left': 'Pressione qualquer tecla do teclado ESQUERDO.',
+  'pianoM.setup.right': 'Pressione qualquer tecla do teclado DIREITO.',
+  'pianoM.setup.heard': '{note} ouvido em {port}.',
+  'pianoM.setup.cluster':
+    'Os dois teclados chegaram na mesma porta MIDI e tocaram as mesmas notas. Estão agrupados sem deslocamento de oitava. O Piano Club não pode somar 24 só ao teclado direito enquanto eles compartilham uma porta, então o arquivo da direita sobe essa oitava em duas. Se mais tarde eles aparecerem como duas portas tocando as mesmas notas, o Piano Club soma 24 à porta direita.',
+  'pianoM.setup.continue': 'Continuar',
+  'pianoM.setup.confirm': 'Toque a tecla mais grave de cada teclado.',
+  'pianoM.setup.detected': 'Esquerda {left}. Direita {right}.',
+  'pianoM.setup.waiting': 'Aguardando as duas teclas graves.',
+  'pianoM.setup.offsetOn': 'O teclado direito agora toca 24 semitons mais alto.',
+  'pianoM.setup.same': 'Esses teclados compartilham uma porta, então o arquivo da direita sobe essa oitava.',
+  'pianoM.setup.roli': 'A ROLI chama essas notas de Dó3 e Dó5.',
+  'pianoM.setup.lightLeft': 'O teclado ESQUERDO acendeu?',
+  'pianoM.setup.lightRight': 'O teclado DIREITO acendeu?',
+  'pianoM.setup.yes': 'Sim',
+  'pianoM.setup.otherLeft': 'Não, foi o da direita',
+  'pianoM.setup.otherRight': 'Não, foi o da esquerda',
+  'pianoM.setup.both': 'Os dois acenderam',
+  'pianoM.setup.none': 'Nenhum acendeu',
+  'pianoM.setup.files':
+    'Os dois teclados acenderam com uma só mensagem. Carregue o arquivo da esquerda no teclado esquerdo e o da direita no teclado direito. Cada arquivo acende só as suas 24 teclas.',
+  'pianoM.setup.noneHelp':
+    'Nenhum teclado acendeu. Carregue o arquivo da esquerda no teclado esquerdo e o da direita no teclado direito, e comece de novo.',
+  'pianoM.setup.done': 'Tudo pronto',
+  'pianoM.setup.summary': 'Esquerda e direita foram atribuídas. Isso fica salvo para estes teclados.',
+  'pianoM.setup.again': 'Refazer a configuração',
 
   'songGuide.open': 'Guia da música',
   'songGuide.title': 'Guia da música',

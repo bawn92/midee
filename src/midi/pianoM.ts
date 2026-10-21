@@ -117,6 +117,32 @@ export function reopenPianoMGuide(): PianoMGuidePrefs {
   return commitGuide({ ...guide, dismissed: false, suggestDismissed: false })
 }
 
+let setupNonce = 0
+let setupArmed = false
+const setupListeners = new Set<(nonce: number) => void>()
+
+export function pianoMSetupNonce(): number {
+  return setupNonce
+}
+
+export function subscribePianoMSetupRequest(fn: (nonce: number) => void): () => void {
+  setupListeners.add(fn)
+  return () => setupListeners.delete(fn)
+}
+
+export function consumePianoMSetupRequest(): boolean {
+  const armed = setupArmed
+  setupArmed = false
+  return armed
+}
+
+export function requestPianoMSetup(): void {
+  reopenPianoMGuide()
+  setupArmed = true
+  setupNonce += 1
+  for (const fn of setupListeners) fn(setupNonce)
+}
+
 export function dismissPianoMSuggest(): PianoMGuidePrefs {
   return commitGuide({ ...guide, suggest: false, suggestDismissed: true })
 }
@@ -154,4 +180,6 @@ export function resetPianoMForTests(): void {
   detected = false
   guide = { ...DEFAULT_GUIDE }
   persisted.save(guide)
+  setupNonce = 0
+  setupArmed = false
 }

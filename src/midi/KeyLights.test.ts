@@ -443,7 +443,7 @@ describe('ROLI Piano M key lights', () => {
     expect(send).toHaveBeenCalledWith([0x9c, 48, 127])
   })
 
-  it('lights only this board when a single Piano M port is selected', () => {
+  it('sends the whole window to one selected Piano M port', () => {
     setKeyboardRange({
       start: 60,
       size: 48,
@@ -455,6 +455,8 @@ describe('ROLI Piano M key lights', () => {
     expect(midiMessages(send)).toEqual([
       [0x9c, 60, 127],
       [0x9c, 83, 127],
+      [0x9c, 84, 127],
+      [0x9c, 107, 127],
     ])
   })
 
@@ -693,7 +695,7 @@ describe('several Piano M outputs', () => {
     expect(lights.settings.value.outputId).toBe('')
   })
 
-  it('sends each note to its board and that board’s lowest note', () => {
+  it('sends every note and one lowest note to each board', () => {
     sendA.mockClear()
     sendB.mockClear()
     setKeyboardRange({
@@ -704,24 +706,23 @@ describe('several Piano M outputs', () => {
       fitToRange: true,
     })
     play([60, 83, 84, 107])
-    expect(midiMessages(sendA).filter((message) => (message[0]! & 0xf0) === 0x90)).toEqual([
+    const colours = themeHandLights(goldenHourTheme)
+    const shared = [
       [0x9c, 60, 127],
       [0x9c, 83, 127],
-    ])
-    expect(midiMessages(sendB).filter((message) => (message[0]! & 0xf0) === 0x90)).toEqual([
       [0x9c, 84, 127],
       [0x9c, 107, 127],
-    ])
-    const colours = themeHandLights(goldenHourTheme)
-    expect(midiMessages(sendA)).toEqual(
-      expect.arrayContaining(pianoMPaletteMessages(colours, getKeyboardRange(), 0)),
-    )
-    expect(midiMessages(sendB)).toEqual(
-      expect.arrayContaining(pianoMPaletteMessages(colours, getKeyboardRange(), 1)),
-    )
+    ]
+    expect(midiMessages(sendA).filter((message) => (message[0]! & 0xf0) === 0x90)).toEqual(shared)
+    expect(midiMessages(sendB).filter((message) => (message[0]! & 0xf0) === 0x90)).toEqual(shared)
+    const palette = pianoMPaletteMessages(colours, getKeyboardRange())
+    expect(midiMessages(sendA)).toEqual(expect.arrayContaining(palette))
+    expect(midiMessages(sendB)).toEqual(expect.arrayContaining(palette))
+    expect(midiMessages(sendA)).toEqual(expect.arrayContaining([[0xbb, 23, 60]]))
+    expect(midiMessages(sendB)).not.toEqual(expect.arrayContaining([[0xbb, 23, 84]]))
   })
 
-  it('swaps which port is the left board and remembers it', () => {
+  it('remembers a swapped order and still sends one shared stream', () => {
     setKeyboardRange({
       start: 60,
       size: 48,
@@ -735,13 +736,17 @@ describe('several Piano M outputs', () => {
     sendB.mockClear()
     lights.setTheme(goldenHourTheme)
     play([60, 84])
-    expect(midiMessages(sendB).filter((message) => message[0] === 0x9c)).toEqual([[0x9c, 60, 127]])
-    expect(midiMessages(sendA).filter((message) => message[0] === 0x9c)).toEqual([[0x9c, 84, 127]])
+    const notes = [
+      [0x9c, 60, 127],
+      [0x9c, 84, 127],
+    ]
+    expect(midiMessages(sendA).filter((message) => message[0] === 0x9c)).toEqual(notes)
+    expect(midiMessages(sendB).filter((message) => message[0] === 0x9c)).toEqual(notes)
+    expect(midiMessages(sendA)).toEqual(expect.arrayContaining([[0xbb, 23, 60]]))
     expect(midiMessages(sendB)).toEqual(expect.arrayContaining([[0xbb, 23, 60]]))
-    expect(midiMessages(sendA)).toEqual(expect.arrayContaining([[0xbb, 23, 84]]))
   })
 
-  it('sends one selected board only its own notes', () => {
+  it('sends one selected port the whole stream', () => {
     lights.configure({ outputId: 'lumi-b' })
     setKeyboardRange({
       start: 60,
@@ -755,25 +760,30 @@ describe('several Piano M outputs', () => {
     lights.setTheme(goldenHourTheme)
     play([60, 84])
     expect(sendA).not.toHaveBeenCalled()
-    expect(midiMessages(sendB).filter((message) => message[0] === 0x9c)).toEqual([[0x9c, 84, 127]])
-    expect(midiMessages(sendB)).toEqual(expect.arrayContaining([[0xbb, 23, 84]]))
+    expect(midiMessages(sendB).filter((message) => message[0] === 0x9c)).toEqual([
+      [0x9c, 60, 127],
+      [0x9c, 84, 127],
+    ])
+    expect(midiMessages(sendB)).toEqual(expect.arrayContaining([[0xbb, 23, 60]]))
   })
 
-  it('flashes board 1, then board 2', () => {
+  it('holds a sweep for one board on one port', () => {
     sendA.mockClear()
     sendB.mockClear()
-    lights.identifyPianoMBoards()
-    expect(midiMessages(sendA).some((message) => message[0] === 0x9c && message[1] === 60)).toBe(
-      true,
-    )
+    lights.startBoardSweep(0, 'lumi-a')
+    const onA = midiMessages(sendA)
+    expect(onA.some((message) => message[0] === 0x9c && message[1] === 60)).toBe(true)
+    expect(onA.some((message) => message[0] === 0x9c && message[1] === 83)).toBe(true)
+    expect(onA.some((message) => message[0] === 0x9c && message[1] === 84)).toBe(false)
+    expect(onA).toEqual(expect.arrayContaining([[0xbb, 23, 60]]))
     expect(sendB).not.toHaveBeenCalled()
-    vi.advanceTimersByTime(450)
+    expect(lights.sentLog.value.some((row) => row.portId === 'lumi-a')).toBe(true)
+    lights.startBoardSweep(1, 'lumi-b')
+    const onB = midiMessages(sendB)
+    expect(onB.some((message) => message[0] === 0x9c && message[1] === 84)).toBe(true)
+    expect(onB.some((message) => message[0] === 0x9c && message[1] === 60)).toBe(false)
+    expect(onB).toEqual(expect.arrayContaining([[0xbb, 23, 60]]))
     expect(midiMessages(sendA).some((message) => message[0] === 0x8c && message[1] === 60)).toBe(
-      true,
-    )
-    expect(sendB).not.toHaveBeenCalled()
-    vi.advanceTimersByTime(120)
-    expect(midiMessages(sendB).some((message) => message[0] === 0x9c && message[1] === 84)).toBe(
       true,
     )
   })

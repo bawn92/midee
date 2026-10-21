@@ -1,0 +1,199 @@
+/*
+<metadata description="Piano M right board lights" target="LUMI Keys" tags="MIDI;Light;" insertModes="false">
+</metadata>
+
+Theme lights for the right ROLI Piano M or LUMI board. Drop this file on the right board in ROLI Dashboard. It is the same lights as the left file, with this board fixed as board 1.
+
+Piano Club sends one shared stream. CC 23 is the lowest MIDI note of the
+whole window, the same value on every board. This file lights only the 24
+keys that belong to board 1: that lowest note, plus 24.
+Notes outside those 24 keys are ignored. The same note-on can arrive twice;
+storing the hand for that note is enough, and a note-off clears it.
+
+Playing and the octave buttons stay with the factory key handler. This
+program does not define a button handler, so it cannot move the octave
+from a button. The key callbacks below only remember which key is held
+for the lights. They do not transmit notes.
+
+If this board still plays the same notes as the left board, the load
+below raises its octave when the DNA topology is unset. Press both
+octave buttons to reset an octave the factory handler has shifted.
+Holding all three top buttons restores the factory program and removes
+these lights.
+
+Channels 12 and 13 are the left and right hands. CC 20/21/22 are red,
+green, and blue. CC 23 on channel 12 or 13 is the window lowest note.
+CC 121 and CC 123 clear the guide notes.
+*/
+
+#heapsize: 128
+
+const int keysPerBlock = 24;
+const int boardIndex = 1;
+const int midiNoteOff = 0x8;
+const int midiNoteOn = 0x9;
+const int midiCC = 0xB;
+
+int baseNote;
+int leftR;
+int leftG;
+int leftB;
+int rightR;
+int rightG;
+int rightB;
+int handFor[128];
+int downKey[24];
+
+const int configOctave = 4;
+const int configTopology = 8;
+
+void matchFirmwareOctave() {
+    // Config 8 is the DNA octave topology. Zero means this board is still
+    // in the same octave as the left board, which is what a factory reset
+    // leaves behind. Two octaves per board to the right puts the right
+    // board 24 semitones higher. A topology that is already set means the
+    // firmware is offsetting, so the octave stays where it is.
+    // If topology stays 0 while the firmware still offsets, this adds
+    // another two octaves. Set Octave back to 0 in ROLI Dashboard.
+    // Loading this file again sets that octave whenever topology is 0.
+    int topology = getLocalConfig(configTopology);
+    if (topology == 0) setLocalConfig(configOctave, boardIndex * 2);
+}
+
+int component(int value) {
+    return (value * 255) / 127;
+}
+
+int handFromChannel(int channel) {
+    if (channel == 1 || channel == 11) return 1;
+    if (channel >= 2 && channel <= 5) return 1;
+    if (channel == 6 || channel == 12) return 2;
+    if (channel >= 7 && channel <= 10) return 2;
+    return 0;
+}
+
+void clearNotes() {
+    for (int i = 0; i < 128; i = i + 1) handFor[i] = 0;
+}
+
+void clearDown() {
+    for (int i = 0; i < keysPerBlock; i = i + 1) downKey[i] = 0;
+}
+
+void markDown(int keyIndex) {
+    if (keyIndex >= 0 && keyIndex < keysPerBlock) downKey[keyIndex] = 1;
+}
+
+void markUp(int keyIndex) {
+    if (keyIndex >= 0 && keyIndex < keysPerBlock) downKey[keyIndex] = 0;
+}
+
+void initialise() {
+    // Factory handler sends the notes. Do not turn clustering on: that
+    // replaces the factory octave map and both boards then play the same notes.
+    setUseDefaultKeyHandler(true, false);
+    matchFirmwareOctave();
+    baseNote = 60;
+    leftR = 0;
+    leftG = 0;
+    leftB = 255;
+    rightR = 0;
+    rightG = 255;
+    rightB = 0;
+    clearNotes();
+    clearDown();
+}
+
+void handleMIDI(int byte0, int byte1, int byte2) {
+    int channel = byte0 & 0x0F;
+    int status = (byte0 >> 4) & 0x0F;
+
+    if (status == midiCC) {
+        if (byte1 == 123 || byte1 == 121) {
+            clearNotes();
+            return;
+        }
+        if (byte1 == 23 && (channel == 11 || channel == 12)) {
+            baseNote = byte2;
+            return;
+        }
+        if (byte1 >= 20 && byte1 <= 22 && (channel == 11 || channel == 12)) {
+            int value = component(byte2);
+            if (channel == 11) {
+                if (byte1 == 20) leftR = value;
+                if (byte1 == 21) leftG = value;
+                if (byte1 == 22) leftB = value;
+            } else {
+                if (byte1 == 20) rightR = value;
+                if (byte1 == 21) rightG = value;
+                if (byte1 == 22) rightB = value;
+            }
+        }
+        return;
+    }
+
+    if (byte1 < 0 || byte1 > 127) return;
+    int hand = handFromChannel(channel);
+    if (status == midiNoteOn && byte2 > 0) {
+        if (hand != 0) handFor[byte1] = hand;
+    } else if (status == midiNoteOff || (status == midiNoteOn && byte2 == 0)) {
+        handFor[byte1] = 0;
+    }
+}
+
+// Observe only. These callbacks do not transmit notes.
+void keyStrike(int keyIndex, int unused, int velocity) {
+    if (velocity < 0) keyIndex = unused;
+    markDown(keyIndex);
+}
+
+void keyPress(int keyIndex, int aftertouch, int velocity) {
+    if (velocity < 0) keyIndex = aftertouch;
+    markDown(keyIndex);
+}
+
+void keyLift(int keyIndex, int unused, int velocity) {
+    if (velocity < 0) keyIndex = unused;
+    markUp(keyIndex);
+}
+
+void repaint() {
+    for (int key = 0; key < keysPerBlock; key = key + 1) {
+        int origin = baseNote + boardIndex * keysPerBlock;
+        int note = origin + key;
+        int guided = 0;
+        if (note >= 0 && note < 128) guided = handFor[note];
+        int held = downKey[key];
+        int r = 0;
+        int g = 0;
+        int b = 0;
+
+        if (held == 1 && guided == 0) {
+            if (key < 12) {
+                r = leftR / 2;
+                g = leftG / 2;
+                b = leftB / 2;
+            } else {
+                r = rightR / 2;
+                g = rightG / 2;
+                b = rightB / 2;
+            }
+        }
+        if (guided == 1) {
+            r = leftR;
+            g = leftG;
+            b = leftB;
+        }
+        if (guided == 2) {
+            r = rightR;
+            g = rightG;
+            b = rightB;
+        }
+        if (guided != 0 && held == 1) {
+            r = r + (255 - r) / 2;
+            g = g + (255 - g) / 2;
+            b = b + (255 - b) / 2;
+        }
+        fillPixel(makeARGB(255, r, g, b), key, 0);
+    }
+}

@@ -15,18 +15,14 @@ import { jsonPersisted } from '../core/persistence'
 import type { Theme } from '../renderer/theme'
 import { createEventSignal } from '../store/eventSignal'
 import { isPianoMPortName } from './pianoM'
-import {
-  PIANO_M_CC_BASE,
-  pianoMBoardBase,
-  pianoMPaletteMessages,
-  themeHandLights,
-} from './pianoMColors'
+import { pianoMBoardBase, pianoMPaletteMessages, themeHandLights } from './pianoMColors'
 import {
   getPianoMPortPrefs,
   markPianoMOutputChosen,
   PIANO_M_ALL_ID,
   type PianoMPortInfo,
   rememberPianoMPorts,
+  setPianoMPortOrder,
   swapPianoMPorts,
 } from './pianoMPorts'
 
@@ -53,10 +49,14 @@ interface LightEvent extends LightNote {
   on: boolean
 }
 
-const IDENTIFY_ON_MS = 450
-const IDENTIFY_GAP_MS = 120
-
 const defaults: KeyLightsSettings = { outputId: '', channelMode: 'original', channel: 1 }
+
+export interface KeyLightsSend {
+  portId: string
+  portName: string
+  bytes: number[]
+  truncated: boolean
+}
 const preferences = jsonPersisted('midee.keyLights', defaults, (raw): KeyLightsSettings => {
   const value = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
   return {
@@ -86,14 +86,15 @@ export class KeyLights {
   readonly outputs = createEventSignal<PianoMPortInfo[]>([])
   // Left-to-right ids of the connected Piano M / LUMI outputs.
   readonly boardOrder = createEventSignal<string[]>([])
+  readonly sentLog = createEventSignal<KeyLightsSend[]>([])
   readonly status = createEventSignal<'off' | 'connected' | 'disconnected' | 'error'>('off')
   private access: MIDIAccess | null = null
   private output: MIDIOutput | null = null
   private boundKey = ''
   private muted = false
   private identifying = false
-  private identifyTimer: ReturnType<typeof setTimeout> | null = null
-  private identifyGen = 0
+  private sweepNotes: number[] = []
+  private sweepPorts: MIDIOutput[] = []
   private applyingDefault = false
   private midi: MidiFile | null = null
   private disabled = new Set<string>()
@@ -169,68 +170,56 @@ export class KeyLights {
     this.setAccess(this.access)
   }
 
-  // Flashes each connected Piano M in left-to-right order so the player can
-  // confirm which port is the left board. Swap reverses that saved order.
-  identifyPianoMBoards(): void {
-    const boards = this.pianoMOutputPorts()
-    if (boards.length < 2) return
+  // Lights one board's range and holds it until the setup flow gets an answer.
+  // CC 23 stays the window's lowest note. The note numbers are that note plus
+  // 24 times the board index, so a script that knows its index lights only
+  // its own keys. `portId` limits the send to one output; the all-boards id
+  // sends the same bytes to every Piano M port.
+  startBoardSweep(boardIndex: number, portId: string): void {
     this.stop()
-    const generation = this.identifyGen
-    this.identifying = true
-    const range = getKeyboardRange()
     const low = this.lightLow()
-    const step = (index: number): void => {
-      if (generation !== this.identifyGen || !this.identifying || this.disposed) return
-      const port = boards[index]
-      if (!port) {
-        this.identifying = false
-        this.sendPalette()
-        this.restart()
-        return
-      }
-      const base = pianoMBoardBase(low, index)
-      const on = [0xbb, 123, 0]
-      for (const message of pianoMPaletteMessages(
-        { left: 0xffffff, right: 0xffffff },
-        range,
-        index,
-      )) {
-        on.push(...message)
-      }
-      for (let key = 0; key < PIANO_M_KEYS_PER_BOARD; key++) {
-        const note = base + key
-        if (note > 127) break
-        on.push(0x9c, note, 127)
-      }
-      this.dispatch(port, on, false)
-      this.identifyTimer = setTimeout(() => {
-        this.identifyTimer = null
-        if (generation !== this.identifyGen || !this.identifying) return
-        const off: number[] = []
-        for (let key = 0; key < PIANO_M_KEYS_PER_BOARD; key++) {
-          const note = base + key
-          if (note > 127) break
-          off.push(0x8c, note, 0)
-        }
-        this.dispatch(port, off, false)
-        this.identifyTimer = setTimeout(() => {
-          this.identifyTimer = null
-          step(index + 1)
-        }, IDENTIFY_GAP_MS)
-      }, IDENTIFY_ON_MS)
+    const origin = pianoMBoardBase(low, boardIndex)
+    const notes: number[] = []
+    for (let key = 0; key < PIANO_M_KEYS_PER_BOARD; key++) {
+      const note = origin + key
+      if (note > 127) break
+      notes.push(note)
     }
-    step(0)
+    const ports = this.portsForSweep(portId)
+    this.sweepNotes = notes
+    this.sweepPorts = ports
+    this.identifying = true
+    const on = [0xbb, 123, 0]
+    for (const message of pianoMPaletteMessages(
+      { left: 0xffffff, right: 0xffffff },
+      getKeyboardRange(),
+    )) {
+      on.push(...message)
+    }
+    for (const note of notes) on.push(0x9c, note, 110)
+    for (const port of ports) this.dispatch(port, on, false)
+  }
+
+  stopBoardSweep(): void {
+    if (!this.identifying && this.sweepNotes.length === 0) return
+    this.stop()
+    this.sendPalette()
+    this.restart()
+  }
+
+  setPianoMBoardOrder(order: readonly string[]): void {
+    const connected = new Set(this.pianoMOutputPorts().map((port) => port.id))
+    const stored = setPianoMPortOrder(order)
+    this.boardOrder.set(stored.filter((id) => connected.has(id)))
+    this.stop()
+    this.restart()
+    this.sendPalette()
   }
 
   swapPianoMBoards(): void {
     const connected = [...this.boardOrder.value]
     if (connected.length < 2) return
-    const wasIdentifying = this.identifying
     this.boardOrder.set(swapPianoMPorts(connected))
-    if (wasIdentifying) {
-      this.identifyPianoMBoards()
-      return
-    }
     this.stop()
     this.restart()
     this.sendPalette()
@@ -555,74 +544,44 @@ export class KeyLights {
     })
   }
 
-  private targets(): { port: MIDIOutput; boardIndex: number | null }[] {
+  private targets(): MIDIOutput[] {
     if (this.muted || !this.access) return []
     const settings = this.settings.value
     if (!settings.outputId) return []
-    if (settings.outputId === PIANO_M_ALL_ID) {
-      const ports = this.boardOrder.value.flatMap((id, boardIndex) => {
-        const port = this.access?.outputs.get(id)
-        if (!port || port.state !== 'connected') return []
-        return [{ port, boardIndex: settings.channelMode === 'pianoM' ? boardIndex : null }]
-      })
-      return ports
-    }
-    if (!this.output) return []
-    if (settings.channelMode !== 'pianoM') return [{ port: this.output, boardIndex: null }]
-    const info = this.outputs.value.find((port) => port.id === this.output?.id)
-    if (!info || !isPianoMPortName(info.name, info.manufacturer)) {
-      return [{ port: this.output, boardIndex: null }]
-    }
-    const index = this.boardOrder.value.indexOf(this.output.id)
-    return [{ port: this.output, boardIndex: index >= 0 ? index : 0 }]
+    if (settings.outputId === PIANO_M_ALL_ID) return this.pianoMOutputPorts()
+    return this.output ? [this.output] : []
   }
 
+  // Every Piano M port gets the same bytes. The script on each board keeps
+  // the notes in its own range. Sending the same note twice is harmless.
   private route(data: number[], fatal: boolean): void {
-    const targets = this.targets()
-    if (targets.length === 0 || data.length === 0) return
-    if (targets.every((target) => target.boardIndex === null)) {
-      for (const target of targets) {
-        if (!this.dispatch(target.port, data, fatal)) return
-      }
-      return
+    if (data.length === 0) return
+    for (const port of this.targets()) {
+      if (!this.dispatch(port, data, fatal)) return
     }
-    const low = this.lightLow()
-    const batches = targets.map(() => [] as number[])
-    for (let i = 0; i + 2 < data.length; i += 3) {
-      const status = data[i] ?? 0
-      const data1 = data[i + 1] ?? 0
-      const data2 = data[i + 2] ?? 0
-      const kind = status & 0xf0
-      const noteOff = kind === 0x80 || (kind === 0x90 && data2 === 0)
-      if (noteOff) {
-        for (const batch of batches) batch.push(status, data1, data2)
-        continue
-      }
-      if (kind === 0x90) {
-        const board = Math.floor((data1 - low) / PIANO_M_KEYS_PER_BOARD)
-        const slot = targets.findIndex((target) => target.boardIndex === board)
-        if (slot >= 0) batches[slot]?.push(status, data1, data2)
-        continue
-      }
-      if (kind === 0xb0 && data1 === PIANO_M_CC_BASE) {
-        targets.forEach((target, slot) => {
-          batches[slot]?.push(status, data1, pianoMBoardBase(low, target.boardIndex ?? 0))
-        })
-        continue
-      }
-      for (const batch of batches) batch.push(status, data1, data2)
-    }
-    for (let slot = 0; slot < targets.length; slot++) {
-      const batch = batches[slot]
-      const target = targets[slot]
-      if (!batch || batch.length === 0 || !target) continue
-      if (!this.dispatch(target.port, batch, fatal)) return
-    }
+  }
+
+  private portsForSweep(portId: string): MIDIOutput[] {
+    const ports = this.pianoMOutputPorts()
+    if (!portId || portId === PIANO_M_ALL_ID) return ports
+    const match = ports.filter((port) => port.id === portId)
+    return match.length > 0 ? match : ports
   }
 
   private dispatch(port: MIDIOutput, data: number[], fatal: boolean): boolean {
     try {
       port.send(data)
+      const bytes = data.slice(0, 24)
+      const next = [
+        ...this.sentLog.value,
+        {
+          portId: port.id,
+          portName: port.name || port.id,
+          bytes,
+          truncated: data.length > bytes.length,
+        },
+      ]
+      this.sentLog.set(next.slice(-8))
       return true
     } catch {
       if (fatal) {
@@ -637,10 +596,15 @@ export class KeyLights {
   }
 
   private finishIdentify(): void {
-    if (this.identifyTimer !== null) clearTimeout(this.identifyTimer)
-    this.identifyTimer = null
+    const notes = this.sweepNotes
+    const ports = this.sweepPorts
+    this.sweepNotes = []
+    this.sweepPorts = []
     this.identifying = false
-    this.identifyGen += 1
+    if (notes.length === 0 || ports.length === 0) return
+    const off: number[] = []
+    for (const note of notes) off.push(0x8c, note, 0)
+    for (const port of ports) this.dispatch(port, off, false)
   }
 
   private onPageHide = (): void => this.stop()

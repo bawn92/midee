@@ -11,14 +11,19 @@ const fr: Messages = {
     'Canaux 12/13 pour les mains gauche/droite. Les mains sont estimées selon la hauteur des pistes ; les fichiers à une piste sont séparés au do central. Sans doigtés.',
   'keyLights.pianoM': 'ROLI Piano M',
   'keyLights.pianoMHint':
-    'Le firmware d’usine du Piano M n’allume pas les notes reçues. Chaque clavier a son propre port MIDI, souvent sous le même nom. Deux claviers font 48 touches, trois en font 72. Choisissez Tous les Piano M pour que chaque note guide n’aille qu’au clavier qui la joue. Ce clavier reçoit sa propre note la plus grave, et les couleurs des mains vont à chaque clavier. Sur la carte de tessiture, choisissez 24, 48 ou 72 : ces plages s’alignent sur do. Téléchargez piano-m-theme-lights.littlefoot et déposez ce fichier sur chaque Piano M dans ROLI Dashboard. Si le script Synthesia ou une ancienne copie est déjà chargé, déposez ce fichier par-dessus. Rechargez ce fichier sur chaque clavier. Chaque clavier n’allume que ses 24 touches. Les canaux 12 et 13 restent la gauche et la droite. Les couleurs de mains partent sur ces canaux — rose à gauche et miel à droite — et sont renvoyées quand vous changez de scène. Les lumières suivent Ajuster à votre tessiture, la main que vous travaillez et le calibrage du clavier. Le jeu et les boutons d’octave restent au gestionnaire d’usine. Identifier fait clignoter le clavier 1, puis le clavier 2. Si celui de droite clignote en premier, inversez les claviers. L’ordre est mémorisé. Si le clavier de droite joue encore les mêmes notes que celui de gauche, appuyez sur les deux boutons d’octave pour réinitialiser l’octave. Le gestionnaire d’usine place alors le clavier de droite 24 demi-tons plus haut. Maintenir les trois boutons du haut restaure le programme d’usine et retire ces lumières. Une touche maintenue s’allume dans la couleur de la main, et la note guide reste plus vive par-dessus.',
+    'Le firmware d’usine du Piano M n’allume pas les notes reçues. Chaque clavier a son propre port MIDI, souvent sous le même nom. Deux claviers font 48 touches, trois en font 72. Choisissez Tous les Piano M. Piano Club envoie les mêmes notes, et la même note la plus grave, à chaque clavier. Le fichier de gauche n’allume que les 24 touches graves. Le fichier de droite allume les 24 suivantes, et le troisième fichier les 24 d’après. Déposez piano-m-lights-left.littlefoot sur le clavier de gauche, piano-m-lights-right.littlefoot sur celui de droite, et piano-m-lights-board-3.littlefoot sur un troisième clavier. Sur la carte de tessiture, choisissez 24, 48 ou 72 : ces plages s’alignent sur do. Les canaux 12 et 13 restent la gauche et la droite. Les couleurs de mains partent sur ces canaux — rose à gauche et miel à droite — et sont renvoyées quand vous changez de scène. Les lumières suivent Ajuster à votre tessiture, la main que vous travaillez et le calibrage du clavier. Le jeu et les boutons d’octave restent au gestionnaire d’usine. Réglez vos claviers pour savoir quel port est à gauche et lequel est à droite. Si les deux claviers jouent les mêmes notes, appuyez sur les deux boutons d’octave pour réinitialiser l’octave. Le fichier de droite monte aussi son octave de deux quand le clavier n’est pas déjà décalé. Maintenir les trois boutons du haut restaure le programme d’usine et retire ces lumières. Une touche maintenue s’allume dans la couleur de la main, et la note guide reste plus vive par-dessus.',
   'keyLights.pianoMScript': 'Télécharger piano-m-theme-lights.littlefoot',
+  'keyLights.pianoMScriptLeft': 'Clavier gauche : piano-m-lights-left.littlefoot',
+  'keyLights.pianoMScriptRight': 'Clavier droit : piano-m-lights-right.littlefoot',
+  'keyLights.pianoMScriptBoard3': 'Troisième clavier : piano-m-lights-board-3.littlefoot',
   'keyLights.pianoMAll': 'Tous les Piano M ({count})',
   'keyLights.pianoMBoard': 'Piano M {n}',
-  'keyLights.pianoMIdentify': 'Identifier',
+  'keyLights.pianoMSetup': 'Régler vos claviers',
   'keyLights.pianoMSwap': 'Inverser les claviers',
   'keyLights.pianoMOrder':
-    'Identifier fait clignoter le clavier 1, puis le clavier 2. Inversez si celui de droite clignote en premier. L’ordre est mémorisé.',
+    'Régler vos claviers apprend quel port est à gauche et lequel est à droite. Inversez les claviers si vous savez déjà qu’ils sont inversés. L’ordre est mémorisé.',
+  'keyLights.pianoMDebug': 'Sorties MIDI et messages récents',
+  'keyLights.pianoMDebugEmpty': 'Rien n’a encore été envoyé.',
   'keyLights.keeziHint':
     'KEEZI : connectez via KEENEKT. Utilisez Visualizer → Synthesia pour les mains, ou → DAW pour les canaux du fichier/des pistes.',
   'keyLights.title': 'Lumières du clavier',
@@ -47,7 +52,7 @@ const fr: Messages = {
   'pianoM.guide.together':
     'Les claviers assemblés forment un seul clavier. Chacun a son propre port MIDI, souvent sous le même nom. Celui de gauche joue les 24 touches graves. Chaque clavier à droite continue 24 demi-tons plus haut.',
   'pianoM.guide.script':
-    'Chargez le script de lumières sur chaque clavier. Choisissez Tous les Piano M. Chaque note guide va seulement au clavier qui la joue, et ce clavier reçoit sa propre note la plus grave. Les couleurs des mains vont à chaque clavier. Identifier fait clignoter le clavier 1, puis le 2. Si celui de droite clignote en premier, inversez les claviers. L’ordre est mémorisé. Déposez piano-m-theme-lights.littlefoot sur chaque Piano M dans ROLI Dashboard. Si une copie plus ancienne est déjà là, déposez ce fichier par-dessus.',
+    'Chargez le fichier de gauche sur le clavier de gauche et le fichier de droite sur celui de droite. Choisissez Tous les Piano M. Chaque clavier entend les mêmes notes. Chaque fichier n’allume que ses 24 touches. Un troisième clavier utilise le troisième fichier.',
   'pianoM.guide.octave':
     'Si les deux claviers jouent les mêmes notes, appuyez sur les deux boutons d’octave pour réinitialiser l’octave. Le clavier de droite se place alors 24 demi-tons plus haut.',
   'pianoM.guide.suggest':
@@ -55,6 +60,33 @@ const fr: Messages = {
   'pianoM.guide.use48': 'Passer à 48',
   'pianoM.guide.notNow': 'Pas maintenant',
   'pianoM.guide.reopen': 'Réglage Piano M',
+  'pianoM.setup.title': 'Régler vos claviers',
+  'pianoM.setup.left': 'Appuyez sur une touche de votre clavier GAUCHE.',
+  'pianoM.setup.right': 'Appuyez sur une touche de votre clavier DROIT.',
+  'pianoM.setup.heard': '{note} entendu sur {port}.',
+  'pianoM.setup.cluster':
+    'Les deux claviers sont arrivés sur le même port MIDI et ont joué les mêmes notes. Ils sont groupés sans décalage d’octave. Piano Club ne peut pas ajouter 24 seulement au clavier de droite tant qu’ils partagent un port : le fichier de droite monte donc cette octave de deux. Si les claviers apparaissent plus tard comme deux ports jouant les mêmes notes, Piano Club ajoute 24 au port de droite.',
+  'pianoM.setup.continue': 'Continuer',
+  'pianoM.setup.confirm': 'Jouez la touche la plus grave de chaque clavier.',
+  'pianoM.setup.detected': 'Gauche {left}. Droite {right}.',
+  'pianoM.setup.waiting': 'En attente des deux touches graves.',
+  'pianoM.setup.offsetOn': 'Le clavier de droite joue maintenant 24 demi-tons plus haut.',
+  'pianoM.setup.same': 'Ces claviers partagent un port, donc le fichier de droite monte cette octave.',
+  'pianoM.setup.roli': 'ROLI appelle ces notes do3 et do5.',
+  'pianoM.setup.lightLeft': 'Le clavier GAUCHE s’est-il allumé ?',
+  'pianoM.setup.lightRight': 'Le clavier DROIT s’est-il allumé ?',
+  'pianoM.setup.yes': 'Oui',
+  'pianoM.setup.otherLeft': 'Non, c’était celui de droite',
+  'pianoM.setup.otherRight': 'Non, c’était celui de gauche',
+  'pianoM.setup.both': 'Les deux se sont allumés',
+  'pianoM.setup.none': 'Aucun ne s’est allumé',
+  'pianoM.setup.files':
+    'Les deux claviers se sont allumés avec un seul message. Chargez le fichier de gauche sur le clavier de gauche et le fichier de droite sur celui de droite. Chaque fichier n’allume que ses 24 touches.',
+  'pianoM.setup.noneHelp':
+    'Aucun clavier ne s’est allumé. Chargez le fichier de gauche sur le clavier de gauche et le fichier de droite sur celui de droite, puis recommencez.',
+  'pianoM.setup.done': 'C’est prêt',
+  'pianoM.setup.summary': 'La gauche et la droite sont attribuées. C’est mémorisé pour ces claviers.',
+  'pianoM.setup.again': 'Recommencer le réglage',
 
   'songGuide.open': 'Guide du morceau',
   'songGuide.title': 'Guide du morceau',

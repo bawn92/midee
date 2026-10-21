@@ -1,11 +1,20 @@
 import type { MasterClock } from '../core/clock/MasterClock'
 import { createEventSignal } from '../store/eventSignal'
 import { isPianoMPortName, setPianoMDetected } from './pianoM'
+import { applyPianoMInputPitch, syncLiveInputOffset } from './pianoMSetup'
 
 export interface MidiNoteEvent {
   pitch: number
   velocity: number // 0–1, normalised from MIDI 0–127
   clockTime: number // MasterClock.currentTime at the moment of the event
+}
+
+export interface PianoKeyEvent {
+  portId: string
+  portName: string
+  rawPitch: number
+  pitch: number
+  velocity: number
 }
 
 export type MidiDeviceStatus = 'unavailable' | 'disconnected' | 'connected' | 'blocked'
@@ -82,6 +91,8 @@ export class MidiInputManager {
   // Since JS is single-threaded, rapid-fire events are processed sequentially.
   readonly noteOn = createEventSignal<MidiNoteEvent | null>(null)
   readonly noteOff = createEventSignal<MidiNoteEvent | null>(null)
+  // Raw pitch plus the pitch after a right-board offset. Setup listens here.
+  readonly pianoKey = createEventSignal<PianoKeyEvent | null>(null)
 
   // Sustain pedal (CC64) — true when the damper is engaged. Per the MIDI
   // spec, controller value <64 = off, >=64 = on. Subscribers decide how to
@@ -127,6 +138,7 @@ export class MidiInputManager {
 
     let anyConnected = false
     const names: string[] = []
+    const pianoIds: string[] = []
     const lightOutput = this.access.outputs.get(this.lightOutputId)
 
     for (const input of this.access.inputs.values()) {
@@ -143,12 +155,14 @@ export class MidiInputManager {
         continue
       }
       // Always overwrite — ensures we don't accumulate duplicate handlers
-      input.onmidimessage = (e) => this.handleMessage(e)
+      input.onmidimessage = (e) => this.handleMessage(input, e)
       if (input.state === 'connected') {
         anyConnected = true
         if (input.name) names.push(input.name)
+        if (isPianoMPortName(input.name ?? '', input.manufacturer ?? '')) pianoIds.push(input.id)
       }
     }
+    syncLiveInputOffset(pianoIds)
 
     this.status.set(anyConnected ? 'connected' : 'disconnected')
     this.deviceName.set(names.join(', '))
@@ -160,7 +174,7 @@ export class MidiInputManager {
     this.midiAccess.set(this.access)
   }
 
-  private handleMessage(e: MIDIMessageEvent): void {
+  private handleMessage(input: MIDIInput, e: MIDIMessageEvent): void {
     const msg = parseMidiMessage(e.data, this.pedal.value)
     if (msg.kind === 'none') return
 
@@ -169,13 +183,24 @@ export class MidiInputManager {
       clockTime = backdateEventTime(clockTime, e.timeStamp, performance.now(), this.clock.speed)
     }
 
-    if (msg.kind === 'noteOn') {
-      this.noteOn.set({ pitch: msg.pitch, velocity: msg.velocity, clockTime })
-    } else if (msg.kind === 'noteOff') {
-      this.noteOff.set({ pitch: msg.pitch, velocity: 0, clockTime })
-    } else {
-      this.pedal.set(msg.down)
+    if (msg.kind === 'noteOn' || msg.kind === 'noteOff') {
+      const rawPitch = msg.pitch
+      const pitch = applyPianoMInputPitch(input.id, rawPitch)
+      if (msg.kind === 'noteOn') {
+        this.pianoKey.set({
+          portId: input.id,
+          portName: input.name || input.id,
+          rawPitch,
+          pitch,
+          velocity: msg.velocity,
+        })
+        this.noteOn.set({ pitch, velocity: msg.velocity, clockTime })
+      } else {
+        this.noteOff.set({ pitch, velocity: 0, clockTime })
+      }
+      return
     }
+    this.pedal.set(msg.down)
   }
 
   dispose(): void {

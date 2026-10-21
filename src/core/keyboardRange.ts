@@ -248,8 +248,8 @@ function clampMidiPitch(pitch: number): number {
 export const DEFAULT_CONTROLLER_LOW = 60
 
 // Keys on one Piano M. A second board snapped on the right continues at
-// lowest + 24; a third at lowest + 48. Piano Club sends each board its own
-// lowest note (this note plus 24 times the board index) on CC 23.
+// lowest + 24; a third at lowest + 48. Piano Club sends that one lowest
+// note on CC 23. Each board's script adds 24 times its own index.
 export const PIANO_M_KEYS_PER_BOARD = 24
 
 // Uncalibrated Piano M spans use the factory low key. One board is 24 keys;

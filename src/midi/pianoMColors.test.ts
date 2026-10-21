@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { FULL_PIANO_RANGE } from '../core/keyboardRange'
 import { goldenHourTheme } from '../renderer/scenes/goldenHour'
 import { rainyStudyTheme } from '../renderer/scenes/rainyStudy'
-import { midiColorByte, pianoMPaletteMessages, themeHandLights } from './pianoMColors'
+import {
+  midiColorByte,
+  pianoMBoardBase,
+  pianoMPaletteMessages,
+  themeHandLights,
+} from './pianoMColors'
 
 describe('Piano M theme colours', () => {
   it('uses the scene’s second note colour on the left and the first on the right', () => {
@@ -32,7 +37,7 @@ describe('Piano M theme colours', () => {
     ])
   })
 
-  it('gives each board its own lowest note', () => {
+  it('shares one lowest note and still names each board’s key range', () => {
     const range = {
       ...FULL_PIANO_RANGE,
       start: 60,
@@ -43,9 +48,10 @@ describe('Piano M theme colours', () => {
       fitToRange: true,
     }
     const colors = themeHandLights(goldenHourTheme)
-    expect(pianoMPaletteMessages(colors, range, 0)[0]).toEqual([0xbb, 23, 60])
-    expect(pianoMPaletteMessages(colors, range, 1)[0]).toEqual([0xbb, 23, 84])
-    expect(pianoMPaletteMessages(colors, range, 2)[0]).toEqual([0xbb, 23, 108])
+    expect(pianoMPaletteMessages(colors, range)[0]).toEqual([0xbb, 23, 60])
+    expect(pianoMBoardBase(60, 0)).toBe(60)
+    expect(pianoMBoardBase(60, 1)).toBe(84)
+    expect(pianoMBoardBase(60, 2)).toBe(108)
   })
 
   it('follows a calibrated lowest key', () => {

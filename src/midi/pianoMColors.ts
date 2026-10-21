@@ -11,9 +11,9 @@ import type { Theme } from '../renderer/theme'
 export const PIANO_M_LEFT_CHANNEL = 11
 export const PIANO_M_RIGHT_CHANNEL = 12
 
-// CC 20/21/22 carry red/green/blue, 0–127. CC 23 carries this board's lowest
-// key. Board N is told lowest + 24*N, so the script lights only its own 24
-// keys and does not guess a DNA position. Calibration updates that lowest key.
+// CC 20/21/22 carry red/green/blue, 0–127. CC 23 carries the window's lowest
+// key, the same value on every board. Each script adds 24 times its own
+// board index and lights only that range. Calibration updates that lowest key.
 export const PIANO_M_CC_RED = 20
 export const PIANO_M_CC_GREEN = 21
 export const PIANO_M_CC_BLUE = 22
@@ -52,10 +52,9 @@ export function pianoMBoardBase(low: number, boardIndex: number): number {
 export function pianoMPaletteMessages(
   colors: { left: number; right: number },
   range: KeyboardRangePrefs,
-  boardIndex = 0,
 ): number[][] {
   const low = controllerKeyLow(range) ?? DEFAULT_CONTROLLER_LOW
-  const base = pianoMBoardBase(low, boardIndex)
+  const base = pianoMBoardBase(low, 0)
   return [
     [0xb0 | PIANO_M_LEFT_CHANNEL, PIANO_M_CC_BASE, base],
     ...rgbMessages(PIANO_M_LEFT_CHANNEL, colors.left),
