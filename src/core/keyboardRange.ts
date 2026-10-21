@@ -2,9 +2,11 @@
 // keyboard always draws all 88 keys; this window is a highlight on that
 // keyboard and the target a hardware controller is transposed onto, so its
 // lowest key sounds as the window's lowest key. Until the player calibrates,
-// a 24- or 25-key controller is assumed to sit on its factory octave: the
-// lowest key sends middle C (MIDI 60). With fit-to-range on, song notes
-// outside the window move by whole octaves onto keys inside it.
+// a Piano M span (24, 48, or 72 keys — one board per 24) or a 25-key
+// controller is assumed to sit on its factory octave: the lowest key sends
+// middle C (MIDI 60). With fit-to-range on, song notes outside the window
+// move by whole octaves onto keys inside it. A note inside a 48-key span
+// stays on that key, including the second snapped board.
 //
 // Persisted under `midee.keyboardRange`. The default is the full 88 keys, so
 // nothing changes until the player narrows it.
@@ -16,8 +18,10 @@ import { jsonPersisted } from './persistence'
 export const KEYBOARD_SIZE_MIN = 12
 export const KEYBOARD_SIZE_MAX = MIDI_MAX - MIDI_MIN + 1
 
-// Common controller sizes. 24 is two octaves (C–B), 25 is C–C.
-export const KEYBOARD_SIZE_PRESETS = [24, 25, 32, 37, 49, 61, 76, 88] as const
+// Common controller sizes. 24 is one Piano M (two octaves, C–B). 48 and 72
+// are two and three Piano M boards snapped into one keyboard. 25 is C–C.
+// Four boards would be 96 keys, which does not fit the 88-key piano.
+export const KEYBOARD_SIZE_PRESETS = [24, 25, 32, 37, 48, 49, 61, 72, 76, 88] as const
 
 export const KEYBOARD_RANGE_STORAGE_KEY = 'midee.keyboardRange'
 
@@ -34,8 +38,9 @@ export interface KeyboardRangePrefs extends KeyboardRange {
   // transposed into the window instead of moving it.
   followMidi: boolean
   // MIDI pitch the physical controller's lowest key sends. Null until the
-  // player calibrates by pressing that key. An uncalibrated 24- or 25-key
-  // window assumes DEFAULT_CONTROLLER_LOW instead of inventing one.
+  // player calibrates by pressing that key. An uncalibrated Piano M span
+  // (24, 48, or 72) or a 25-key window assumes DEFAULT_CONTROLLER_LOW
+  // instead of inventing one.
   controllerLow: number | null
   // True after "press your lowest key".
   calibrated: boolean
@@ -188,7 +193,7 @@ export function resizeRangeFromEdge(
 
 // Pitch class a controller of this size is built to start on.
 // 76-key pianos start on E. 88 keys are the piano itself (A0 only).
-// 24, 25, 32, 37, 49, 61, and any other size start on C.
+// 24, 25, 32, 37, 48, 49, 61, 72, and any other size start on C.
 export function rangeAnchorPitchClass(size: number): number | null {
   if (size >= KEYBOARD_SIZE_MAX) return null
   if (size === 76) return 4
@@ -236,17 +241,25 @@ function clampMidiPitch(pitch: number): number {
   return Math.max(0, Math.min(127, Math.round(pitch)))
 }
 
-// Factory lowest key of a ROLI Piano M (and the usual default for a 24- or
-// 25-key controller). ROLI labels this key C3. This app uses scientific pitch,
-// where the same MIDI note is C4 — middle C. Assuming MIDI 48 (our C3) puts
-// every Piano M note one octave above the window.
+// Factory lowest key of a ROLI Piano M (and the usual default for a 24-,
+// 48-, 72-, or 25-key controller). ROLI labels this key C3. This app uses
+// scientific pitch, where the same MIDI note is C4 — middle C. Assuming
+// MIDI 48 (our C3) puts every Piano M note one octave above the window.
 export const DEFAULT_CONTROLLER_LOW = 60
 
-// Uncalibrated two-octave windows use the factory low key. Anything else
-// passes MIDI through until the player presses their lowest key: a 49- or
-// 76-key controller does not ship on middle C.
+// Keys on one Piano M. A second board snapped on the right continues at
+// lowest + 24; a third at lowest + 48. The littlefoot script applies that
+// offset from getClusterXpos() and this shared lowest note.
+export const PIANO_M_KEYS_PER_BOARD = 24
+
+// Uncalibrated Piano M spans use the factory low key. One board is 24 keys;
+// each board snapped on the right adds 24, up to the three boards that still
+// fit on the 88-key piano. A 25-key C-to-C controller uses the same default.
+// A 49- or 76-key controller does not ship on middle C.
 export function assumesFactoryControllerLow(prefs: KeyboardRangePrefs): boolean {
-  return !prefs.calibrated && (prefs.size === 24 || prefs.size === 25)
+  const span = prefs.size
+  const pianoM = span >= PIANO_M_KEYS_PER_BOARD && span <= 72 && span % PIANO_M_KEYS_PER_BOARD === 0
+  return !prefs.calibrated && (pianoM || span === 25)
 }
 
 // How far to transpose a hardware note so the controller's lowest key lands

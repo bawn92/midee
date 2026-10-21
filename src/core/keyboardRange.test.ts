@@ -149,6 +149,8 @@ describe('snapRangeStart', () => {
 
   it('resizes onto that layout instead of an arbitrary center', () => {
     expect(resizeKeyboardRangeSnapped(FULL_PIANO_RANGE, 24)).toEqual({ start: 48, size: 24 })
+    expect(resizeKeyboardRangeSnapped(FULL_PIANO_RANGE, 48)).toEqual({ start: 36, size: 48 })
+    expect(resizeKeyboardRangeSnapped(FULL_PIANO_RANGE, 72)).toEqual({ start: 24, size: 72 })
     expect(resizeKeyboardRangeSnapped(FULL_PIANO_RANGE, 76)).toEqual({ start: 28, size: 76 })
   })
 })
@@ -207,6 +209,61 @@ describe('controller mapping', () => {
     expect(unmapControllerPitch(60, FULL_PREFS)).toBe(60)
     expect(unmapControllerPitch(200, FULL_PREFS)).toBeNull()
     expect(unmapControllerPitch(0, c3)).toBeNull()
+  })
+
+  // Which LED a raw note reaches. The littlefoot script does the same split:
+  // block = getClusterXpos(), key = note - (sharedLowest + block * 24).
+  function pianoMKey(raw: number, base: number): { block: number; key: number } | null {
+    const offset = raw - base
+    if (offset < 0 || offset > 127) return null
+    return { block: Math.floor(offset / 24), key: offset % 24 }
+  }
+
+  it('maps one Piano M and two snapped boards onto the physical key, with no wrap', () => {
+    const one = { ...prefs, start: 60, size: 24, controllerLow: null, calibrated: false }
+    expect(unmapControllerPitch(60, one)).toBe(60)
+    expect(unmapControllerPitch(83, one)).toBe(83)
+    // The next note is the first key of a second board. A 24-key span cannot
+    // hold it, so the light is skipped instead of wrapping onto key 0.
+    expect(unmapControllerPitch(84, one)).toBeNull()
+    expect(pianoMKey(60, 60)).toEqual({ block: 0, key: 0 })
+    expect(pianoMKey(83, 60)).toEqual({ block: 0, key: 23 })
+
+    const two = { ...prefs, start: 60, size: 48, controllerLow: null, calibrated: false }
+    expect(unmapControllerPitch(60, two)).toBe(60)
+    expect(unmapControllerPitch(83, two)).toBe(83)
+    expect(unmapControllerPitch(84, two)).toBe(84)
+    expect(unmapControllerPitch(107, two)).toBe(107)
+    expect(unmapControllerPitch(108, two)).toBeNull()
+    expect(pianoMKey(60, 60)).toEqual({ block: 0, key: 0 })
+    expect(pianoMKey(83, 60)).toEqual({ block: 0, key: 23 })
+    expect(pianoMKey(84, 60)).toEqual({ block: 1, key: 0 })
+    expect(pianoMKey(107, 60)).toEqual({ block: 1, key: 23 })
+
+    // Calibrated lowest key is MIDI 48. The window still starts at C4, so
+    // each sounding note lights 12 semitones lower, across both boards.
+    const calibrated = { ...two, start: 60, controllerLow: 48, calibrated: true }
+    expect(unmapControllerPitch(60, calibrated)).toBe(48)
+    expect(unmapControllerPitch(83, calibrated)).toBe(71)
+    expect(unmapControllerPitch(84, calibrated)).toBe(72)
+    expect(unmapControllerPitch(107, calibrated)).toBe(95)
+    expect(pianoMKey(48, 48)).toEqual({ block: 0, key: 0 })
+    expect(pianoMKey(72, 48)).toEqual({ block: 1, key: 0 })
+    expect(pianoMKey(95, 48)).toEqual({ block: 1, key: 23 })
+
+    // A note on the second board used to look like the octave button, because
+    // it sits 24 semitones above a 24-key span. Inside 48 keys it is just a key.
+    expect(detectControllerOctaveShift(84, 60, 24)).toBe(12)
+    expect(detectControllerOctaveShift(84, 60, 48)).toBe(0)
+    const kept = adoptControllerNote(84, { ...two, controllerLow: 60, calibrated: true }, false)
+    expect(kept.controllerLow).toBe(60)
+    expect(kept.mapped).toBe(84)
+
+    // Fit-to-range keeps a second-board note on that board when the window
+    // covers both. At 24 keys the same C6 folds one octave onto the first board.
+    expect(placedPitch(84, { ...two, fitToRange: true })).toEqual({ pitch: 84, octaves: 0 })
+    expect(placedPitch(84, { ...one, fitToRange: true })).toEqual({ pitch: 72, octaves: -1 })
+    expect(pianoMKey(72, 60)).toEqual({ block: 0, key: 12 })
   })
 
   it('hears an octave shift as the same physical key', () => {

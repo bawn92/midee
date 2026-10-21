@@ -10,8 +10,10 @@ import type { Theme } from '../renderer/theme'
 export const PIANO_M_LEFT_CHANNEL = 11
 export const PIANO_M_RIGHT_CHANNEL = 12
 
-// CC 20/21/22 carry red/green/blue, 0–127. CC 23 carries the lowest key's
-// MIDI note so the 25-key map follows calibration and the octave buttons.
+// CC 20/21/22 carry red/green/blue, 0–127. CC 23 carries the shared lowest
+// key's MIDI note. Each snapped board adds 24 times its DNA x-offset, so
+// one base note covers 24, 48, or 72 keys. Calibration and the octave
+// buttons update that same note.
 export const PIANO_M_CC_RED = 20
 export const PIANO_M_CC_GREEN = 21
 export const PIANO_M_CC_BLUE = 22

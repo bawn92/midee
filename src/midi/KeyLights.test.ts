@@ -440,6 +440,23 @@ describe('ROLI Piano M key lights', () => {
     expect(send).toHaveBeenCalledWith([0x9c, 48, 127])
   })
 
+  it('lights both boards of a 48-key Piano M on the physical key, with no wrap', () => {
+    setKeyboardRange({
+      start: 60,
+      size: 48,
+      calibrated: false,
+      controllerLow: null,
+      fitToRange: true,
+    })
+    play(song([60, 83, 84, 107]))
+    expect(midiMessages(send)).toEqual([
+      [0x9c, 60, 127],
+      [0x9c, 83, 127],
+      [0x9c, 84, 127],
+      [0x9c, 107, 127],
+    ])
+  })
+
   it('folds a note into the window and lights the physical key for that sounding pitch', () => {
     setKeyboardRange({
       start: 48,
