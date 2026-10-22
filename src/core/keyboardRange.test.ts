@@ -27,6 +27,7 @@ import {
   snapRangeStart,
   subscribeKeyboardRange,
   unmapControllerPitch,
+  withSnappedStart,
 } from './keyboardRange'
 import { MIDI_MAX, MIDI_MIN } from './midi/types'
 
@@ -150,8 +151,10 @@ describe('snapRangeStart', () => {
 
   it('resizes onto that layout instead of an arbitrary center', () => {
     expect(resizeKeyboardRangeSnapped(FULL_PIANO_RANGE, 24)).toEqual({ start: 48, size: 24 })
-    // Two Piano M boards start on factory C4, not the C2 nearest the middle.
-    expect(resizeKeyboardRangeSnapped(FULL_PIANO_RANGE, 48)).toEqual({ start: 60, size: 48 })
+    // Two Piano M boards use the nearest C, C2–B5, and stay draggable.
+    expect(resizeKeyboardRangeSnapped(FULL_PIANO_RANGE, 48)).toEqual({ start: 36, size: 48 })
+    expect(withSnappedStart({ start: 50, size: 48 })).toEqual({ start: 48, size: 48 })
+    expect(withSnappedStart({ start: 36, size: 48 })).toEqual({ start: 36, size: 48 })
     expect(resizeKeyboardRangeSnapped(FULL_PIANO_RANGE, 72)).toEqual({ start: 24, size: 72 })
     expect(resizeKeyboardRangeSnapped(FULL_PIANO_RANGE, 76)).toEqual({ start: 28, size: 76 })
   })
@@ -242,33 +245,38 @@ describe('controller mapping', () => {
     expect(pianoMKey(84, 60)).toEqual({ block: 1, key: 0 })
     expect(pianoMKey(107, 60)).toEqual({ block: 1, key: 23 })
 
-    // The preset 48-key window is this same C4 span. CC 23 is the range start,
-    // the sent note is the guide pitch, and the lit key is guide − C4.
+    // The preset 48-key window is C2–B5. CC 23 stays the factory C4. The sent
+    // note is (guide − window start) + C4, so left key 0 is the window start
+    // and right key 0 is the window start plus 24.
     const preset = {
       ...two,
       ...resizeKeyboardRangeSnapped(FULL_PIANO_RANGE, 48),
     }
-    expect(preset).toMatchObject({ start: 60, size: 48 })
-    expect(controllerKeyLow(preset)).toBe(preset.start)
+    expect(preset).toMatchObject({ start: 36, size: 48 })
+    expect(controllerKeyLow(preset)).toBe(60)
+    expect(mapControllerPitch(60, preset)).toBe(36)
+    expect(mapControllerPitch(84, preset)).toBe(60)
     const lit = (guide: number) => {
       const sent = unmapControllerPitch(guide, preset)
       const base = controllerKeyLow(preset)
       if (sent === null || base === null) return null
       return { sent, base, key: sent - base }
     }
-    expect(lit(60)).toEqual({ sent: 60, base: 60, key: 0 })
-    expect(lit(65)).toEqual({ sent: 65, base: 60, key: 5 })
-    expect(lit(83)).toEqual({ sent: 83, base: 60, key: 23 })
-    expect(lit(84)).toEqual({ sent: 84, base: 60, key: 24 })
-    expect(lit(107)).toEqual({ sent: 107, base: 60, key: 47 })
-    // Outside the 48 keys: skipped, not clamped onto C4, B5, C6, or B7.
-    expect(lit(59)).toBeNull()
-    expect(lit(108)).toBeNull()
-    expect(placedPitch(84, preset)).toEqual({ pitch: 84, octaves: 0 })
-    expect(placedPitch(59, { ...preset, fitToRange: true })).toEqual({ pitch: 71, octaves: 1 })
-    expect(placedPitch(108, { ...preset, fitToRange: true })).toEqual({ pitch: 96, octaves: -1 })
-    expect(placedPitch(108, { ...preset, fitToRange: true })?.pitch).not.toBe(107)
-    expect(placedPitch(59, { ...preset, fitToRange: true })?.pitch).not.toBe(60)
+    expect(lit(36)).toEqual({ sent: 60, base: 60, key: 0 })
+    expect(lit(41)).toEqual({ sent: 65, base: 60, key: 5 })
+    expect(lit(59)).toEqual({ sent: 83, base: 60, key: 23 })
+    expect(lit(60)).toEqual({ sent: 84, base: 60, key: 24 })
+    expect(lit(83)).toEqual({ sent: 107, base: 60, key: 47 })
+    expect(lit(35)).toBeNull()
+    expect(lit(84)).toBeNull()
+    // A song that spans more than 24 keys stays spread across the 48.
+    for (const pitch of [48, 55, 60, 64, 67, 72, 76, 83]) {
+      expect(placedPitch(pitch, preset)).toEqual({ pitch, octaves: 0 })
+    }
+    expect(placedPitch(84, { ...preset, fitToRange: true })).toEqual({ pitch: 72, octaves: -1 })
+    expect(placedPitch(35, { ...preset, fitToRange: true })).toEqual({ pitch: 47, octaves: 1 })
+    expect(placedPitch(84, { ...preset, fitToRange: true })?.pitch).not.toBe(83)
+    expect(placedPitch(35, { ...preset, fitToRange: true })?.pitch).not.toBe(36)
 
     // Calibrated lowest key is MIDI 48. The window still starts at C4, so
     // each sounding note lights 12 semitones lower, across both boards.
@@ -372,7 +380,7 @@ describe('keyboard range store', () => {
     expect(mapControllerPitch(48, prefs)).toBe(72)
   })
 
-  it('moves a saved two-board window from C2 onto factory C4', () => {
+  it('keeps a saved two-board window on C2', () => {
     localStorage.setItem(
       KEYBOARD_RANGE_STORAGE_KEY,
       JSON.stringify({
@@ -385,7 +393,7 @@ describe('keyboard range store', () => {
       }),
     )
     expect(reloadKeyboardRange()).toMatchObject({
-      start: 60,
+      start: 36,
       size: 48,
       calibrated: false,
       controllerLow: null,

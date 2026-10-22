@@ -26,6 +26,7 @@ import {
 import { KBD, keyFrame, whiteKeyCount } from './keyboardMetrics'
 import { keyboardPalette } from './keyboardStyle'
 import { keyRect } from './keyGeometry'
+import { screenNoteColor } from './noteColor'
 import { rangeLayerAlpha, rangeOverlay } from './rangeOverlay'
 import { keyboardMaterial } from './scenes'
 import { liveNoteColor, type Theme } from './theme'
@@ -444,12 +445,9 @@ export class KeyboardRenderer {
       const layer = isBlack ? this.blackActiveLayer : this.whiteActiveLayer
       const { x, y, w, h, radius } = keyRect(pitch, pos, keyboardHeight)
       const left = tint === palette.noteLh || (tint !== palette.noteRh && pitch < 60)
-      const fill =
-        this.theme.id === 'highway'
-          ? { color: this.theme.whiteKeyActive, alpha: 1 }
-          : walnut
-            ? this.handFill(left ? palette.noteLh : palette.noteRh, left)
-            : { color: tint, alpha: 1 }
+      const fill = walnut
+        ? this.handFill(left ? palette.noteLh : palette.noteRh, left)
+        : { color: tint, alpha: 1 }
       this.fillKey(layer, x, y, w, h, palette.hairline ? 0 : radius, fill)
     }
   }
@@ -549,12 +547,12 @@ export class KeyboardRenderer {
     for (const [pitch, pos] of positions) {
       const black = isBlackKey(pitch)
       const rect = keyRect(pitch, pos, keyboardHeight)
-      const size = Math.max(
-        black ? 7 : 9,
-        Math.min(black ? 11 : 13, rect.w * (black ? 0.42 : 0.48)),
-      )
+      const caption = highwayKeyCaption(pitch)
+      const fit = rect.w / (caption.length * 0.62)
+      const size = Math.min(black ? 10 : 13, rect.w * (black ? 0.42 : 0.48), fit)
+      if (size < 7) continue
       const text = new Text({
-        text: highwayKeyCaption(pitch),
+        text: caption,
         style: {
           fontFamily: 'Figtree, system-ui, sans-serif',
           fontSize: size,
@@ -636,7 +634,9 @@ export class KeyboardRenderer {
     const y = walnut ? frame.keysY : 0
     const h = walnut ? frame.keysH : keyboardHeight
     const wash = (x: number, w: number) => {
-      this.rangeSatLayer.rect(x, y, w, h).fill({ color: 0x808080, alpha: 0.4 * playAlpha })
+      if (this.theme.id !== 'highway') {
+        this.rangeSatLayer.rect(x, y, w, h).fill({ color: 0x808080, alpha: 0.4 * playAlpha })
+      }
       this.rangeLayer.rect(x, y, w, h).fill({ color: dim.color, alpha: dim.alpha * playAlpha })
     }
     if (x0 > 0) wash(0, x0)
@@ -659,12 +659,9 @@ export class KeyboardRenderer {
       const tint = color || fallback
       const left = tint === palette.noteLh || (tint !== palette.noteRh && pitch < 60)
       const { x, y, w, h, radius } = keyRect(pitch, pos, keyboardHeight)
-      const fill =
-        this.theme.id === 'highway'
-          ? { color: this.theme.whiteKeyActive, alpha: 1 }
-          : walnut
-            ? this.handFill(left ? palette.noteLh : palette.noteRh, left)
-            : { color: tint, alpha: 1 }
+      const fill = walnut
+        ? this.handFill(left ? palette.noteLh : palette.noteRh, left)
+        : { color: tint, alpha: 1 }
       this.fillKey(this.pressLiftLayer, x, y, w, h, palette.hairline ? 0 : radius, fill)
     }
   }
@@ -813,14 +810,20 @@ export class KeyboardRenderer {
     this.whitePracticeHintLayer.y = yOffset
     this.blackPracticeHintLayer.y = yOffset
     const highway = this.theme.id === 'highway'
-    const tint = highway ? this.theme.whiteKeyActive : this.theme.accent
-    const acceptedTint = highway ? this.theme.whiteKeyActive : 0x9ee7b8
+    const hintColor = (pitch: number) =>
+      screenNoteColor(
+        this.theme,
+        pitch,
+        pitch < 60 ? 'left' : 'right',
+        this.theme.trackColors[pitch < 60 ? 1 : 0] ?? this.theme.accent,
+      )
 
     if (accepted) {
       for (const pitch of accepted) {
         const pos = positions.get(pitch)
         if (!pos) continue
         const layer = isBlackKey(pitch) ? this.blackPracticeHintLayer : this.whitePracticeHintLayer
+        const acceptedTint = highway ? hintColor(pitch) : 0x9ee7b8
         this.drawPracticeKey(layer, pitch, pos, kbHeight, acceptedTint, {
           bodyAlpha: highway ? 0.72 : isBlackKey(pitch) ? 0.36 : 0.25,
           stripAlpha: highway ? 0 : 0.58,
@@ -835,6 +838,7 @@ export class KeyboardRenderer {
       if (!pos) continue
       const isBlack = isBlackKey(pitch)
       const layer = isBlack ? this.blackPracticeHintLayer : this.whitePracticeHintLayer
+      const tint = highway ? hintColor(pitch) : this.theme.accent
       this.drawPracticeKey(layer, pitch, pos, kbHeight, tint, {
         bodyAlpha: highway ? 1 : (isBlack ? 0.32 : 0.22) * pulse,
         stripAlpha: highway ? 0 : 0.55 * pulse,

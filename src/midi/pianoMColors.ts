@@ -35,6 +35,10 @@ export function midiColorByte(component: number): number {
   return Math.max(0, Math.min(127, Math.round((clamped * 127) / 255)))
 }
 
+export function pianoMNoteColorMessages(channel: number, color: number): number[][] {
+  return rgbMessages(channel, color)
+}
+
 function rgbMessages(channel: number, color: number): number[][] {
   const status = 0xb0 | channel
   return [

@@ -1,13 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MasterClock } from '../core/clock/MasterClock'
 import { setHandPractice } from '../core/handPractice'
-import { FULL_PIANO_RANGE, getKeyboardRange, setKeyboardRange } from '../core/keyboardRange'
+import {
+  FULL_PIANO_RANGE,
+  getKeyboardRange,
+  resizeKeyboardRangeSnapped,
+  setKeyboardRange,
+} from '../core/keyboardRange'
 import { deriveMidi } from '../core/midi/derive'
 import { type MidiFile, nominalTempoMap } from '../core/midi/types'
+import { highwayLaneColor } from '../renderer/highwayNotes'
 import { goldenHourTheme } from '../renderer/scenes/goldenHour'
+import { highwayTheme } from '../renderer/scenes/highway'
 import { rainyStudyTheme } from '../renderer/scenes/rainyStudy'
 import { KeyLights } from './KeyLights'
-import { pianoMPaletteMessages, themeHandLights } from './pianoMColors'
+import { midiColorByte, pianoMPaletteMessages, themeHandLights } from './pianoMColors'
 import { PIANO_M_ALL_ID, resetPianoMPortsForTests } from './pianoMPorts'
 
 function resetGuide(): void {
@@ -478,6 +485,30 @@ describe('ROLI Piano M key lights', () => {
     expect(pitches).toEqual([60, 65, 71, 83, 84, 96, 107])
     expect(pitches).not.toContain(59)
     expect(pitches).not.toContain(108)
+  })
+
+  it('spreads a centred 48-key window across both boards and colours each note', () => {
+    lights.setTheme(highwayTheme)
+    send.mockClear()
+    const window = resizeKeyboardRangeSnapped(FULL_PIANO_RANGE, 48)
+    setKeyboardRange({
+      ...window,
+      calibrated: false,
+      controllerLow: null,
+      fitToRange: true,
+    })
+    play(song([48, 60, 83]))
+    const notes = midiMessages(send).filter((message) => (message[0]! & 0xf0) === 0x90)
+    expect(notes.map((message) => message[1])).toEqual([72, 84, 107])
+    expect(midiMessages(send)).toEqual(expect.arrayContaining([[0xbb, 23, 60]]))
+    const yellow = highwayLaneColor(60)
+    expect(midiMessages(send)).toEqual(
+      expect.arrayContaining([
+        [0xbc, 20, midiColorByte((yellow >> 16) & 0xff)],
+        [0xbc, 21, midiColorByte((yellow >> 8) & 0xff)],
+        [0xbc, 22, midiColorByte(yellow & 0xff)],
+      ]),
+    )
   })
 
   it('sends the whole window to one selected Piano M port', () => {

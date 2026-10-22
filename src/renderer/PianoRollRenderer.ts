@@ -12,13 +12,14 @@ import { readCssColor } from './cssColor'
 import { type EmitCadence, scheduleEmissions } from './emitSchedule'
 import { EmberMistStrike } from './forLater/EmberMistStrike'
 import { ENABLE_FOR_LATER_VISUALS } from './forLater/visuals'
-import { paintHighwayBackdrop } from './highwayNotes'
+import { highwayChromeInset, highwayFrame, paintHighwayBackdrop } from './highwayNotes'
 import { KeyboardRenderer } from './KeyboardRenderer'
 import { keyFrame, proportionalKeyboardHeight, whiteKeyCount } from './keyboardMetrics'
 import { subscribeKeyboardStyle } from './keyboardStyle'
 import { LiveNoteRenderer } from './LiveNoteRenderer'
 import { makeMaterialAtmosphere } from './materialAtmosphere'
 import { NoteRenderer } from './NoteRenderer'
+import { screenNoteColor } from './noteColor'
 import { type ParticleStyle, ParticleSystem } from './ParticleSystem'
 import { PlantShadowField } from './plantShadowField'
 import {
@@ -389,6 +390,20 @@ export class PianoRollRenderer {
     }
   }
 
+  private highwayView(width: number, rollHeight: number) {
+    let nearLeft = width
+    let nearRight = 0
+    for (const pos of this.viewport.getAllKeyPositions().values()) {
+      if (pos.x < nearLeft) nearLeft = pos.x
+      if (pos.x + pos.width > nearRight) nearRight = pos.x + pos.width
+    }
+    if (!(nearRight > nearLeft)) {
+      nearLeft = 0
+      nearRight = width
+    }
+    return highwayFrame(width, nearLeft, nearRight, highwayChromeInset(), rollHeight)
+  }
+
   private syncSceneBackdrop(
     themeId: string,
     width: number,
@@ -397,9 +412,10 @@ export class PianoRollRenderer {
   ): void {
     const scene = sceneForTheme(themeId)
     if (!scene) return
+    const highwayView = scene.token === 'highway' ? this.highwayView(width, rollHeight) : null
     const key =
-      scene.token === 'highway'
-        ? `${scene.id}:${width}x${height}:r${Math.round(rollHeight)}`
+      scene.token === 'highway' && highwayView
+        ? `${scene.id}:${width}x${height}:r${Math.round(rollHeight)}:v${Math.round(highwayView.vanishX)}:${Math.round(highwayView.topInset)}`
         : `${scene.id}:${width}x${height}`
     if (this.sceneBackdrop && this.sceneBackdropKey === key) {
       this.sceneBackdrop.width = width
@@ -412,7 +428,15 @@ export class PianoRollRenderer {
       canvas.width = Math.max(2, width)
       canvas.height = Math.max(2, height)
       const ctx = canvas.getContext('2d')
-      if (ctx) paintHighwayBackdrop(ctx, canvas.width, canvas.height, rollHeight)
+      if (ctx) {
+        paintHighwayBackdrop(
+          ctx,
+          canvas.width,
+          canvas.height,
+          rollHeight,
+          this.highwayView(width, rollHeight),
+        )
+      }
     } else if (scene.token === 'after-hours') {
       canvas.width = Math.max(2, Math.min(width, 1100))
       canvas.height = Math.max(2, Math.min(height, 700))
@@ -865,11 +889,15 @@ export class PianoRollRenderer {
           const dimmed = practiceInactive || handDim
           const handId = noteHandOf(track, note.pitch)
           const byHand = sceneForTheme(this.theme.id) !== null && paintPrefs().colorBy === 'hand'
-          const litColor =
+          const litColor = screenNoteColor(
+            this.theme,
+            sounding,
+            handId === 'left' ? 'left' : 'right',
             byHand && !track.isDrum
               ? ((handId === 'left' ? this.theme.trackColors[1] : this.theme.trackColors[0]) ??
-                trackColor)
-              : trackColor
+                  trackColor)
+              : trackColor,
+          )
 
           const key = keyBase + sounding
           const awaitingPracticePress = this.practiceHintPending?.has(sounding) ?? false

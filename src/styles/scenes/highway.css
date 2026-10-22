@@ -60,7 +60,8 @@
   --range-glass: rgba(42, 212, 255, 0.16);
   --range-glass-drag: rgba(42, 212, 255, 0.28);
   --range-border: rgba(201, 182, 255, 0.7);
-  --range-dim: rgba(0, 0, 0, 0.46);
+  --range-dim: rgba(0, 0, 0, 0.2);
+  --highway-chrome: 168px;
   --range-edge: #c9b6ff;
   --range-strip: #2ad4ff;
   --range-lane: #d2d6e6;
@@ -82,32 +83,38 @@ html[data-scene="highway"] {
   color-scheme: dark;
 }
 
-/* The floating HUD uses transform and backdrop-filter, which would trap a
-   fixed icon inside the pill. Clearing both lets the row pin to the viewport
-   while drag still moves the pill through the offset variables. */
+/* Transport sits in the top chrome, under the icon row, so the roll can run
+   from that band down to the keys without notes passing through the controls. */
 html[data-scene="highway"] #hud.float-hud,
 html[data-scene="highway"]
-  #hud.hud--active.float-hud--idle:not(.float-hud--pinned):not(.float-hud--dragging) {
+  #hud.hud--active.float-hud--idle:not(.float-hud--pinned):not(.float-hud--dragging),
+html[data-scene="highway"] .float-hud.pa-hud {
   transform: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   filter: none;
-  top: auto;
-  left: var(--hud-dx, 0px);
-  right: calc(var(--hud-dx, 0px) * -1);
-  width: max-content;
-  max-width: min(820px, calc(100vw - 80px));
+  top: calc(82px + env(safe-area-inset-top));
+  bottom: auto;
+  left: 0;
+  right: 0;
+  width: auto;
+  max-width: none;
   height: auto;
   min-height: 0;
-  margin-left: auto;
-  margin-right: auto;
-  overflow: visible;
-  bottom: calc(
-    var(--keyboard-h, 120px) +
-    var(--hud-gap, 16px) +
-    env(safe-area-inset-bottom) -
-    var(--hud-dy, 0px)
-  );
+  margin: 0;
+  overflow: hidden;
+  opacity: 1;
+  border: 0;
+  border-radius: 0;
+  background: #16181f;
+  box-shadow: none;
+  z-index: 30;
+}
+
+html[data-scene="highway"] .float-hud.pa-hud.float-hud--idle,
+html[data-scene="highway"] #hud.hud--active.float-hud--idle {
+  opacity: 1;
+  transform: none;
 }
 
 html[data-scene="highway"] #top-strip {
@@ -271,27 +278,35 @@ html[data-scene="highway"] [data-highway="effect"] {
 }
 
 html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="loop"] {
-  left: calc(50% - 204px);
+  left: calc(50% - 238px);
 }
 
 html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="notes"] {
-  left: calc(50% - 136px);
+  left: calc(50% - 170px);
+}
+
+html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="metro"] {
+  left: calc(50% - 102px);
 }
 
 html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="wait"] {
-  left: calc(50% - 68px);
+  left: calc(50% - 34px);
+}
+
+html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="sound"] {
+  left: calc(50% + 34px);
 }
 
 html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="cascade"] {
-  left: calc(50% + 0px);
+  left: calc(50% + 102px);
 }
 
 html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="instrument"] {
-  left: calc(50% + 68px);
+  left: calc(50% + 170px);
 }
 
 html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="effect"] {
-  left: calc(50% + 136px);
+  left: calc(50% + 238px);
 }
 
 html[data-scene="highway"] [data-highway]::after {
@@ -347,4 +362,170 @@ html[data-scene="highway"] #pa-cascade {
     sans-serif;
   color: #fff;
   background: transparent;
+}
+
+/* Plain captions. The scene pill, the mode thumb, and the accent chip were
+   painting white and teal blocks over the icon row and clipping the words. */
+html[data-scene="highway"] .piano-m-guide,
+html[data-scene="highway"] .piano-m-guide-mount {
+  z-index: 60;
+}
+
+html[data-scene="highway"] #top-strip {
+  top: 0;
+  height: 48px;
+  background: #12141a;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  z-index: 32;
+}
+
+html[data-scene="highway"] #top-strip .ts-pill,
+html[data-scene="highway"] #ts-customize,
+html[data-scene="highway"] #ts-instrument,
+html[data-scene="highway"] .ts-mode-switch,
+html[data-scene="highway"] .ts-mode-thumb,
+html[data-scene="highway"] .ts-home,
+html[data-scene="highway"] [data-highway] {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  overflow: visible;
+  border-radius: 0;
+}
+
+html[data-scene="highway"] .ts-mode-thumb {
+  display: none !important;
+}
+
+html[data-scene="highway"] .ts-mode-switch {
+  position: fixed;
+  top: calc(50px + env(safe-area-inset-top));
+  left: 8px;
+  z-index: 36;
+  height: 28px;
+  padding: 0;
+}
+
+html[data-scene="highway"] .ts-mode-seg {
+  min-width: 0;
+  height: 28px;
+  padding: 0 6px;
+  background: transparent;
+}
+
+html[data-scene="highway"] .ts-mode-label {
+  display: none;
+}
+
+html[data-scene="highway"] .ts-status-main,
+html[data-scene="highway"] .ts-bars {
+  display: none;
+}
+
+html[data-scene="highway"] [data-highway]::after {
+  white-space: nowrap;
+  overflow: visible;
+}
+
+html[data-scene="highway"] .pa-hud__body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+html[data-scene="highway"] .pa-hud__options {
+  border: 0;
+  padding: 0;
+}
+
+html[data-scene="highway"] .kbd-range-panel,
+html[data-scene="highway"] .kbd-range-bar {
+  background: #1c1f28;
+  color: #f5f6fa;
+  border-color: rgba(210, 214, 230, 0.16);
+  box-shadow: none;
+}
+
+html[data-scene="highway"] .kbd-range-board,
+html[data-scene="highway"] .kbd-range-boards-mini-board {
+  background: transparent !important;
+}
+
+html[data-scene="highway"] .kbd-range-board-label {
+  top: -18px;
+  bottom: auto;
+  padding: 0;
+  background: transparent;
+  font-size: 10px;
+  line-height: 12px;
+  color: rgba(245, 246, 250, 0.72);
+}
+
+html[data-scene="highway"] #kbd-range-band .kbd-range-band-tip {
+  top: -22px;
+  background: transparent;
+  color: rgba(245, 246, 250, 0.82);
+  box-shadow: none;
+}
+
+@media (max-width: 720px) {
+  :root[data-scene="highway"] {
+    --highway-chrome: 188px;
+  }
+
+  html[data-scene="highway"] [data-highway] {
+    width: 44px;
+  }
+
+  html[data-scene="highway"] [data-highway="loop"] {
+    left: calc(50% - 138px);
+  }
+  html[data-scene="highway"] [data-highway="notes"] {
+    left: calc(50% - 92px);
+  }
+  html[data-scene="highway"] [data-highway="metro"] {
+    left: calc(50% - 46px);
+  }
+  html[data-scene="highway"] [data-highway="sound"] {
+    left: calc(50%);
+  }
+  html[data-scene="highway"] [data-highway="cascade"] {
+    left: calc(50% + 46px);
+  }
+  html[data-scene="highway"] [data-highway="instrument"] {
+    left: calc(50% + 92px);
+  }
+  html[data-scene="highway"] [data-highway="effect"] {
+    left: calc(50% + 138px);
+  }
+
+  html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="loop"] {
+    left: calc(50% - 154px);
+  }
+  html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="notes"] {
+    left: calc(50% - 110px);
+  }
+  html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="metro"] {
+    left: calc(50% - 66px);
+  }
+  html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="wait"] {
+    left: calc(50% - 22px);
+  }
+  html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="sound"] {
+    left: calc(50% + 22px);
+  }
+  html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="cascade"] {
+    left: calc(50% + 66px);
+  }
+  html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="instrument"] {
+    left: calc(50% + 110px);
+  }
+  html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="effect"] {
+    left: calc(50% + 154px);
+  }
 }

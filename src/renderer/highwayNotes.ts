@@ -1,11 +1,18 @@
 import type { Graphics } from 'pixi.js'
 import { isBlackKey } from '../core/midi/types'
 
-// Synthesia-style highway. Depth 0 sits on the hit line. Depth 1 is the
-// vanishing point at the top centre of the roll. The same mapping paints the
-// floor grid and places each block, so a lane meets the key it belongs to.
+// How far the highway narrows across the visible floor, as a fraction of the
+// keyboard width. This is the only perspective control. 0 is a flat top-down
+// roll. 1 puts the vanishing point on the top edge of the floor. 0.32 leaves
+// the far end about 68% as wide as the keys, with the vanishing point well
+// above the screen, so lanes stay nearly parallel and notes change size only
+// a little from far to near.
+export const HIGHWAY_DEPTH = 0.32
 
-export const HIGHWAY_HORIZON = 0.1
+// A tail shorter than this is just the rounded head. Consecutive notes on a
+// lane keep this much clear time between the tail and the next head.
+export const HIGHWAY_TAIL_MIN = 0.14
+export const HIGHWAY_TAIL_GAP = 0.07
 
 // One vivid colour per pitch class: yellow, cyan, blue, indigo, purple,
 // magenta, red, orange, and the steps between them.
@@ -36,25 +43,82 @@ export function highwayKeyCaption(pitch: number): string {
   return CAPTIONS[pc] ?? 'C'
 }
 
-// 0 at the hit line, 1 at the horizon. An exponent below 1 keeps nearby notes
-// moving and bunches the far ones, which is the perspective read.
+// 0 at the hit line, 1 at the far edge of the floor. Linear, so a lower
+// camera tilt spaces notes evenly instead of rushing them out of a point.
 export function highwayDepth(timeDelta: number, lookahead: number): number {
   if (!(lookahead > 0) || timeDelta <= 0) return 0
   const t = timeDelta / lookahead
-  if (t >= 1) return 1
-  return t ** 0.72
+  return t >= 1 ? 1 : t
+}
+
+// Block size at a depth. 1 on the keys, 1 − HIGHWAY_DEPTH at the far edge.
+export function highwayScale(depth: number): number {
+  const d = depth < 0 ? 0 : depth > 1 ? 1 : depth
+  return 1 - d * HIGHWAY_DEPTH
+}
+
+export interface HighwayFrame {
+  vanishX: number
+  nearLeft: number
+  nearRight: number
+  topInset: number
+}
+
+// The floor is framed on the visible keys. `topInset` is chrome above the
+// roll, in pixels, so the grid starts under the controls.
+export function highwayFrame(
+  width: number,
+  nearLeft = 0,
+  nearRight = width,
+  topInset = 0,
+  rollHeight = 0,
+): HighwayFrame {
+  const left = Math.min(nearLeft, nearRight)
+  const right = Math.max(nearLeft, nearRight)
+  const cap = rollHeight > 0 ? rollHeight * 0.45 : topInset
+  return {
+    vanishX: (left + right) / 2,
+    nearLeft: left,
+    nearRight: right,
+    topInset: Math.max(0, Math.min(topInset, cap)),
+  }
+}
+
+// Pixels the icon row and transport occupy. The floor starts below them.
+export function highwayChromeInset(): number {
+  if (typeof document === 'undefined') return 0
+  const raw = getComputedStyle(document.documentElement).getPropertyValue('--highway-chrome')
+  const n = Number.parseFloat(raw)
+  return Number.isFinite(n) && n > 0 ? n : 0
 }
 
 export function highwayPoint(
   keyX: number,
   depth: number,
-  width: number,
   rollHeight: number,
+  vanishX: number,
+  topInset = 0,
 ): { x: number; y: number } {
   const d = depth < 0 ? 0 : depth > 1 ? 1 : depth
-  const y = rollHeight * (1 - d * (1 - HIGHWAY_HORIZON))
-  const x = keyX + (width * 0.5 - keyX) * d
+  const span = Math.max(1, rollHeight - topInset)
+  const y = topInset + span * (1 - d)
+  const x = vanishX + (keyX - vanishX) * highwayScale(d)
   return { x, y }
+}
+
+// End time of a sustain tail, in the same timeDelta units as the head.
+// Null when the note is short enough to stay a block, or when the gap before
+// the next note on this lane eats the tail.
+export function highwayTailEnd(
+  timeDelta: number,
+  duration: number,
+  nextTimeDelta: number | null,
+): number | null {
+  const start = Math.max(timeDelta, 0)
+  let end = timeDelta + duration
+  if (nextTimeDelta !== null) end = Math.min(end, nextTimeDelta - HIGHWAY_TAIL_GAP)
+  if (end - start <= HIGHWAY_TAIL_MIN) return null
+  return end
 }
 
 export interface HighwayNote {
@@ -98,108 +162,170 @@ function lane(
   g.fill({ color, alpha })
 }
 
-// Short glossy blocks on a coloured lane. A repeated pitch is a chain of
-// blocks because each note keeps a fixed height instead of stretching.
+// Rounded head at the attack, with a quieter tail behind it for the sustain.
+// The tail narrows with the same perspective constant as the lanes. Lanes are
+// drawn first so the blocks sit on top of them.
 export function paintHighwayNotes(
   g: Graphics,
   notes: readonly HighwayNote[],
-  width: number,
   rollHeight: number,
   lookahead: number,
+  frame: HighwayFrame,
   count = notes.length,
 ): void {
   g.clear()
-  if (width < 2 || rollHeight < 2 || count <= 0) return
+  if (rollHeight < 2 || count <= 0) return
+  const n = Math.min(count, notes.length)
   const lanes = new Uint8Array(128)
   const laneX = new Float32Array(128)
   const laneW = new Float32Array(128)
-  const n = Math.min(count, notes.length)
+  const nextAt = new Float64Array(128)
+  nextAt.fill(Number.POSITIVE_INFINITY)
   for (let i = 0; i < n; i++) {
     const note = notes[i]!
     const pitch = note.pitch
-    if (pitch < 0 || pitch >= 128 || lanes[pitch]) continue
-    lanes[pitch] = 1
-    laneX[pitch] = note.keyX
-    laneW[pitch] = note.keyW
+    if (pitch < 0 || pitch >= 128) continue
+    if (!lanes[pitch]) {
+      lanes[pitch] = 1
+      laneX[pitch] = note.keyX
+      laneW[pitch] = note.keyW
+    }
   }
+  // Second pass finds the following onset on each pitch so tails leave a gap.
+  const order = new Array<number>(n)
+  for (let i = 0; i < n; i++) order[i] = i
+  order.sort((a, b) => notes[b]!.timeDelta - notes[a]!.timeDelta)
+  const follower = new Float64Array(n)
+  follower.fill(Number.POSITIVE_INFINITY)
+  for (const i of order) {
+    const note = notes[i]!
+    const pitch = note.pitch
+    if (pitch < 0 || pitch >= 128) continue
+    follower[i] = nextAt[pitch]!
+    nextAt[pitch] = note.timeDelta
+  }
+
+  const { vanishX, topInset } = frame
   for (let pitch = 0; pitch < 128; pitch++) {
     if (!lanes[pitch]) continue
     const keyX = laneX[pitch]! + laneW[pitch]! / 2
-    const far = highwayPoint(keyX, 0.9, width, rollHeight)
-    const near = highwayPoint(keyX, 0, width, rollHeight)
-    lane(g, far.x, far.y, near.x, near.y, 1.25, highwayLaneColor(pitch), 0.45)
+    const far = highwayPoint(keyX, 1, rollHeight, vanishX, topInset)
+    const near = highwayPoint(keyX, 0, rollHeight, vanishX, topInset)
+    lane(g, far.x, far.y, near.x, near.y, 1.35, highwayLaneColor(pitch), 0.22)
   }
+
+  for (let i = 0; i < n; i++) {
+    const note = notes[i]!
+    const sustaining = note.timeDelta <= 0 && note.timeDelta + note.duration > 0
+    if (!sustaining && note.timeDelta < 0) continue
+    const next = follower[i]!
+    const tailEnd = highwayTailEnd(
+      note.timeDelta,
+      note.duration,
+      Number.isFinite(next) ? next : null,
+    )
+    if (tailEnd === null) continue
+    const headTime = sustaining ? 0 : note.timeDelta
+    const headDepth = highwayDepth(headTime, lookahead)
+    const farDepth = highwayDepth(tailEnd, lookahead)
+    if (farDepth <= headDepth + 0.004) continue
+    const center = note.keyX + note.keyW / 2
+    const near = highwayPoint(center, headDepth, rollHeight, vanishX, topInset)
+    const far = highwayPoint(center, farDepth, rollHeight, vanishX, topInset)
+    const black = isBlackKey(note.pitch)
+    const unit = Math.max(16, note.keyW * (black ? 0.72 : 0.46))
+    const nearW = unit * highwayScale(headDepth) * 0.42
+    const farW = unit * highwayScale(farDepth) * 0.42
+    const color = highwayLaneColor(note.pitch)
+    g.poly([
+      near.x - nearW / 2,
+      near.y,
+      near.x + nearW / 2,
+      near.y,
+      far.x + farW / 2,
+      far.y,
+      far.x - farW / 2,
+      far.y,
+    ])
+    g.fill({ color, alpha: 0.32 * note.alpha })
+  }
+
   for (let i = 0; i < n; i++) {
     const note = notes[i]!
     const sustaining = note.timeDelta <= 0 && note.timeDelta + note.duration > 0
     if (!sustaining && note.timeDelta < 0) continue
     const depth = sustaining ? 0 : highwayDepth(note.timeDelta, lookahead)
-    const scale = 0.26 + (1 - depth) * 0.74
-    const w = Math.max(5, note.keyW * (isBlackKey(note.pitch) ? 0.92 : 0.62) * scale)
-    const h = Math.max(6, 15 * scale)
-    const at = highwayPoint(note.keyX + note.keyW / 2, depth, width, rollHeight)
+    const scale = highwayScale(depth)
+    const black = isBlackKey(note.pitch)
+    const unit = Math.max(16, note.keyW * (black ? 0.92 : 0.78))
+    const w = unit * scale
+    const h = unit * 0.78 * scale
+    const at = highwayPoint(note.keyX + note.keyW / 2, depth, rollHeight, vanishX, topInset)
     const x = at.x - w / 2
-    const y = at.y - h * 0.72
+    const y = at.y - h * 0.82
     const color = highwayLaneColor(note.pitch)
-    const radius = Math.min(4, w / 2, h / 2)
+    const radius = Math.min(w, h) * 0.32
     const alpha = note.alpha
-    g.roundRect(x, y + 1.5, w, h, radius)
-    g.fill({ color: 0x000000, alpha: 0.28 * alpha })
+    g.roundRect(x, y + 1, w, h, radius)
+    g.fill({ color: 0x000000, alpha: 0.22 * alpha })
     g.roundRect(x, y, w, h, radius)
     g.fill({ color, alpha })
-    const glossH = Math.max(2, h * 0.42)
-    g.roundRect(x + 1, y + 1, Math.max(1, w - 2), glossH, Math.max(1, radius - 1))
-    g.fill({ color: mix(color, 0xffffff, 0.78), alpha: 0.92 * alpha })
+    const glossH = Math.max(2, h * 0.26)
+    g.roundRect(x + 1, y + 1, Math.max(1, w - 2), glossH, Math.max(1, radius * 0.6))
+    g.fill({ color: mix(color, 0xffffff, 0.28), alpha: 0.4 * alpha })
   }
 }
 
-// Floor grid, painted once per resize. Rows bunch toward the horizon.
+// Floor grid, painted once per resize. Rows stay nearly parallel because
+// they share HIGHWAY_DEPTH with the notes.
 export function paintHighwayBackdrop(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
   rollHeight: number,
+  frame?: HighwayFrame,
 ): void {
+  const view = frame ?? highwayFrame(width, 0, width, 0, rollHeight)
   ctx.fillStyle = '#12141a'
   ctx.fillRect(0, 0, width, height)
   const roll = Math.max(2, Math.min(rollHeight, height))
-  ctx.strokeStyle = 'rgba(210, 214, 230, 0.16)'
+  ctx.strokeStyle = 'rgba(210, 214, 230, 0.28)'
   ctx.lineWidth = 1
-  const rows = 16
+  const rows = 10
   for (let i = 1; i <= rows; i++) {
-    const t = i / rows
-    const depth = 1 - (1 - t) ** 1.85
-    const left = highwayPoint(0, depth, width, roll)
-    const right = highwayPoint(width, depth, width, roll)
+    const depth = i / rows
+    const left = highwayPoint(view.nearLeft, depth, roll, view.vanishX, view.topInset)
+    const right = highwayPoint(view.nearRight, depth, roll, view.vanishX, view.topInset)
     const y = Math.round(left.y) + 0.5
-    ctx.globalAlpha = 0.28 + (1 - depth) * 0.72
+    ctx.globalAlpha = 0.55 + (1 - depth) * 0.45
     ctx.beginPath()
     ctx.moveTo(left.x, y)
     ctx.lineTo(right.x, y)
     ctx.stroke()
   }
   ctx.globalAlpha = 1
-  const rays = 22
+  const rays = 16
+  const span = Math.max(1, view.nearRight - view.nearLeft)
   for (let i = 0; i <= rays; i++) {
-    const keyX = (width * i) / rays
-    const far = highwayPoint(keyX, 0.96, width, roll)
-    const near = highwayPoint(keyX, 0, width, roll)
-    ctx.strokeStyle = 'rgba(210, 214, 230, 0.07)'
+    const keyX = view.nearLeft + (span * i) / rays
+    const far = highwayPoint(keyX, 1, roll, view.vanishX, view.topInset)
+    const near = highwayPoint(keyX, 0, roll, view.vanishX, view.topInset)
+    ctx.strokeStyle = 'rgba(210, 214, 230, 0.14)'
     ctx.beginPath()
     ctx.moveTo(far.x, far.y)
     ctx.lineTo(near.x, near.y)
     ctx.stroke()
   }
   const vignette = ctx.createRadialGradient(
-    width * 0.5,
-    roll * 0.2,
-    roll * 0.05,
-    width * 0.5,
-    roll * 0.45,
+    view.vanishX,
+    roll * 0.35,
+    roll * 0.1,
+    view.vanishX,
+    roll * 0.55,
     Math.max(width, roll) * 0.72,
   )
   vignette.addColorStop(0, 'rgba(0,0,0,0)')
-  vignette.addColorStop(1, 'rgba(0,0,0,0.45)')
+  vignette.addColorStop(1, 'rgba(0,0,0,0.35)')
   ctx.fillStyle = vignette
   ctx.fillRect(0, 0, width, height)
 }
@@ -217,8 +343,7 @@ function traceKey(ctx: CanvasRenderingContext2D, key: HighwayKeyFace): void {
   ctx.roundRect(key.x, key.y, key.w, key.h, radius)
 }
 
-// Dark bed with a short top lip. White keys stay flat so the cyan hit read
-// is a solid fill, not a second material.
+// Dark bed with a short top lip. White keys stay flat.
 export function paintHighwayKeyBed(
   ctx: CanvasRenderingContext2D,
   width: number,

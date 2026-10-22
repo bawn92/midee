@@ -12,10 +12,17 @@ import {
 import { noteHandOf, noteMatchesHandOf } from '../core/midi/hands'
 import type { MidiFile } from '../core/midi/types'
 import { jsonPersisted } from '../core/persistence'
+import { screenNoteColor } from '../renderer/noteColor'
 import type { Theme } from '../renderer/theme'
+import { getTrackColor } from '../renderer/theme'
 import { createEventSignal } from '../store/eventSignal'
 import { isPianoMPortName } from './pianoM'
-import { pianoMBoardBase, pianoMPaletteMessages, themeHandLights } from './pianoMColors'
+import {
+  pianoMBoardBase,
+  pianoMNoteColorMessages,
+  pianoMPaletteMessages,
+  themeHandLights,
+} from './pianoMColors'
 import {
   getPianoMPortPrefs,
   markPianoMOutputChosen,
@@ -277,7 +284,9 @@ export class KeyLights {
       if (this.shownGuidance.has(key)) continue
       this.shownGuidance.set(key, note)
       const velocity = Math.max(1, Math.min(127, Math.round(note.velocity * 127)))
-      this.send([0x90 | Math.floor(key / 128), note.pitch, velocity])
+      const batch: number[] = []
+      this.pushNoteOn(batch, Math.floor(key / 128), note.pitch, velocity, note)
+      this.send(batch)
       if (!this.hasDestination()) return
     }
     this.shownGuidance = desired
@@ -357,14 +366,46 @@ export class KeyLights {
     return note.channel & 0x0f
   }
 
+  private channelColor = new Map<number, number>()
+
   private sendPalette(): void {
     if (this.disposed || this.identifying || !this.hasDestination() || !this.theme) return
     if (this.settings.value.channelMode !== 'pianoM') return
+    const colors = themeHandLights(this.theme)
+    this.channelColor.set(11, colors.left)
+    this.channelColor.set(12, colors.right)
     const batch: number[] = []
-    for (const message of pianoMPaletteMessages(themeHandLights(this.theme), getKeyboardRange())) {
+    for (const message of pianoMPaletteMessages(colors, getKeyboardRange())) {
       batch.push(...message)
     }
     this.send(batch)
+  }
+
+  private pushNoteOn(
+    batch: number[],
+    channel: number,
+    pitch: number,
+    velocity: number,
+    event: LightNote,
+  ): void {
+    if (this.settings.value.channelMode === 'pianoM' && this.theme) {
+      const color = this.noteColor(event)
+      if (this.channelColor.get(channel) !== color) {
+        for (const message of pianoMNoteColorMessages(channel, color)) batch.push(...message)
+        this.channelColor.set(channel, color)
+      }
+    }
+    batch.push(0x90 | channel, pitch, velocity)
+  }
+
+  // Colour of the note on screen, snapshotted into the script at note-on.
+  private noteColor(event: LightNote): number {
+    const theme = this.theme
+    if (!theme) return 0xffffff
+    const track = this.midi?.tracks[event.trackIndex]
+    const trackColor = track ? getTrackColor(track, theme) : (theme.trackColors[0] ?? 0xffffff)
+    const hand = noteHandOf(track, event.sourcePitch ?? event.pitch)
+    return screenNoteColor(theme, event.sourcePitch ?? event.pitch, hand, trackColor)
   }
 
   private send(data: number[]): void {
@@ -381,7 +422,7 @@ export class KeyLights {
       this.counts.set(key, count + 1)
       if (count === 0) {
         const velocity = Math.max(1, Math.min(127, Math.round(event.velocity * 127)))
-        batch.push(0x90 | channel, event.pitch, velocity)
+        this.pushNoteOn(batch, channel, event.pitch, velocity, event)
       }
     } else if (count > 0) {
       if (count === 1) {
@@ -416,8 +457,9 @@ export class KeyLights {
     }
     const batch: number[] = []
     for (const [key] of this.counts) {
-      const velocity = Math.max(1, Math.min(127, Math.round(held.get(key)!.velocity * 127)))
-      batch.push(0x90 | Math.floor(key / 128), key % 128, velocity)
+      const event = held.get(key)!
+      const velocity = Math.max(1, Math.min(127, Math.round(event.velocity * 127)))
+      this.pushNoteOn(batch, Math.floor(key / 128), key % 128, velocity, event)
     }
     this.send(batch)
     if (!this.hasDestination()) return

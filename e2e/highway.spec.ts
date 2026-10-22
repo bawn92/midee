@@ -19,7 +19,7 @@ function highwayMid(): Buffer {
     { tick: 0, data: [0xff, 0x58, 0x04, 0x04, 0x02, 0x18, 0x08] },
   ]
   const notes: [number, number, number][] = [
-    [24, 67, 120],
+    [24, 67, 360],
     [96, 48, 40],
     [96, 55, 40],
     [96, 60, 40],
@@ -73,7 +73,7 @@ async function loadPiece(page: Page): Promise<void> {
 async function park(page: Page): Promise<void> {
   await page.locator('#hud-scrubber').evaluate((el) => {
     const input = el as HTMLInputElement
-    input.value = '8'
+    input.value = '0.35'
     input.dispatchEvent(new Event('input', { bubbles: true }))
     input.dispatchEvent(new Event('change', { bubbles: true }))
   })
@@ -125,9 +125,12 @@ test('Highway scene shows the perspective roll, icon row, and progress bar', asy
   expect(boxes.scrubber?.h ?? 99).toBeLessThan(8)
   expect(boxes.loop?.y ?? 999).toBeLessThan(20)
   expect(boxes.notes?.y ?? 999).toBeLessThan(20)
-  expect(boxes.hud?.h ?? 999).toBeLessThan(160)
-  expect(boxes.hud?.y ?? 0).toBeGreaterThan(400)
+  expect(boxes.hud?.h ?? 999).toBeLessThan(180)
+  expect(boxes.hud?.y ?? 0).toBeGreaterThan(40)
+  expect(boxes.hud?.y ?? 999).toBeLessThan(220)
   await page.screenshot({ path: '/opt/cursor/artifacts/screenshots/highway_play.png' })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.screenshot({ path: '/opt/cursor/artifacts/screenshots/highway_narrow.png' })
 })
 
 test('Highway keeps the Piano M Board 1 and Board 2 overlay', async ({ page }) => {

@@ -14,7 +14,12 @@ import {
   glowSettings,
 } from './bakedGlow'
 import { createNoteMaterial } from './createNoteMaterial'
-import { type HighwayNote, paintHighwayNotes } from './highwayNotes'
+import {
+  type HighwayNote,
+  highwayChromeInset,
+  highwayFrame,
+  paintHighwayNotes,
+} from './highwayNotes'
 import { KBD } from './keyboardMetrics'
 import type { NoteMaterial, NoteMaterialId } from './NoteMaterial'
 import { NoteLabelLayer } from './noteLabels'
@@ -427,12 +432,28 @@ export class NoteRenderer {
         this.highwayUsed++
       }
     }
+    let nearLeft = viewport.config.canvasWidth
+    let nearRight = 0
+    for (const pos of viewport.getAllKeyPositions().values()) {
+      if (pos.x < nearLeft) nearLeft = pos.x
+      if (pos.x + pos.width > nearRight) nearRight = pos.x + pos.width
+    }
+    if (!(nearRight > nearLeft)) {
+      nearLeft = 0
+      nearRight = viewport.config.canvasWidth
+    }
     paintHighwayNotes(
       this.highway,
       this.highwayPool,
-      viewport.config.canvasWidth,
       viewport.rollHeight,
       lookahead,
+      highwayFrame(
+        viewport.config.canvasWidth,
+        nearLeft,
+        nearRight,
+        highwayChromeInset(),
+        viewport.rollHeight,
+      ),
       this.highwayUsed,
     )
   }
