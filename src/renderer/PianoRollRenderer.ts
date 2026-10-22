@@ -12,6 +12,7 @@ import { readCssColor } from './cssColor'
 import { type EmitCadence, scheduleEmissions } from './emitSchedule'
 import { EmberMistStrike } from './forLater/EmberMistStrike'
 import { ENABLE_FOR_LATER_VISUALS } from './forLater/visuals'
+import { paintHighwayBackdrop } from './highwayNotes'
 import { KeyboardRenderer } from './KeyboardRenderer'
 import { keyFrame, proportionalKeyboardHeight, whiteKeyCount } from './keyboardMetrics'
 import { subscribeKeyboardStyle } from './keyboardStyle'
@@ -336,6 +337,8 @@ export class PianoRollRenderer {
     const scene = sceneForTheme(this.theme.id)
     if (scene) {
       this.syncSceneBackdrop(scene.themeId, canvasWidth, canvasHeight, rollHeight)
+      // The highway backdrop is the floor. Vertical lane washes would cover it.
+      if (scene.token === 'highway') return
       const { pitchMin, pitchMax } = this.viewport.config
       const frame = keyFrame(
         canvasWidth,
@@ -394,7 +397,10 @@ export class PianoRollRenderer {
   ): void {
     const scene = sceneForTheme(themeId)
     if (!scene) return
-    const key = `${scene.id}:${width}x${height}`
+    const key =
+      scene.token === 'highway'
+        ? `${scene.id}:${width}x${height}:r${Math.round(rollHeight)}`
+        : `${scene.id}:${width}x${height}`
     if (this.sceneBackdrop && this.sceneBackdropKey === key) {
       this.sceneBackdrop.width = width
       this.sceneBackdrop.height = height
@@ -402,7 +408,12 @@ export class PianoRollRenderer {
     }
     this.clearSceneBackdrop()
     const canvas = document.createElement('canvas')
-    if (scene.token === 'after-hours') {
+    if (scene.token === 'highway') {
+      canvas.width = Math.max(2, width)
+      canvas.height = Math.max(2, height)
+      const ctx = canvas.getContext('2d')
+      if (ctx) paintHighwayBackdrop(ctx, canvas.width, canvas.height, rollHeight)
+    } else if (scene.token === 'after-hours') {
       canvas.width = Math.max(2, Math.min(width, 1100))
       canvas.height = Math.max(2, Math.min(height, 700))
       this.afterCanvas = canvas
@@ -515,6 +526,12 @@ export class PianoRollRenderer {
     const y = this.viewport.nowLineY
     const w = this.viewport.config.canvasWidth
     const glow = this.theme.nowLineGlow
+    // A hairline just above the keys. The other scenes keep their glow.
+    if (this.theme.id === 'highway') {
+      g.rect(0, y - 1.5, w, 1.5)
+      g.fill({ color: this.theme.nowLine, alpha: this.theme.nowLineAlpha })
+      return
+    }
     const warm = sceneForTheme(this.theme.id) !== null
     const lift = warm ? 3 : 1
 
@@ -1256,6 +1273,8 @@ export class PianoRollRenderer {
     const alphaMul = rangeLayerAlpha('lanes')
     g.clear()
     g.alpha = 1
+    // Board labels sit on the keys. A roll wash would cover the floor grid.
+    if (this.theme.id === 'highway') return
     if (alphaMul < 0.02) return
     const { pitchMin, pitchMax } = this.viewport.config
     const lo = pitchMin ?? 21

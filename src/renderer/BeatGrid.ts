@@ -35,6 +35,9 @@ export class BeatGrid {
   draw(currentTime: number, piece: BeatGridSource, viewport: Viewport, theme: Theme): void {
     const g = this.graphics
     g.clear()
+    // Highway draws its own floor. Invisible beat rects would still be a
+    // per-frame submit, so a theme with both alphas at 0 leaves the layer empty.
+    if (theme.beatLineAlpha <= 0 && theme.barLineAlpha <= 0) return
     if (piece !== this.cachedFor) this.rebuild(piece)
 
     // Computed getters — these update automatically with zoom.

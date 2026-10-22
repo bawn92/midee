@@ -57,6 +57,8 @@ function TriggerView(props: TriggerProps) {
       classList={{ 'ts-pill--open': props.isOpen() }}
       id="ts-customize"
       type="button"
+      data-highway="effect"
+      data-highway-label="OFF"
       aria-label={t('customize.aria')}
       aria-haspopup="dialog"
       aria-expanded={props.isOpen()}

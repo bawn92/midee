@@ -382,7 +382,10 @@ function PlayAlongHudView(props: PlayAlongHudOptions) {
           <span class="pa-hud__seg-label">{t('learn.pa.speedLabel')}</span>
           <button
             class="pa-hud__speed-chip"
+            id="pa-cascade"
             type="button"
+            data-highway="cascade"
+            data-highway-label="Cascade"
             classList={{ 'is-off': engine.state.speedPct !== 100 }}
             data-tip={t('learn.pa.speedCycleTip')}
             aria-label={t('learn.pa.speedCycleAria', {
@@ -407,6 +410,8 @@ function PlayAlongHudView(props: PlayAlongHudOptions) {
               class="pa-hud__pill pa-hud__pill--loop"
               id="pa-loop"
               type="button"
+              data-highway="loop"
+              data-highway-label="Loop"
               data-tip={
                 engine.state.loopRegion ? t('learn.pa.loopRestartTip') : t('learn.pa.loopOnTip')
               }
@@ -446,7 +451,10 @@ function PlayAlongHudView(props: PlayAlongHudOptions) {
 
           <button
             class="pa-hud__pill"
+            id="pa-wait"
             type="button"
+            data-highway="wait"
+            data-highway-label="Wait"
             aria-pressed={isWaitOn()}
             data-tip={t('learn.pa.waitTip')}
             aria-label={t('learn.pa.waitAria')}

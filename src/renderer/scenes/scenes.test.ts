@@ -10,10 +10,11 @@ describe('scenes', () => {
       'rainy-study',
       'after-hours',
       'night',
+      'highway',
     ])
     expect(DEFAULT_THEME_ID).toBe('golden-hour')
     expect(THEMES.some((theme) => theme.id === 'golden-hour')).toBe(true)
-    expect(ALL_THEMES.at(-1)?.id).toBe('night')
+    expect(ALL_THEMES.at(-1)?.id).toBe('highway')
   })
 
   it('paints After Hours cyan on the right hand and pink on the left', () => {
@@ -64,6 +65,19 @@ describe('scenes', () => {
     expect(document.documentElement.dataset.scene).toBe('rainy-study')
     applySceneClass('sunset')
     expect(document.documentElement.dataset.scene).toBeUndefined()
+  })
+
+  it('adds Highway without restyling Golden Hour', () => {
+    const highway = sceneForTheme('highway')
+    const golden = sceneForTheme('golden-hour')
+    expect(highway?.name).toBe('Highway')
+    expect(highway?.keyboard.material).toBe('flat')
+    expect(highway?.theme.noteStyle).toBeUndefined()
+    expect(highway?.theme.noteGlowStrength).toBe(0)
+    expect(highway?.theme.beatLineAlpha).toBe(0)
+    expect(highway?.theme.whiteKeyActive).toBe(0x2ad4ff)
+    expect(golden?.theme.noteStyle).toBe('pill')
+    expect(golden?.keyboard.material).toBe('upright-walnut')
   })
 
   it('swaps favicon links with the scene and leaves the apple-touch icon', () => {

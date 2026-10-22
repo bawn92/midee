@@ -13,6 +13,7 @@ describe('visual release gate', () => {
       'rainy-study',
       'after-hours',
       'night',
+      'highway',
     ])
     expect(THEMES.filter((theme) => theme.noteMaterial)).toEqual([])
     expect(PARTICLE_STYLES.map(({ id }) => id)).toEqual([

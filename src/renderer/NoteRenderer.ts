@@ -14,6 +14,7 @@ import {
   glowSettings,
 } from './bakedGlow'
 import { createNoteMaterial } from './createNoteMaterial'
+import { type HighwayNote, paintHighwayNotes } from './highwayNotes'
 import { KBD } from './keyboardMetrics'
 import type { NoteMaterial, NoteMaterialId } from './NoteMaterial'
 import { NoteLabelLayer } from './noteLabels'
@@ -62,6 +63,9 @@ export class NoteRenderer {
   private foldRaised = false
   private landing = new Graphics()
   private badgeGraphics = new Graphics()
+  private highway = new Graphics()
+  private highwayPool: HighwayNote[] = []
+  private highwayUsed = 0
   private bpm = 120
 
   // `renderer` is only used by the baked glow to render its halo textures.
@@ -95,11 +99,14 @@ export class NoteRenderer {
     this.foldGraphics.label = 'note-fold'
     this.landing.label = 'note-landing'
     this.badgeGraphics.label = 'note-badges'
+    this.highway.label = 'highway-notes'
+    this.highway.visible = false
     this.container.addChild(this.glowContainer)
     this.container.addChild(this.landing)
     this.container.addChild(this.foldGraphics)
     this.container.addChild(this.badgeGraphics)
     this.container.addChild(this.labels.container)
+    this.container.addChild(this.highway)
     this.updateTheme(theme)
   }
 
@@ -165,6 +172,15 @@ export class NoteRenderer {
     this.foldGraphics.clear()
     this.landing.clear()
     this.badgeGraphics.clear()
+    if (this.theme.id === 'highway') {
+      baked?.end(null)
+      this.paintHighway(tracks, currentTime, viewport, visibleTrackIds, practiceFocusTrackIds)
+      return
+    }
+    if (this.highway.visible) {
+      this.highway.clear()
+      this.highway.visible = false
+    }
     if (
       this.material &&
       (this.clipWidth !== viewport.config.canvasWidth || this.clipHeight !== nowLineY)
@@ -349,6 +365,76 @@ export class NoteRenderer {
       baked?.end(null)
       this.glowContainer.visible = false
     }
+  }
+
+  // Short coloured blocks on a perspective lane. Track graphics stay empty so
+  // a theme swap cannot leave Golden Hour bars underneath.
+  private paintHighway(
+    tracks: MidiTrack[],
+    currentTime: number,
+    viewport: Viewport,
+    visibleTrackIds: Set<string>,
+    practiceFocusTrackIds: ReadonlySet<string> | null,
+  ): void {
+    for (const g of this.trackGraphics.values()) g.clear()
+    for (const label of this.fingerLabels) label.visible = false
+    this.labels.clear()
+    this.material?.clear()
+    this.glowContainer.visible = false
+    this.highway.visible = true
+    this.highwayUsed = 0
+    const rangePrefs = getKeyboardRange()
+    const practiceHand = getHandPractice().hand
+    const lookahead = viewport.lookaheadSeconds
+    const visStart = currentTime - viewport.trailSeconds - 0.5
+    const visEnd = currentTime + lookahead + 0.5
+    for (const track of tracks) {
+      if (!visibleTrackIds.has(track.id)) continue
+      const practiceInactive =
+        practiceFocusTrackIds !== null && !practiceFocusTrackIds.has(track.id)
+      const [lo, hi] = visibleNoteRange(track.notes, visStart, visEnd)
+      for (let ni = lo; ni < hi; ni++) {
+        const note = track.notes[ni]!
+        const timeDelta = note.time - currentTime
+        const sustaining = timeDelta <= 0 && timeDelta + note.duration > 0
+        if (!sustaining && (timeDelta < 0 || timeDelta > lookahead)) continue
+        const placement = track.isDrum ? null : placedPitch(note.pitch, rangePrefs)
+        const drawPitch = placement?.pitch ?? note.pitch
+        if (!viewport.hasKey(drawPitch)) continue
+        const handDim =
+          !track.isDrum &&
+          practiceHand !== 'both' &&
+          !noteMatchesHandOf(track, note.pitch, practiceHand)
+        const dimmed = practiceInactive || handDim
+        let slot = this.highwayPool[this.highwayUsed]
+        if (!slot) {
+          slot = {
+            pitch: drawPitch,
+            timeDelta,
+            duration: note.duration,
+            keyX: 0,
+            keyW: 0,
+            alpha: 1,
+          }
+          this.highwayPool.push(slot)
+        }
+        slot.pitch = drawPitch
+        slot.timeDelta = timeDelta
+        slot.duration = note.duration
+        slot.keyX = viewport.pitchToX(drawPitch)
+        slot.keyW = Math.max(viewport.pitchWidth(drawPitch), 2)
+        slot.alpha = dimmed ? 0.35 : 1
+        this.highwayUsed++
+      }
+    }
+    paintHighwayNotes(
+      this.highway,
+      this.highwayPool,
+      viewport.config.canvasWidth,
+      viewport.rollHeight,
+      lookahead,
+      this.highwayUsed,
+    )
   }
 
   private claimSceneInput(
@@ -638,6 +724,8 @@ export class NoteRenderer {
     this.foldGraphics.clear()
     this.landing.clear()
     this.badgeGraphics.clear()
+    this.highway.clear()
+    this.highway.visible = false
     this.glowContainer.visible = false
     this.labels.clear()
     this.material?.clear()
