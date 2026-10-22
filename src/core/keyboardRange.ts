@@ -4,9 +4,11 @@
 // lowest key sounds as the window's lowest key. Until the player calibrates,
 // a Piano M span (24, 48, or 72 keys — one board per 24) or a 25-key
 // controller is assumed to sit on its factory octave: the lowest key sends
-// middle C (MIDI 60). With fit-to-range on, song notes outside the window
-// move by whole octaves onto keys inside it. A note inside a 48-key span
-// stays on that key, including the second snapped board.
+// middle C (MIDI 60). A 48-key window starts on that C4, so the lit key is
+// the guide pitch minus C4 and CC 23 is the range start. With fit-to-range
+// on, song notes outside the window move by whole octaves onto keys inside
+// it. A note inside the 48 stays on that key, including the second board.
+// A note outside is not clamped onto either edge.
 //
 // Persisted under `midee.keyboardRange`. The default is the full 88 keys, so
 // nothing changes until the player narrows it.
@@ -201,9 +203,16 @@ export function rangeAnchorPitchClass(size: number): number | null {
 }
 
 // Nearest musically valid low key for `size`, preferring the lower key on a tie.
-// 88-key windows are pinned to A0. Semitone nudges do not call this.
+// 88-key windows are pinned to A0. Two Piano M boards are 48 keys and start on
+// the factory C4 (MIDI 60): the nearest C to the middle of the piano is C2,
+// and that two-octave gap lit guide notes on the wrong key. Semitone nudges
+// do not call this.
 export function snapRangeStart(size: number, preferredStart: number): number {
   const clamped = clampKeyboardRange({ start: preferredStart, size })
+  if (clamped.size === 48) {
+    const factory = clampKeyboardRange({ start: DEFAULT_CONTROLLER_LOW, size: 48 })
+    if (factory.start === DEFAULT_CONTROLLER_LOW && factory.size === 48) return factory.start
+  }
   const pitchClass = rangeAnchorPitchClass(clamped.size)
   if (pitchClass === null) return MIDI_MIN
   const maxStart = MIDI_MAX - clamped.size + 1
@@ -372,10 +381,16 @@ function readControllerLow(value: unknown): number | null {
 function migrateKeyboardRange(raw: unknown): KeyboardRangePrefs {
   if (!raw || typeof raw !== 'object') return { ...FULL_PREFS }
   const o = raw as Record<string, unknown>
-  const clamped = clampKeyboardRange({
+  const calibrated = o.calibrated === true
+  let clamped = clampKeyboardRange({
     start: typeof o.start === 'number' ? o.start : MIDI_MIN,
     size: typeof o.size === 'number' ? o.size : KEYBOARD_SIZE_MAX,
   })
+  // Older builds snapped two boards to C2. The Piano M's lowest key is C4,
+  // so those saved windows light every guide note 24 semitones sharp.
+  if (!calibrated && clamped.size === 48 && clamped.start === 36) {
+    clamped = { start: DEFAULT_CONTROLLER_LOW, size: 48 }
+  }
   return {
     ...clamped,
     followMidi: o.followMidi === true,

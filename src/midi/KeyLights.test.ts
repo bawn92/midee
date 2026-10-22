@@ -443,6 +443,43 @@ describe('ROLI Piano M key lights', () => {
     expect(send).toHaveBeenCalledWith([0x9c, 48, 127])
   })
 
+  it('lights one left-hand guide on the displayed key, measured from C4', () => {
+    setKeyboardRange({
+      start: 60,
+      size: 48,
+      calibrated: false,
+      controllerLow: null,
+      fitToRange: true,
+    })
+    // F3 is below middle C, so it is the left hand. Fit draws it on F4.
+    // F4 is MIDI 65, five semitones above C4: the 4th white key, not an edge.
+    play(song([53]))
+    expect(
+      midiMessages(send)
+        .filter((message) => (message[0]! & 0xf0) === 0x90)
+        .map((message) => [message[0], message[1]]),
+    ).toEqual([[0x9b, 65]])
+  })
+
+  it('lights a 48-key chord on both boards and does not clamp notes outside it', () => {
+    setKeyboardRange({
+      start: 60,
+      size: 48,
+      calibrated: false,
+      controllerLow: null,
+      fitToRange: true,
+    })
+    play(song([59, 60, 65, 83, 84, 107, 108]))
+    const pitches = midiMessages(send)
+      .filter((message) => (message[0]! & 0xf0) === 0x90)
+      .map((message) => message[1])
+      .sort((a, b) => a! - b!)
+    // 59 folds to 71 and 108 folds to 96. Neither is shoved onto an edge key.
+    expect(pitches).toEqual([60, 65, 71, 83, 84, 96, 107])
+    expect(pitches).not.toContain(59)
+    expect(pitches).not.toContain(108)
+  })
+
   it('sends the whole window to one selected Piano M port', () => {
     setKeyboardRange({
       start: 60,
