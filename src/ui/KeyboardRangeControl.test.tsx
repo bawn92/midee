@@ -51,23 +51,26 @@ describe('KeyboardRangeControl', () => {
       (b) => b.textContent === '48',
     )!
     pair.click()
-    // Two Piano M boards snap to a 48-key C span. The middle of the piano lands on C2.
-    expect(getKeyboardRange()).toMatchObject({ start: 36, size: 48 })
-    expect(root.querySelector('.kbd-range-notes')!.textContent).toBe('C2–B5')
+    // Two Piano M boards snap to factory C4, the note the lowest key sends.
+    expect(getKeyboardRange()).toMatchObject({ start: 60, size: 48 })
+    expect(root.querySelector('.kbd-range-notes')!.textContent).toBe('C4–B7')
     preset.click()
+    // 24 keys recenter on that window, then snap to C. C4–B7's middle is C5.
+    expect(getKeyboardRange()).toMatchObject({ start: 72, size: 24 })
+    expect(root.querySelector('.kbd-range-notes')!.textContent).toBe('C5–B6')
 
     host.querySelector<HTMLButtonElement>('#kbd-range-up')!.click()
-    expect(getKeyboardRange().start).toBe(49)
-    expect(root.querySelector('.kbd-range-notes')!.textContent).toBe('C#3–C5')
+    expect(getKeyboardRange().start).toBe(73)
+    expect(root.querySelector('.kbd-range-notes')!.textContent).toBe('C#5–C7')
 
     host.querySelector<HTMLButtonElement>('#kbd-range-oct-up')!.click()
-    expect(getKeyboardRange().start).toBe(61)
+    expect(getKeyboardRange().start).toBe(85)
 
     host.querySelector<HTMLButtonElement>('#kbd-range-follow')!.click()
     expect(getKeyboardRange().followMidi).toBe(true)
 
     reloadKeyboardRange()
-    expect(getKeyboardRange()).toMatchObject({ start: 61, size: 24, followMidi: true })
+    expect(getKeyboardRange()).toMatchObject({ start: 85, size: 24, followMidi: true })
   })
 
   it('drags, jumps, and resizes the piano overview', () => {

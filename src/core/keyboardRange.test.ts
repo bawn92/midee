@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   adoptControllerNote,
   clampKeyboardRange,
+  controllerKeyLow,
   detectControllerOctaveShift,
   FULL_PIANO_RANGE,
   foldPitchIntoRange,
@@ -149,7 +150,8 @@ describe('snapRangeStart', () => {
 
   it('resizes onto that layout instead of an arbitrary center', () => {
     expect(resizeKeyboardRangeSnapped(FULL_PIANO_RANGE, 24)).toEqual({ start: 48, size: 24 })
-    expect(resizeKeyboardRangeSnapped(FULL_PIANO_RANGE, 48)).toEqual({ start: 36, size: 48 })
+    // Two Piano M boards start on factory C4, not the C2 nearest the middle.
+    expect(resizeKeyboardRangeSnapped(FULL_PIANO_RANGE, 48)).toEqual({ start: 60, size: 48 })
     expect(resizeKeyboardRangeSnapped(FULL_PIANO_RANGE, 72)).toEqual({ start: 24, size: 72 })
     expect(resizeKeyboardRangeSnapped(FULL_PIANO_RANGE, 76)).toEqual({ start: 28, size: 76 })
   })
@@ -239,6 +241,34 @@ describe('controller mapping', () => {
     expect(pianoMKey(83, 60)).toEqual({ block: 0, key: 23 })
     expect(pianoMKey(84, 60)).toEqual({ block: 1, key: 0 })
     expect(pianoMKey(107, 60)).toEqual({ block: 1, key: 23 })
+
+    // The preset 48-key window is this same C4 span. CC 23 is the range start,
+    // the sent note is the guide pitch, and the lit key is guide − C4.
+    const preset = {
+      ...two,
+      ...resizeKeyboardRangeSnapped(FULL_PIANO_RANGE, 48),
+    }
+    expect(preset).toMatchObject({ start: 60, size: 48 })
+    expect(controllerKeyLow(preset)).toBe(preset.start)
+    const lit = (guide: number) => {
+      const sent = unmapControllerPitch(guide, preset)
+      const base = controllerKeyLow(preset)
+      if (sent === null || base === null) return null
+      return { sent, base, key: sent - base }
+    }
+    expect(lit(60)).toEqual({ sent: 60, base: 60, key: 0 })
+    expect(lit(65)).toEqual({ sent: 65, base: 60, key: 5 })
+    expect(lit(83)).toEqual({ sent: 83, base: 60, key: 23 })
+    expect(lit(84)).toEqual({ sent: 84, base: 60, key: 24 })
+    expect(lit(107)).toEqual({ sent: 107, base: 60, key: 47 })
+    // Outside the 48 keys: skipped, not clamped onto C4, B5, C6, or B7.
+    expect(lit(59)).toBeNull()
+    expect(lit(108)).toBeNull()
+    expect(placedPitch(84, preset)).toEqual({ pitch: 84, octaves: 0 })
+    expect(placedPitch(59, { ...preset, fitToRange: true })).toEqual({ pitch: 71, octaves: 1 })
+    expect(placedPitch(108, { ...preset, fitToRange: true })).toEqual({ pitch: 96, octaves: -1 })
+    expect(placedPitch(108, { ...preset, fitToRange: true })?.pitch).not.toBe(107)
+    expect(placedPitch(59, { ...preset, fitToRange: true })?.pitch).not.toBe(60)
 
     // Calibrated lowest key is MIDI 48. The window still starts at C4, so
     // each sounding note lights 12 semitones lower, across both boards.
@@ -340,6 +370,38 @@ describe('keyboard range store', () => {
     const prefs = getKeyboardRange()
     expect(prefs).toMatchObject({ start: 72, controllerLow: 48, calibrated: true })
     expect(mapControllerPitch(48, prefs)).toBe(72)
+  })
+
+  it('moves a saved two-board window from C2 onto factory C4', () => {
+    localStorage.setItem(
+      KEYBOARD_RANGE_STORAGE_KEY,
+      JSON.stringify({
+        start: 36,
+        size: 48,
+        followMidi: false,
+        controllerLow: null,
+        calibrated: false,
+        fitToRange: true,
+      }),
+    )
+    expect(reloadKeyboardRange()).toMatchObject({
+      start: 60,
+      size: 48,
+      calibrated: false,
+      controllerLow: null,
+    })
+    localStorage.setItem(
+      KEYBOARD_RANGE_STORAGE_KEY,
+      JSON.stringify({
+        start: 36,
+        size: 48,
+        followMidi: false,
+        controllerLow: 48,
+        calibrated: true,
+        fitToRange: true,
+      }),
+    )
+    expect(reloadKeyboardRange()).toMatchObject({ start: 36, size: 48, calibrated: true })
   })
 
   it('drops an uncalibrated anchor saved by an older build', () => {

@@ -8,6 +8,7 @@ import { goldenHourTheme } from '../renderer/scenes/goldenHour'
 import { rainyStudyTheme } from '../renderer/scenes/rainyStudy'
 import { KeyLights } from './KeyLights'
 import { pianoMPaletteMessages, themeHandLights } from './pianoMColors'
+import { PIANO_M_ALL_ID, resetPianoMPortsForTests } from './pianoMPorts'
 
 function resetGuide(): void {
   setKeyboardRange({
@@ -76,6 +77,7 @@ describe('Key Lights MIDI output', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     localStorage.clear()
+    resetPianoMPortsForTests()
     resetGuide()
     vi.stubGlobal(
       'requestAnimationFrame',
@@ -115,7 +117,7 @@ describe('Key Lights MIDI output', () => {
     advance(0.1)
     expect(send).not.toHaveBeenCalled()
     expect(lights.status.value).toBe('off')
-    expect(lights.outputs.value).toEqual([{ id: 'keezi', name: 'KEEZI' }])
+    expect(lights.outputs.value).toEqual([{ id: 'keezi', name: 'KEEZI', manufacturer: '' }])
   })
 
   it('sends due note on/off immediately, including short notes and notated releases', () => {
@@ -352,6 +354,7 @@ describe('ROLI Piano M key lights', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     localStorage.clear()
+    resetPianoMPortsForTests()
     resetGuide()
     vi.stubGlobal(
       'requestAnimationFrame',
@@ -440,7 +443,44 @@ describe('ROLI Piano M key lights', () => {
     expect(send).toHaveBeenCalledWith([0x9c, 48, 127])
   })
 
-  it('lights both boards of a 48-key Piano M on the physical key, with no wrap', () => {
+  it('lights one left-hand guide on the displayed key, measured from C4', () => {
+    setKeyboardRange({
+      start: 60,
+      size: 48,
+      calibrated: false,
+      controllerLow: null,
+      fitToRange: true,
+    })
+    // F3 is below middle C, so it is the left hand. Fit draws it on F4.
+    // F4 is MIDI 65, five semitones above C4: the 4th white key, not an edge.
+    play(song([53]))
+    expect(
+      midiMessages(send)
+        .filter((message) => (message[0]! & 0xf0) === 0x90)
+        .map((message) => [message[0], message[1]]),
+    ).toEqual([[0x9b, 65]])
+  })
+
+  it('lights a 48-key chord on both boards and does not clamp notes outside it', () => {
+    setKeyboardRange({
+      start: 60,
+      size: 48,
+      calibrated: false,
+      controllerLow: null,
+      fitToRange: true,
+    })
+    play(song([59, 60, 65, 83, 84, 107, 108]))
+    const pitches = midiMessages(send)
+      .filter((message) => (message[0]! & 0xf0) === 0x90)
+      .map((message) => message[1])
+      .sort((a, b) => a! - b!)
+    // 59 folds to 71 and 108 folds to 96. Neither is shoved onto an edge key.
+    expect(pitches).toEqual([60, 65, 71, 83, 84, 96, 107])
+    expect(pitches).not.toContain(59)
+    expect(pitches).not.toContain(108)
+  })
+
+  it('sends the whole window to one selected Piano M port', () => {
     setKeyboardRange({
       start: 60,
       size: 48,
@@ -589,5 +629,199 @@ describe('ROLI Piano M key lights', () => {
     send.mockClear()
     play(song([48]))
     expect(send.mock.calls.map(([data]) => data)).toEqual([[0x9b, 60, 127]])
+  })
+})
+
+describe('several Piano M outputs', () => {
+  let now: number
+  let clock: MasterClock
+  let lights: KeyLights
+  let sendA: ReturnType<typeof vi.fn>
+  let sendB: ReturnType<typeof vi.fn>
+  let access: MIDIAccess
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    localStorage.clear()
+    resetPianoMPortsForTests()
+    resetGuide()
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn(() => 1),
+    )
+    vi.stubGlobal('cancelAnimationFrame', vi.fn())
+    now = 0
+    clock = new MasterClock(() => now)
+    sendA = vi.fn()
+    sendB = vi.fn()
+    const portA = {
+      id: 'lumi-a',
+      name: 'LUMI Keys BLOCK',
+      manufacturer: 'ROLI',
+      state: 'connected',
+      send: sendA,
+    } as unknown as MIDIOutput
+    const portB = {
+      id: 'lumi-b',
+      name: 'LUMI Keys BLOCK',
+      manufacturer: 'ROLI',
+      state: 'connected',
+      send: sendB,
+    } as unknown as MIDIOutput
+    const roland = {
+      id: 'roland',
+      name: 'Roland FANTOM',
+      manufacturer: 'Roland',
+      state: 'connected',
+      send: vi.fn(),
+    } as unknown as MIDIOutput
+    access = {
+      outputs: new Map([
+        [portA.id, portA],
+        [portB.id, portB],
+        [roland.id, roland],
+      ]),
+    } as unknown as MIDIAccess
+    lights = new KeyLights(clock)
+    lights.setAccess(access)
+    lights.setTheme(goldenHourTheme)
+    sendA.mockClear()
+    sendB.mockClear()
+  })
+
+  afterEach(() => {
+    lights.dispose()
+    clock.dispose()
+    resetPianoMPortsForTests()
+    resetGuide()
+    vi.unstubAllGlobals()
+    vi.useRealTimers()
+  })
+
+  function play(pitches: number[]): void {
+    lights.load({
+      name: 'guide.mid',
+      duration: 2,
+      bpm: 120,
+      timeSignature: [4, 4],
+      ...nominalTempoMap(120, [4, 4]),
+      tracks: [
+        {
+          id: 'piano',
+          name: 'Piano',
+          channel: 0,
+          instrument: 0,
+          isDrum: false,
+          colorIndex: 0,
+          notes: pitches.map((pitch) => ({ pitch, velocity: 1, time: 0, duration: 1 })),
+        },
+      ],
+    })
+    clock.play()
+    now = 0.1
+    vi.advanceTimersByTime(100)
+  }
+
+  it('defaults to every Piano M board', () => {
+    expect(lights.settings.value.outputId).toBe(PIANO_M_ALL_ID)
+    expect(lights.settings.value.channelMode).toBe('pianoM')
+    expect(lights.boardOrder.value).toEqual(['lumi-a', 'lumi-b'])
+    lights.configure({ outputId: '' })
+    expect(lights.settings.value.outputId).toBe('')
+    lights.setAccess(access)
+    expect(lights.settings.value.outputId).toBe('')
+  })
+
+  it('sends every note and one lowest note to each board', () => {
+    sendA.mockClear()
+    sendB.mockClear()
+    setKeyboardRange({
+      start: 60,
+      size: 48,
+      calibrated: false,
+      controllerLow: null,
+      fitToRange: true,
+    })
+    play([60, 83, 84, 107])
+    const colours = themeHandLights(goldenHourTheme)
+    const shared = [
+      [0x9c, 60, 127],
+      [0x9c, 83, 127],
+      [0x9c, 84, 127],
+      [0x9c, 107, 127],
+    ]
+    expect(midiMessages(sendA).filter((message) => (message[0]! & 0xf0) === 0x90)).toEqual(shared)
+    expect(midiMessages(sendB).filter((message) => (message[0]! & 0xf0) === 0x90)).toEqual(shared)
+    const palette = pianoMPaletteMessages(colours, getKeyboardRange())
+    expect(midiMessages(sendA)).toEqual(expect.arrayContaining(palette))
+    expect(midiMessages(sendB)).toEqual(expect.arrayContaining(palette))
+    expect(midiMessages(sendA)).toEqual(expect.arrayContaining([[0xbb, 23, 60]]))
+    expect(midiMessages(sendB)).not.toEqual(expect.arrayContaining([[0xbb, 23, 84]]))
+  })
+
+  it('remembers a swapped order and still sends one shared stream', () => {
+    setKeyboardRange({
+      start: 60,
+      size: 48,
+      calibrated: false,
+      controllerLow: null,
+      fitToRange: true,
+    })
+    lights.swapPianoMBoards()
+    expect(lights.boardOrder.value).toEqual(['lumi-b', 'lumi-a'])
+    sendA.mockClear()
+    sendB.mockClear()
+    lights.setTheme(goldenHourTheme)
+    play([60, 84])
+    const notes = [
+      [0x9c, 60, 127],
+      [0x9c, 84, 127],
+    ]
+    expect(midiMessages(sendA).filter((message) => message[0] === 0x9c)).toEqual(notes)
+    expect(midiMessages(sendB).filter((message) => message[0] === 0x9c)).toEqual(notes)
+    expect(midiMessages(sendA)).toEqual(expect.arrayContaining([[0xbb, 23, 60]]))
+    expect(midiMessages(sendB)).toEqual(expect.arrayContaining([[0xbb, 23, 60]]))
+  })
+
+  it('sends one selected port the whole stream', () => {
+    lights.configure({ outputId: 'lumi-b' })
+    setKeyboardRange({
+      start: 60,
+      size: 48,
+      calibrated: false,
+      controllerLow: null,
+      fitToRange: true,
+    })
+    sendA.mockClear()
+    sendB.mockClear()
+    lights.setTheme(goldenHourTheme)
+    play([60, 84])
+    expect(sendA).not.toHaveBeenCalled()
+    expect(midiMessages(sendB).filter((message) => message[0] === 0x9c)).toEqual([
+      [0x9c, 60, 127],
+      [0x9c, 84, 127],
+    ])
+    expect(midiMessages(sendB)).toEqual(expect.arrayContaining([[0xbb, 23, 60]]))
+  })
+
+  it('holds a sweep for one board on one port', () => {
+    sendA.mockClear()
+    sendB.mockClear()
+    lights.startBoardSweep(0, 'lumi-a')
+    const onA = midiMessages(sendA)
+    expect(onA.some((message) => message[0] === 0x9c && message[1] === 60)).toBe(true)
+    expect(onA.some((message) => message[0] === 0x9c && message[1] === 83)).toBe(true)
+    expect(onA.some((message) => message[0] === 0x9c && message[1] === 84)).toBe(false)
+    expect(onA).toEqual(expect.arrayContaining([[0xbb, 23, 60]]))
+    expect(sendB).not.toHaveBeenCalled()
+    expect(lights.sentLog.value.some((row) => row.portId === 'lumi-a')).toBe(true)
+    lights.startBoardSweep(1, 'lumi-b')
+    const onB = midiMessages(sendB)
+    expect(onB.some((message) => message[0] === 0x9c && message[1] === 84)).toBe(true)
+    expect(onB.some((message) => message[0] === 0x9c && message[1] === 60)).toBe(false)
+    expect(onB).toEqual(expect.arrayContaining([[0xbb, 23, 60]]))
+    expect(midiMessages(sendA).some((message) => message[0] === 0x8c && message[1] === 60)).toBe(
+      true,
+    )
   })
 })

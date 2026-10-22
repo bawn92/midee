@@ -94,6 +94,7 @@ import { LiveNoteStore } from './midi/LiveNoteStore'
 import type { CapturedEvent } from './midi/MidiEncoding'
 import { encodeCapturedEvents, midiFileToBytes, triggerMidiDownload } from './midi/MidiEncoding'
 import { MidiInputManager } from './midi/MidiInputManager'
+import { noticePianoMNote } from './midi/pianoM'
 import { SessionRecorder } from './midi/SessionRecorder'
 import { sessionToMidiFile } from './midi/SessionToMidi'
 import type { LearnController } from './modes/LearnController'
@@ -147,6 +148,7 @@ import { KeyboardResizer } from './ui/KeyboardResizer'
 import { closeModePopovers } from './ui/modeChrome'
 import { overlayRoot } from './ui/overlayRoot'
 import { mountPhoneDock } from './ui/PhoneDock'
+import { PianoMGuide } from './ui/PianoMGuide'
 import type { SessionAction } from './ui/PostSessionModal'
 import { PEDAL_HIDDEN, type PedalIndicatorState, pedalIndicatorState } from './ui/pedalIndicator'
 import { SongGuideController } from './ui/SongGuide'
@@ -248,6 +250,7 @@ export class App {
   private kbdResizer!: KeyboardResizer
   private kbdRange!: KeyboardRangeControl
   private kbdRangeBand!: KeyboardRangeBand
+  private pianoMGuide!: PianoMGuide
   private songGuide!: SongGuideController
   // Hardware note-on pitch → the transposed pitch we actually sounded, so
   // note-off releases that pitch even if the range moves while the key is held.
@@ -637,6 +640,7 @@ export class App {
       rect: (start, end) => this.renderer.keyBandRect(start, end),
       pitchAt: (clientX) => this.renderer.pitchFromClientX(clientX),
     })
+    this.pianoMGuide = new PianoMGuide(overlay, this.store, this.midiInput, this.keyLights)
     this.songGuide = new SongGuideController(overlay, this.store, this.clock, this.synth, (pitch) =>
       this.renderer.keyClientBox(pitch),
     )
@@ -811,6 +815,7 @@ export class App {
     this.unsubs.push(
       this.midiInput.noteOn.subscribe((evt) => {
         if (!evt) return
+        noticePianoMNote(evt.pitch)
         this.inputBus.emitNoteOn({ ...evt, pitch: this.takeMidiPitch(evt.pitch, true) }, 'midi')
       }),
       this.midiInput.noteOff.subscribe((evt) => {
@@ -2791,6 +2796,7 @@ export class App {
     this.kbdResizer.dispose()
     this.kbdRange.dispose()
     this.kbdRangeBand.dispose()
+    this.pianoMGuide.dispose()
     this.songGuide.dispose()
     this.lowerLeft?.remove()
     this.lowerLeft = null

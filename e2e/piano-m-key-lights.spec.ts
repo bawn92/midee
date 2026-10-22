@@ -69,7 +69,9 @@ test('Piano M lights the physical key for the sounding note', async ({ page }) =
   await expect(colors).toHaveValue('pianoM')
   await page.getByText('Setup help').click()
   await expect(page.getByText(/factory key handler/)).toBeVisible()
-  await expect(page.getByText(/Octave to 0/)).toBeVisible()
+  await expect(page.getByText(/press both octave buttons to reset the octave/)).toBeVisible()
+  await expect(page.getByText(/cyan/i)).toHaveCount(0)
+  await expect(page.getByText(/Power\/Mode/)).toHaveCount(0)
   const script = page.getByRole('link', { name: /piano-m-theme-lights\.littlefoot/ })
   await expect(script).toBeVisible()
   await expect(script).toHaveAttribute('href', '/piano-m-theme-lights.littlefoot')
@@ -105,4 +107,60 @@ test('Piano M lights the physical key for the sounding note', async ({ page }) =
   await page.locator('#ts-appearance-panel .panel-close-btn').click()
   await page.locator('#hud-play').click()
   await expect.poll(sent).toEqual(expect.arrayContaining([[0x8b, 60, 0]]))
+})
+
+test('two LUMI ports default to all boards and keep swap as an advanced control', async ({ page }) => {
+  await page.addInitScript(() => {
+    const log: { id: string; data: number[] }[] = []
+    const output = (id: string) => ({
+      id,
+      name: 'LUMI Keys BLOCK',
+      manufacturer: 'ROLI',
+      state: 'connected' as const,
+      connection: 'open' as const,
+      send: (data: number[] | Uint8Array) => {
+        log.push({ id, data: Array.from(data) })
+      },
+    })
+    const access = {
+      inputs: new Map(),
+      outputs: new Map([
+        ['lumi-a', output('lumi-a')],
+        ['lumi-b', output('lumi-b')],
+      ]),
+      sysexEnabled: false,
+      onstatechange: null,
+    }
+    navigator.requestMIDIAccess = async () => access as unknown as MIDIAccess
+    ;(window as unknown as { __boardLog: typeof log }).__boardLog = log
+  })
+
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/start')
+  await page.locator('#midi-input').setInputFiles({
+    name: 'c3.mid',
+    mimeType: 'audio/midi',
+    buffer: C3_MID,
+  })
+  await expect(page.locator('#hud-play')).toBeVisible({ timeout: 30_000 })
+  await openAppearance(page)
+
+  const device = page.getByLabel('Light device')
+  await expect(device).toHaveValue('piano-m:all')
+  await expect(device.locator('option:not([hidden])')).toHaveText([
+    'Off',
+    'All Piano M boards (2)',
+    'Piano M board 1',
+    'Piano M board 2',
+  ])
+  await expect(page.getByRole('button', { name: 'Set up your boards' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Identify' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Swap boards' })).toBeVisible()
+  await page.screenshot({
+    path: '/opt/cursor/artifacts/screenshots/piano_m_all_boards.png',
+  })
+
+  await page.getByRole('button', { name: 'Swap boards' }).click()
+  await expect(device.locator('option[value="lumi-b"]')).toHaveText('Piano M board 1')
+  await expect(device.locator('option[value="lumi-a"]')).toHaveText('Piano M board 2')
 })

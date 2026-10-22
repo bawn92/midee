@@ -2,6 +2,7 @@ import {
   controllerKeyLow,
   DEFAULT_CONTROLLER_LOW,
   type KeyboardRangePrefs,
+  PIANO_M_KEYS_PER_BOARD,
 } from '../core/keyboardRange'
 import type { Theme } from '../renderer/theme'
 
@@ -10,10 +11,9 @@ import type { Theme } from '../renderer/theme'
 export const PIANO_M_LEFT_CHANNEL = 11
 export const PIANO_M_RIGHT_CHANNEL = 12
 
-// CC 20/21/22 carry red/green/blue, 0–127. CC 23 carries the shared lowest
-// key's MIDI note. Each snapped board adds 24 times its DNA x-offset, so
-// one base note covers 24, 48, or 72 keys. Calibration and the octave
-// buttons update that same note.
+// CC 20/21/22 carry red/green/blue, 0–127. CC 23 carries the window's lowest
+// key, the same value on every board. Each script adds 24 times its own
+// board index and lights only that range. Calibration updates that lowest key.
 export const PIANO_M_CC_RED = 20
 export const PIANO_M_CC_GREEN = 21
 export const PIANO_M_CC_BLUE = 22
@@ -44,11 +44,17 @@ function rgbMessages(channel: number, color: number): number[][] {
   ]
 }
 
+export function pianoMBoardBase(low: number, boardIndex: number): number {
+  const base = Math.round(low) + boardIndex * PIANO_M_KEYS_PER_BOARD
+  return Math.max(0, Math.min(127, base))
+}
+
 export function pianoMPaletteMessages(
   colors: { left: number; right: number },
   range: KeyboardRangePrefs,
 ): number[][] {
-  const base = controllerKeyLow(range) ?? DEFAULT_CONTROLLER_LOW
+  const low = controllerKeyLow(range) ?? DEFAULT_CONTROLLER_LOW
+  const base = pianoMBoardBase(low, 0)
   return [
     [0xb0 | PIANO_M_LEFT_CHANNEL, PIANO_M_CC_BASE, base],
     ...rgbMessages(PIANO_M_LEFT_CHANNEL, colors.left),
