@@ -38,6 +38,12 @@ describe('Piano M littlefoot scripts', () => {
       expect(script).toContain('void keyStrike')
       expect(script).toContain('downKey[keyIndex] = 1')
       expect(script).toContain('downKey[keyIndex] = 0')
+      expect(script).toContain('int colorFor[24]')
+      expect(script).not.toContain('colorFor[128]')
+      expect(script).not.toContain('255 - r')
+      expect(script).not.toContain('channel >= 2 && channel <= 5')
+      expect(script).toContain('if (channel != 11 && channel != 12) return')
+      expect(script).toContain('if (ready == 7)')
     }
   })
 

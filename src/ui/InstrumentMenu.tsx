@@ -30,6 +30,8 @@ function TriggerView(props: TriggerProps) {
       }}
       id="ts-instrument"
       type="button"
+      data-highway="instrument"
+      data-highway-label="Instrument"
       data-tip={t('instrument.title')}
       aria-label={t('instrument.aria')}
       aria-busy={props.loading() ? 'true' : 'false'}

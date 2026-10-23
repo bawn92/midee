@@ -390,6 +390,8 @@ export function TopStripView(props: TopStripProps) {
             }}
             id="ts-tracks"
             type="button"
+            data-highway="notes"
+            data-highway-label="Notes"
             aria-label={t('topStrip.tracks')}
             data-tip={t('topStrip.tracks')}
             onClick={() => props.onTracks()}
@@ -559,7 +561,10 @@ export function HudView(props: HudProps) {
         <div class="ctrl-group">
           <button
             type="button"
+            id="hud-sound"
             class="ctrl-icon ctrl-icon--btn"
+            data-highway="sound"
+            data-highway-label="Sound"
             data-tip={props.volume() === 0 ? t('hud.unmute') : t('hud.mute')}
             aria-label={props.volume() === 0 ? t('hud.unmute') : t('hud.mute')}
             aria-pressed={props.volume() === 0}
@@ -594,6 +599,8 @@ export function HudView(props: HudProps) {
             type="button"
             class="speed-chip"
             id="hud-speed-val"
+            data-highway="cascade"
+            data-highway-label="Cascade"
             data-off={props.speed() === 1 ? undefined : ''}
             aria-label={t('hud.aria.speed')}
             onClick={(e) => props.onSpeed(stepSpeedPreset(props.speed(), e.shiftKey ? -1 : 1))}
@@ -698,6 +705,8 @@ export function HudView(props: HudProps) {
             classList={{ 'hud-metro-toggle--on': props.metroRunning() }}
             id="hud-metro"
             type="button"
+            data-highway="metro"
+            data-highway-label={props.metroRunning() ? 'Metronome' : 'OFF'}
             aria-label={t('hud.aria.metronomeToggle')}
             data-tip={t('hud.metronome')}
             onClick={() => props.onMetroToggle()}
@@ -753,6 +762,8 @@ export function HudView(props: HudProps) {
           class="hud-loop-btn hud-group--live"
           id="hud-loop"
           type="button"
+          data-highway="loop"
+          data-highway-label="Loop"
           aria-label={t('hud.aria.loop')}
           data-tip={t('hud.loop')}
           data-loop-state={props.loopState()}

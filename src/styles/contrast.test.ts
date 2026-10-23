@@ -116,12 +116,17 @@ function scenes(): Pair[] {
     readFileSync(resolve(ROOT, 'scenes/night.css'), 'utf8'),
     ':root[data-scene="night"]',
   )
+  const highway = block(
+    readFileSync(resolve(ROOT, 'scenes/highway.css'), 'utf8'),
+    ':root[data-scene="highway"]',
+  )
   return [
     ...pairs('tokens', tokens),
     ...pairs('golden-hour', golden),
     ...pairs('rainy-study', rainy),
     ...pairs('after-hours', after),
     ...pairs('night', night),
+    ...pairs('highway', highway),
   ]
 }
 

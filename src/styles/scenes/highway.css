@@ -1,0 +1,835 @@
+/* Highway. Dark charcoal roll, lavender progress, white icon row.
+   Rules stay under data-scene="highway" so Golden Hour is unchanged. */
+
+:root[data-scene="highway"] {
+  color-scheme: dark;
+  --bg-top: #1a1d28;
+  --bg-bottom: #12141a;
+  --bg-vignette: rgba(0, 0, 0, 0.45);
+  --scene-shadow-img: none;
+  --surface: rgba(22, 24, 32, 0.72);
+  --surface-solid: #1c1f28;
+  --surface-sunken: rgba(245, 246, 250, 0.06);
+  --surface-hover: rgba(36, 39, 50, 0.86);
+  --surface-sunken-hover: rgba(245, 246, 250, 0.1);
+  --surface-active: rgba(245, 246, 250, 0.14);
+  --border: rgba(210, 214, 230, 0.14);
+  --border-strong: rgba(210, 214, 230, 0.28);
+  --text-1: #f5f6fa;
+  --text-2: #c8ccd8;
+  --text-3: #a8aebd;
+  --text-on-accent: #1a1430;
+  --accent: #8b7cf0;
+  --accent-hover: #9d90f5;
+  --accent-press: #7e72e6;
+  --accent-soft: #2a2640;
+  --note-rh: #3ee0ff;
+  --note-rh-edge: #1a9ec0;
+  --note-lh: #ff3d9a;
+  --note-lh-edge: #c41e70;
+  --particle-hot: #fff6ea;
+  --particle-glint: #ffffff;
+  --particle-rain: #9ec4e0;
+  --particle-mist: #b7b4cc;
+  --particle-glass-rim: #e4e2ee;
+  --particle-opal-1: #ff3d9a;
+  --particle-opal-2: #b44dff;
+  --particle-opal-3: #3ee0ff;
+  --particle-opal-4: #7a4dff;
+  --particle-opal-5: #ffe14a;
+  --success: #86cfa0;
+  --success-soft: #1c2c24;
+  --warning: #ffd24a;
+  --warning-soft: #332a14;
+  --danger: #ff6a3c;
+  --danger-soft: #3a221c;
+  --focus-ring: #c9b6ff;
+  --wood-light: #2a2e3a;
+  --wood-dark: #101218;
+  --key-ivory: #f3f3f6;
+  --key-ivory-side: #d5d5de;
+  --key-ebony: #1a1c24;
+  --key-ebony-side: #0c0d12;
+  --felt: #23262f;
+  --scrim: rgba(0, 0, 0, 0.62);
+  --key-gap: #0c0d12;
+  --key-out-of-range: #0a0b10;
+  --roll-lane-c: rgba(210, 214, 230, 0);
+  --roll-lane: rgba(210, 214, 230, 0);
+  --roll-fade: #12141a;
+  --range-glass: rgba(42, 212, 255, 0.16);
+  --range-glass-drag: rgba(42, 212, 255, 0.28);
+  --range-border: rgba(201, 182, 255, 0.7);
+  --range-dim: rgba(0, 0, 0, 0.2);
+  --highway-chrome: 120px;
+  --range-edge: #c9b6ff;
+  --range-strip: #2ad4ff;
+  --range-lane: #d2d6e6;
+  --segment-lh-thumb: rgba(255, 61, 154, 0.35);
+  --segment-rh-thumb: rgba(62, 224, 255, 0.4);
+  --icon-toggled-bg: rgba(255, 255, 255, 0.12);
+  --key-pressed-rh: #2ad4ff;
+  --key-pressed-lh: #2ad4ff;
+  --key-wrong: #ff6a3c;
+  --tooltip-bg: rgba(28, 31, 40, 0.94);
+  --tooltip-fg: #f5f6fa;
+  --tooltip-border: rgba(210, 214, 230, 0.18);
+  --tooltip-shadow: 0 8px 22px rgba(0, 0, 0, 0.5);
+  --hit-line: rgba(228, 220, 255, 0.95);
+  --wood-highlight: #323746;
+}
+
+html[data-scene="highway"] {
+  color-scheme: dark;
+}
+
+/* Transport sits in the top chrome, under the icon row, so the roll can run
+   from that band down to the keys without notes passing through the controls. */
+html[data-scene="highway"] #hud.float-hud,
+html[data-scene="highway"]
+  #hud.hud--active.float-hud--idle:not(.float-hud--pinned):not(.float-hud--dragging),
+html[data-scene="highway"] .float-hud.pa-hud {
+  transform: none !important;
+  animation: none !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  filter: none;
+  top: calc(56px + env(safe-area-inset-top));
+  bottom: auto;
+  left: 0;
+  right: 0;
+  width: auto;
+  max-width: none;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 4px 16px 8px;
+  overflow: visible;
+  opacity: 1 !important;
+  pointer-events: none;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  z-index: 45;
+}
+
+html[data-scene="highway"] .float-hud.pa-hud.float-hud--idle,
+html[data-scene="highway"] #hud.hud--active.float-hud--idle,
+html[data-scene="highway"]
+  #hud.hud--active.float-hud--idle:not(.float-hud--pinned):not(.float-hud--dragging) {
+  opacity: 1 !important;
+  pointer-events: none;
+  transform: none !important;
+}
+
+html[data-scene="highway"] #hud .hud-bar,
+html[data-scene="highway"] .pa-hud__body {
+  pointer-events: none;
+}
+
+html[data-scene="highway"] #hud .hud-bar > *,
+html[data-scene="highway"] .pa-hud__body > *,
+html[data-scene="highway"] #hud .scrubber-wrap,
+html[data-scene="highway"] #hud .scrubber,
+html[data-scene="highway"] #hud .float-hud__close {
+  pointer-events: auto;
+}
+
+html[data-scene="highway"] #top-strip {
+  top: calc(56px + env(safe-area-inset-top));
+}
+
+html[data-scene="highway"] #hud .scrubber-wrap,
+html[data-scene="highway"] .pa-hud__scrubber-wrap {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: auto;
+  left: 0;
+  z-index: 50;
+  display: block;
+  width: auto;
+  height: 3px;
+  margin: 0;
+  padding: 0;
+  gap: 0;
+  background: transparent;
+  pointer-events: auto;
+}
+
+html[data-scene="highway"] #hud .scrubber-wrap .time-display,
+html[data-scene="highway"] .pa-hud__scrubber-wrap .pa-hud__time {
+  display: none;
+}
+
+html[data-scene="highway"] #hud .scrubber,
+html[data-scene="highway"] #pa-scrubber {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 51;
+  width: 100%;
+  height: 3px;
+  margin: 0;
+  background-color: transparent;
+  background-image:
+    linear-gradient(#c9b6ff, #c9b6ff),
+    linear-gradient(rgba(201, 182, 255, 0.28), rgba(201, 182, 255, 0.28));
+  background-size:
+    var(--pct, 0%) 3px,
+    100% 3px;
+  background-position:
+    left center,
+    left center;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+html[data-scene="highway"] #hud .scrubber::-webkit-slider-runnable-track,
+html[data-scene="highway"] #pa-scrubber::-webkit-slider-runnable-track {
+  height: 3px;
+  margin: 0;
+  border-radius: 0;
+  background: linear-gradient(
+    to right,
+    #c9b6ff 0,
+    #c9b6ff var(--pct, 0%),
+    rgba(201, 182, 255, 0.28) var(--pct, 0%),
+    rgba(201, 182, 255, 0.28) 100%
+  );
+  box-shadow: none;
+}
+
+html[data-scene="highway"] #hud .scrubber::-webkit-slider-thumb,
+html[data-scene="highway"] #pa-scrubber::-webkit-slider-thumb {
+  width: 0;
+  height: 0;
+  margin-top: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+html[data-scene="highway"] #hud .scrubber::-moz-range-track,
+html[data-scene="highway"] #pa-scrubber::-moz-range-track {
+  height: 3px;
+  border: 0;
+  border-radius: 0;
+  background: rgba(201, 182, 255, 0.28);
+}
+
+html[data-scene="highway"] #hud .scrubber::-moz-range-progress,
+html[data-scene="highway"] #pa-scrubber::-moz-range-progress {
+  height: 3px;
+  border-radius: 0;
+  background: #c9b6ff;
+}
+
+html[data-scene="highway"] #hud .scrubber::-moz-range-thumb,
+html[data-scene="highway"] #pa-scrubber::-moz-range-thumb {
+  width: 0;
+  height: 0;
+  border: 0;
+  background: transparent;
+}
+
+html[data-scene="highway"] #hud #hud-loop,
+html[data-scene="highway"] #hud #hud-metro,
+html[data-scene="highway"] #hud #hud-sound,
+html[data-scene="highway"] #hud #hud-speed-val {
+  width: 64px;
+  height: 42px;
+  min-width: 0;
+  color: #fff;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+html[data-scene="highway"] [data-highway] {
+  position: fixed;
+  top: 10px;
+  z-index: 46;
+  display: flex !important;
+  flex-direction: column;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 2px;
+  width: 64px;
+  height: 42px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #fff;
+  pointer-events: auto;
+}
+
+html[data-scene="highway"] [data-highway="loop"] {
+  left: calc(50% - 238px);
+}
+
+html[data-scene="highway"] [data-highway="notes"] {
+  left: calc(50% - 170px);
+}
+
+html[data-scene="highway"] [data-highway="metro"] {
+  left: calc(50% - 102px);
+}
+
+html[data-scene="highway"] [data-highway="sound"] {
+  left: calc(50% - 34px);
+}
+
+html[data-scene="highway"] [data-highway="cascade"] {
+  left: calc(50% + 34px);
+}
+
+html[data-scene="highway"] [data-highway="instrument"] {
+  left: calc(50% + 102px);
+}
+
+html[data-scene="highway"] [data-highway="effect"] {
+  left: calc(50% + 170px);
+}
+
+html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="loop"] {
+  left: calc(50% - 238px);
+}
+
+html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="notes"] {
+  left: calc(50% - 170px);
+}
+
+html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="metro"] {
+  left: calc(50% - 102px);
+}
+
+html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="wait"] {
+  left: calc(50% - 34px);
+}
+
+html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="sound"] {
+  left: calc(50% + 34px);
+}
+
+html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="cascade"] {
+  left: calc(50% + 102px);
+}
+
+html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="instrument"] {
+  left: calc(50% + 170px);
+}
+
+html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="effect"] {
+  left: calc(50% + 238px);
+}
+
+html[data-scene="highway"] [data-highway]::after,
+html[data-scene="highway"] [data-tip]::after {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0;
+  box-shadow: none !important;
+  padding: 0;
+}
+
+html[data-scene="highway"] [data-highway]::after {
+  content: attr(data-highway-label);
+  font:
+    600 9px / 11px "Figtree",
+    system-ui,
+    sans-serif;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+html[data-scene="highway"] [data-highway] svg,
+html[data-scene="highway"] [data-highway] .hud-loop-icon,
+html[data-scene="highway"] [data-highway] .hud-metro-icon,
+html[data-scene="highway"] [data-highway] .ts-instrument-icon-slot,
+html[data-scene="highway"] [data-highway] .ts-customize-icon {
+  position: static;
+  display: flex;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  overflow: visible;
+  clip: auto;
+  color: #fff;
+}
+
+html[data-scene="highway"] #hud-loop-label,
+html[data-scene="highway"] #ts-tracks > span + span,
+html[data-scene="highway"] #ts-instrument-label,
+html[data-scene="highway"] #ts-instrument > span:last-child,
+html[data-scene="highway"] #ts-customize-label,
+html[data-scene="highway"] .ts-customize-chev,
+html[data-scene="highway"] #pa-loop > span + span,
+html[data-scene="highway"] #pa-wait > span + span,
+html[data-scene="highway"] .pa-hud__seg-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+html[data-scene="highway"] #ts-customize-icon {
+  color: #fff !important;
+}
+
+html[data-scene="highway"] #hud-metro.hud-metro-toggle--on,
+html[data-scene="highway"] #hud-loop[data-loop-state="playing"],
+html[data-scene="highway"] #hud-loop[data-loop-state="overdubbing"] {
+  color: #fff;
+  background: transparent;
+}
+
+html[data-scene="highway"] #hud-speed-val,
+html[data-scene="highway"] #pa-cascade {
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  font:
+    600 11px / 14px "Figtree",
+    system-ui,
+    sans-serif;
+  color: #fff;
+  background: transparent;
+}
+
+/* Plain captions. The scene pill, the mode thumb, and the accent chip were
+   painting white and teal blocks over the icon row and clipping the words. */
+html[data-scene="highway"] .piano-m-guide,
+html[data-scene="highway"] .piano-m-guide-mount {
+  z-index: 60;
+}
+
+html[data-scene="highway"] #top-strip {
+  top: 0;
+  height: 52px;
+  align-items: center;
+  overflow: visible;
+  background: #12141a;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  z-index: 32;
+  pointer-events: none;
+}
+
+html[data-scene="highway"] #top-strip::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: var(--highway-chrome);
+  background: #12141a;
+}
+
+html[data-scene="highway"] #top-strip .ts-pill,
+html[data-scene="highway"] #ts-customize,
+html[data-scene="highway"] #ts-instrument,
+html[data-scene="highway"] .ts-mode-switch,
+html[data-scene="highway"] .ts-mode-thumb,
+html[data-scene="highway"] .ts-home,
+html[data-scene="highway"] [data-highway] {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  overflow: visible;
+  border-radius: 0;
+}
+
+html[data-scene="highway"] .ts-mode-thumb {
+  display: none !important;
+}
+
+html[data-scene="highway"] .ts-mode-switch {
+  position: fixed;
+  top: calc(62px + env(safe-area-inset-top));
+  left: 8px;
+  z-index: 47;
+  height: 28px;
+  padding: 0;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+html[data-scene="highway"] .ts-mode-seg {
+  min-width: 28px !important;
+  min-height: 0 !important;
+  width: 28px;
+  height: 28px;
+  padding: 0 !important;
+  background: transparent;
+}
+
+html[data-scene="highway"] #hud-metro-group {
+  display: flex !important;
+}
+
+html[data-scene="highway"] .ts-mode-label {
+  display: none;
+}
+
+html[data-scene="highway"] .ts-status-main,
+html[data-scene="highway"] .ts-bars {
+  display: none;
+}
+
+html[data-scene="highway"] [data-highway]::after {
+  white-space: nowrap;
+  overflow: visible;
+}
+
+html[data-scene="highway"] #hud .hud-bar,
+html[data-scene="highway"] .pa-hud__body {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 28px;
+  width: 100%;
+  height: auto;
+  min-height: 36px;
+  padding: 0 56px 0 132px;
+  box-sizing: border-box;
+}
+
+html[data-scene="highway"] #hud .hud-group--transport {
+  gap: 14px;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+html[data-scene="highway"] #hud .hud-divider,
+html[data-scene="highway"] .pa-hud__options {
+  display: none;
+}
+
+html[data-scene="highway"] #hud .ctrl-group:has([data-highway]) {
+  display: flex !important;
+}
+
+html[data-scene="highway"] #hud .btn-play,
+html[data-scene="highway"] #hud.hud--playing .btn-play {
+  width: 28px;
+  height: 28px;
+  background: transparent !important;
+  color: #fff !important;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none !important;
+  animation: none;
+}
+
+html[data-scene="highway"] #hud .btn-skip,
+html[data-scene="highway"] #hud .ctrl-icon,
+html[data-scene="highway"] #hud .ctrl-icon--btn,
+html[data-scene="highway"] #hud .speed-chip,
+html[data-scene="highway"] #hud .hud-transpose-step,
+html[data-scene="highway"] #hud .hud-transpose-val,
+html[data-scene="highway"] #hud .hud-metro,
+html[data-scene="highway"] #hud .hud-metro-toggle,
+html[data-scene="highway"] #hud .hud-hand-track,
+html[data-scene="highway"] #hud .hud-hand,
+html[data-scene="highway"] #hud .hud-hand.is-active,
+html[data-scene="highway"] #hud .hud-hands[data-hand="left"] .hud-hand.is-active,
+html[data-scene="highway"] #hud .hud-hands[data-hand="right"] .hud-hand.is-active,
+html[data-scene="highway"] #top-strip .ts-home-icon,
+html[data-scene="highway"] #top-strip .ts-record-btn,
+html[data-scene="highway"] #top-strip .ts-pill,
+html[data-scene="highway"] #top-strip .ts-pill--midi,
+html[data-scene="highway"] #top-strip .ts-status {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0;
+}
+
+html[data-scene="highway"] #hud .hud-hand-track,
+html[data-scene="highway"] #hud .hud-metro {
+  height: auto;
+  padding: 0;
+  gap: 8px;
+  border: 0;
+}
+
+html[data-scene="highway"] #hud .hud-hand {
+  min-width: 0;
+  height: auto;
+  padding: 0 2px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+html[data-scene="highway"] #hud .hud-hand.is-active {
+  color: #fff;
+}
+
+html[data-scene="highway"] #hud .hud-piece {
+  max-width: 160px;
+  flex: 0 1 120px;
+  min-width: 0;
+}
+
+html[data-scene="highway"] #hud .float-hud__close {
+  margin: 0;
+  background: transparent !important;
+  border: 0;
+  box-shadow: none !important;
+}
+
+html[data-scene="highway"] #hud .mini-slider {
+  width: 64px;
+}
+
+html[data-scene="highway"] #top-strip .ts-home-name {
+  display: none;
+}
+
+html[data-scene="highway"] #top-strip .ts-home {
+  width: auto;
+  pointer-events: auto;
+}
+
+html[data-scene="highway"] .pa-hud__body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+html[data-scene="highway"] .pa-hud__options {
+  border: 0;
+  padding: 0;
+}
+
+html[data-scene="highway"] .kbd-range-panel,
+html[data-scene="highway"] .kbd-range-bar {
+  background: #1c1f28;
+  color: #f5f6fa;
+  border-color: rgba(210, 214, 230, 0.16);
+  box-shadow: none;
+}
+
+html[data-scene="highway"] .kbd-range-board,
+html[data-scene="highway"] .kbd-range-boards-mini-board {
+  background: transparent !important;
+}
+
+html[data-scene="highway"] .kbd-range-board-label {
+  top: -18px;
+  bottom: auto;
+  padding: 0;
+  background: transparent;
+  font-size: 10px;
+  line-height: 12px;
+  color: rgba(245, 246, 250, 0.72);
+}
+
+html[data-scene="highway"] #kbd-range-band .kbd-range-band-tip {
+  top: -22px;
+  background: transparent;
+  color: rgba(245, 246, 250, 0.82);
+  box-shadow: none;
+}
+
+@media (max-width: 720px) {
+  :root[data-scene="highway"] {
+    --highway-chrome: 140px;
+  }
+
+  html[data-scene="highway"] #hud.float-hud,
+  html[data-scene="highway"]
+    #hud.hud--active.float-hud--idle:not(.float-hud--pinned):not(.float-hud--dragging),
+  html[data-scene="highway"] .float-hud.pa-hud {
+    top: calc(84px + env(safe-area-inset-top));
+    padding: 2px 8px 6px;
+  }
+
+  html[data-scene="highway"] [data-highway],
+  html[data-scene="highway"] #hud #hud-loop,
+  html[data-scene="highway"] #hud #hud-metro,
+  html[data-scene="highway"] #hud #hud-sound,
+  html[data-scene="highway"] #hud #hud-speed-val {
+    top: 6px;
+    width: 48px !important;
+    height: 40px !important;
+  }
+
+  html[data-scene="highway"] [data-highway]::after {
+    font-size: 8px;
+    line-height: 10px;
+    letter-spacing: 0;
+  }
+
+  html[data-scene="highway"] [data-highway="loop"] {
+    left: calc((100% - 336px) / 2);
+  }
+  html[data-scene="highway"] [data-highway="notes"] {
+    left: calc((100% - 336px) / 2 + 48px);
+  }
+  html[data-scene="highway"] [data-highway="metro"] {
+    left: calc((100% - 336px) / 2 + 96px);
+  }
+  html[data-scene="highway"] [data-highway="sound"] {
+    left: calc((100% - 336px) / 2 + 144px);
+  }
+  html[data-scene="highway"] [data-highway="cascade"] {
+    left: calc((100% - 336px) / 2 + 192px);
+  }
+  html[data-scene="highway"] [data-highway="instrument"] {
+    left: calc((100% - 336px) / 2 + 240px);
+  }
+  html[data-scene="highway"] [data-highway="effect"] {
+    left: calc((100% - 336px) / 2 + 288px);
+  }
+
+  html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway],
+  html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) #hud #hud-loop,
+  html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) #hud #hud-metro,
+  html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) #hud #hud-sound,
+  html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) #hud #hud-speed-val {
+    width: 44px !important;
+  }
+  html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="loop"] {
+    left: calc((100% - 368px) / 2);
+  }
+  html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="notes"] {
+    left: calc((100% - 368px) / 2 + 46px);
+  }
+  html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="metro"] {
+    left: calc((100% - 368px) / 2 + 92px);
+  }
+  html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="wait"] {
+    left: calc((100% - 368px) / 2 + 138px);
+  }
+  html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="sound"] {
+    left: calc((100% - 368px) / 2 + 184px);
+  }
+  html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="cascade"] {
+    left: calc((100% - 368px) / 2 + 230px);
+  }
+  html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="instrument"] {
+    left: calc((100% - 368px) / 2 + 276px);
+  }
+  html[data-scene="highway"]:has(#top-strip[data-mode="learn"]) [data-highway="effect"] {
+    left: calc((100% - 368px) / 2 + 322px);
+  }
+
+  /* The icon buttons live in .ts-end. Keeping that node displayed lets the
+     fixed icons paint, without parking Open / Learn / Record on the row.
+     The more button opens those. */
+  html[data-scene="highway"] .ts-end:not(.is-open) {
+    display: flex !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    min-width: 0;
+    padding: 0;
+    overflow: visible;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    pointer-events: none;
+  }
+
+  html[data-scene="highway"] .ts-end:not(.is-open) [data-highway] {
+    pointer-events: auto;
+  }
+
+  html[data-scene="highway"]
+    .ts-end:not(.is-open)
+    :is(#ts-open, #ts-learn-this, #ts-midi, #ts-record, .ts-sep) {
+    display: none !important;
+  }
+
+  html[data-scene="highway"] .ts-more {
+    display: inline-flex !important;
+    position: fixed;
+    top: calc(50px + env(safe-area-inset-top));
+    right: 6px;
+    left: auto;
+    z-index: 48;
+    width: 32px;
+    height: 32px;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 0;
+    color: #fff;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  html[data-scene="highway"] #top-strip .ts-brand-link {
+    display: none;
+  }
+
+  html[data-scene="highway"] #top-strip .ts-home,
+  html[data-scene="highway"] .ts-mode-switch {
+    position: fixed;
+    top: calc(50px + env(safe-area-inset-top));
+    z-index: 47;
+  }
+
+  html[data-scene="highway"] #top-strip .ts-home {
+    left: 4px;
+    right: auto;
+    width: 32px;
+    height: 32px;
+    min-width: 0 !important;
+    min-height: 0 !important;
+  }
+
+  html[data-scene="highway"] #top-strip .ts-home-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  html[data-scene="highway"] .ts-mode-switch {
+    left: 42px;
+  }
+
+  html[data-scene="highway"] #top-strip .ts-status {
+    display: none;
+  }
+
+  html[data-scene="highway"] #hud .hud-bar,
+  html[data-scene="highway"] .pa-hud__body {
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 10px;
+    min-height: 0;
+    padding: 2px 4px 0;
+  }
+
+  html[data-scene="highway"] #hud .btn-skip {
+    width: 32px;
+    height: 32px;
+  }
+
+  html[data-scene="highway"] #hud .hud-group--transport {
+    gap: 8px;
+  }
+
+  html[data-scene="highway"] #hud .hud-piece {
+    flex: 1 1 56px;
+    max-width: 88px;
+  }
+}

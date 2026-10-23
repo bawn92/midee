@@ -1,13 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MasterClock } from '../core/clock/MasterClock'
 import { setHandPractice } from '../core/handPractice'
-import { FULL_PIANO_RANGE, getKeyboardRange, setKeyboardRange } from '../core/keyboardRange'
+import {
+  FULL_PIANO_RANGE,
+  getKeyboardRange,
+  resizeKeyboardRangeSnapped,
+  setKeyboardRange,
+} from '../core/keyboardRange'
 import { deriveMidi } from '../core/midi/derive'
 import { type MidiFile, nominalTempoMap } from '../core/midi/types'
+import { highwayLaneColor } from '../renderer/highwayNotes'
+import { screenNoteColor } from '../renderer/noteColor'
+import { afterHoursTheme } from '../renderer/scenes/afterHours'
 import { goldenHourTheme } from '../renderer/scenes/goldenHour'
+import { highwayTheme } from '../renderer/scenes/highway'
+import { nightTheme } from '../renderer/scenes/night'
 import { rainyStudyTheme } from '../renderer/scenes/rainyStudy'
+import { setPaintPrefs } from '../ui/paint'
 import { KeyLights } from './KeyLights'
-import { pianoMPaletteMessages, themeHandLights } from './pianoMColors'
+import { midiColorByte, pianoMPaletteMessages, themeHandLights } from './pianoMColors'
 import { PIANO_M_ALL_ID, resetPianoMPortsForTests } from './pianoMPorts'
 
 function resetGuide(): void {
@@ -34,6 +45,28 @@ function midiMessages(send: { mock: { calls: unknown[][] } }): number[][] {
     for (let i = 0; i + 2 < bytes.length; i += 3) out.push(bytes.slice(i, i + 3))
   }
   return out
+}
+
+function colorTriplet(channel: number, color: number): number[][] {
+  const status = 0xb0 | channel
+  return [
+    [status, 20, midiColorByte((color >> 16) & 0xff)],
+    [status, 21, midiColorByte((color >> 8) & 0xff)],
+    [status, 22, midiColorByte(color & 0xff)],
+  ]
+}
+
+function expectColoredNote(
+  messages: number[][],
+  channel: number,
+  pitch: number,
+  color: number,
+  velocity = 127,
+): void {
+  const note = [0x90 | channel, pitch, velocity]
+  const at = messages.findIndex((message) => message.every((byte, index) => byte === note[index]))
+  expect(at).toBeGreaterThanOrEqual(3)
+  expect(messages.slice(at - 3, at + 1)).toEqual([...colorTriplet(channel, color), note])
 }
 
 function file(): MidiFile {
@@ -480,6 +513,33 @@ describe('ROLI Piano M key lights', () => {
     expect(pitches).not.toContain(108)
   })
 
+  it('spreads a centred 48-key window across both boards and colours each note', () => {
+    lights.setTheme(highwayTheme)
+    send.mockClear()
+    const window = resizeKeyboardRangeSnapped(FULL_PIANO_RANGE, 48)
+    setKeyboardRange({
+      ...window,
+      calibrated: false,
+      controllerLow: null,
+      fitToRange: true,
+    })
+    // C and D share the left hand. B is the right hand. Each note-on carries
+    // its own lane colour, the same value the highway block is painted with.
+    play(song([48, 50, 83]))
+    const messages = midiMessages(send)
+    const notes = messages.filter((message) => (message[0]! & 0xf0) === 0x90)
+    expect(notes.map((message) => message[1])).toEqual([72, 74, 107])
+    expect(messages).toEqual(expect.arrayContaining([[0xbb, 23, 60]]))
+    const track = highwayTheme.trackColors[0] ?? 0xffffff
+    expectColoredNote(messages, 11, 72, screenNoteColor(highwayTheme, 48, 'left', track))
+    expectColoredNote(messages, 11, 74, screenNoteColor(highwayTheme, 50, 'left', track))
+    expectColoredNote(messages, 12, 107, screenNoteColor(highwayTheme, 83, 'right', track))
+    expect(screenNoteColor(highwayTheme, 48, 'left', track)).toBe(highwayLaneColor(48))
+    expect(screenNoteColor(highwayTheme, 50, 'left', track)).toBe(highwayLaneColor(50))
+    expect(screenNoteColor(highwayTheme, 83, 'right', track)).toBe(highwayLaneColor(83))
+    expect(highwayLaneColor(48)).not.toBe(highwayLaneColor(50))
+  })
+
   it('sends the whole window to one selected Piano M port', () => {
     setKeyboardRange({
       start: 60,
@@ -628,7 +688,61 @@ describe('ROLI Piano M key lights', () => {
     )
     send.mockClear()
     play(song([48]))
-    expect(send.mock.calls.map(([data]) => data)).toEqual([[0x9b, 60, 127]])
+    const left = screenNoteColor(
+      goldenHourTheme,
+      48,
+      'left',
+      goldenHourTheme.trackColors[0] ?? 0xffffff,
+    )
+    expect(left).toBe(goldenHourTheme.trackColors[1])
+    expect(midiMessages(send)).toEqual([...colorTriplet(11, left), [0x9b, 60, 127]])
+  })
+
+  it('matches Golden Hour and Rainy Study block colours, including finger colour', () => {
+    setKeyboardRange({
+      start: 48,
+      size: 24,
+      calibrated: false,
+      controllerLow: null,
+      fitToRange: true,
+    })
+    setPaintPrefs({ colorBy: 'hand', noteStyle: 'classic' })
+    lights.setTheme(goldenHourTheme)
+    send.mockClear()
+    play(song([48, 60]))
+    const goldTrack = goldenHourTheme.trackColors[0] ?? 0xffffff
+    let messages = midiMessages(send)
+    expectColoredNote(messages, 11, 60, screenNoteColor(goldenHourTheme, 48, 'left', goldTrack))
+    expectColoredNote(messages, 12, 72, screenNoteColor(goldenHourTheme, 60, 'right', goldTrack))
+    expect(screenNoteColor(goldenHourTheme, 48, 'left', goldTrack)).toBe(
+      goldenHourTheme.trackColors[1],
+    )
+
+    setPaintPrefs({ colorBy: 'finger', noteStyle: 'classic' })
+    send.mockClear()
+    play(song([48, 60]))
+    messages = midiMessages(send)
+    expect(screenNoteColor(goldenHourTheme, 48, 'left', goldTrack)).toBe(goldTrack)
+    expectColoredNote(messages, 11, 60, goldTrack)
+    expectColoredNote(messages, 12, 72, goldTrack)
+
+    setPaintPrefs({ colorBy: 'finger', noteStyle: 'glass' })
+    expect(screenNoteColor(goldenHourTheme, 48, 'left', goldTrack)).toBe(
+      goldenHourTheme.trackColors[1],
+    )
+
+    setPaintPrefs({ colorBy: 'hand', noteStyle: 'classic' })
+    for (const theme of [rainyStudyTheme, nightTheme, afterHoursTheme]) {
+      lights.setTheme(theme)
+      send.mockClear()
+      play(song([48, 60]))
+      const track = theme.trackColors[0] ?? 0xffffff
+      messages = midiMessages(send)
+      expect(screenNoteColor(theme, 48, 'left', track)).toBe(theme.trackColors[1])
+      expect(screenNoteColor(theme, 60, 'right', track)).toBe(theme.trackColors[0])
+      expectColoredNote(messages, 11, 60, screenNoteColor(theme, 48, 'left', track))
+      expectColoredNote(messages, 12, 72, screenNoteColor(theme, 60, 'right', track))
+    }
   })
 })
 

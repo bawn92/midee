@@ -13,6 +13,7 @@ import { isBlackKey, MIDI_MAX, MIDI_MIN } from '../core/midi/types'
 import { shimmerStrength, whiteKeyColumn } from '../ui/liveEntrance'
 import { paintPrefs } from '../ui/paint'
 import { readCssColor } from './cssColor'
+import { highwayKeyCaption, paintHighwayBlackKeys, paintHighwayKeyBed } from './highwayNotes'
 import {
   type HandStops,
   handStops,
@@ -25,6 +26,7 @@ import {
 import { KBD, keyFrame, whiteKeyCount } from './keyboardMetrics'
 import { keyboardPalette } from './keyboardStyle'
 import { keyRect } from './keyGeometry'
+import { screenNoteColor } from './noteColor'
 import { rangeLayerAlpha, rangeOverlay } from './rangeOverlay'
 import { keyboardMaterial } from './scenes'
 import { liveNoteColor, type Theme } from './theme'
@@ -226,12 +228,13 @@ export class KeyboardRenderer {
     // that tint the white/black keys and gap. Hitting this cache path turns
     // a theme re-apply or redundant rebuildStaticLayers() into a no-op.
     const walnut = keyboardMaterial(this.theme.id) === 'upright-walnut'
+    const highway = this.theme.id === 'highway'
     const palette = keyboardPalette(this.theme.id)
     const paint = paintPrefs()
     const sig =
       `${canvasWidth}x${keyboardHeight}|${pitchMin ?? 21}-${pitchMax ?? 108}|` +
       `${this.theme.whiteKey}.${this.theme.blackKey}.${this.theme.keyBorder}|` +
-      `${walnut ? palette.id : 'flat'}|labels=${paint.keyLabels}|y=${yOffset}`
+      `${highway ? 'highway' : walnut ? palette.id : 'flat'}|labels=${paint.keyLabels}|y=${yOffset}`
     if (sig === this.lastBuildSignature && this.whiteSprite && this.blackSprite) return
     this.lastBuildSignature = sig
 
@@ -252,7 +255,23 @@ export class KeyboardRenderer {
     // ─── White bake ──────────────────────────────────────────────────
     // Walnut keys are a static canvas: ivory gradient, front face, specular.
     // The press overlay stays Graphics and only rebuilds when the chord changes.
-    if (walnut) {
+    if (highway) {
+      const whiteCanvas = document.createElement('canvas')
+      whiteCanvas.width = Math.max(1, canvasWidth)
+      whiteCanvas.height = Math.max(1, keyboardHeight)
+      const whiteCtx = whiteCanvas.getContext('2d')
+      const whites = []
+      if (whiteCtx) {
+        for (let p = MIDI_MIN; p <= MIDI_MAX; p++) {
+          if (isBlackKey(p)) continue
+          const pos = positions.get(p)
+          if (!pos) continue
+          whites.push(keyRect(p, pos, keyboardHeight))
+        }
+        paintHighwayKeyBed(whiteCtx, whiteCanvas.width, whiteCanvas.height, whites)
+      }
+      this.whiteTexture = Texture.from(whiteCanvas)
+    } else if (walnut) {
       const caseCanvas = document.createElement('canvas')
       caseCanvas.width = Math.max(1, canvasWidth)
       caseCanvas.height = Math.max(1, keyboardHeight)
@@ -309,7 +328,23 @@ export class KeyboardRenderer {
     }
 
     // ─── Black bake ──────────────────────────────────────────────────
-    if (walnut) {
+    if (highway) {
+      const blackCanvas = document.createElement('canvas')
+      blackCanvas.width = Math.max(1, canvasWidth)
+      blackCanvas.height = Math.max(1, keyboardHeight)
+      const blackCtx = blackCanvas.getContext('2d')
+      const blacks = []
+      if (blackCtx) {
+        for (let p = MIDI_MIN; p <= MIDI_MAX; p++) {
+          if (!isBlackKey(p)) continue
+          const pos = positions.get(p)
+          if (!pos) continue
+          blacks.push(keyRect(p, pos, keyboardHeight))
+        }
+        paintHighwayBlackKeys(blackCtx, blackCanvas.width, blackCanvas.height, blacks)
+      }
+      this.blackTexture = Texture.from(blackCanvas)
+    } else if (walnut) {
       const blackCanvas = document.createElement('canvas')
       blackCanvas.width = Math.max(1, canvasWidth)
       blackCanvas.height = Math.max(1, keyboardHeight)
@@ -370,7 +405,7 @@ export class KeyboardRenderer {
     this.blackActiveLayer.y = yOffset
     this.caseLayer.y = yOffset
     this.drawCase(canvasWidth, keyboardHeight, walnut)
-    this.drawKeyLabels(positions, yOffset, keyboardHeight, walnut)
+    this.drawKeyLabels(positions, yOffset, keyboardHeight, walnut, highway)
     this.rangeSatLayer.y = yOffset
     this.rangeLayer.y = yOffset
     this.pressLiftLayer.y = yOffset
@@ -471,9 +506,14 @@ export class KeyboardRenderer {
     yOffset: number,
     keyboardHeight: number,
     walnut: boolean,
+    highway: boolean,
   ): void {
     for (const label of this.keyLabels) label.destroy()
     this.keyLabels = []
+    if (highway) {
+      this.drawHighwayLabels(positions, yOffset, keyboardHeight)
+      return
+    }
     if (!walnut || !paintPrefs().keyLabels) return
     for (const [pitch, pos] of positions) {
       if (pitch % 12 !== 0) continue
@@ -493,6 +533,37 @@ export class KeyboardRenderer {
       text.y = yOffset + (KBD.keysY + KBD.keysH * 0.82) * v
       text.style.fontSize = Math.max(8, 12 * (pos.width / KBD.pitch))
       this.container.addChild(text)
+      this.keyLabels.push(text)
+    }
+  }
+
+  // Letter on every white key, flat name on every black key. Drawn above the
+  // cyan press so the caption stays readable on the lit key.
+  private drawHighwayLabels(
+    positions: Map<number, { x: number; width: number }>,
+    yOffset: number,
+    keyboardHeight: number,
+  ): void {
+    for (const [pitch, pos] of positions) {
+      const black = isBlackKey(pitch)
+      const rect = keyRect(pitch, pos, keyboardHeight)
+      const caption = highwayKeyCaption(pitch)
+      const fit = rect.w / (caption.length * 0.62)
+      const size = Math.min(black ? 10 : 13, rect.w * (black ? 0.42 : 0.48), fit)
+      if (size < 7) continue
+      const text = new Text({
+        text: caption,
+        style: {
+          fontFamily: 'Figtree, system-ui, sans-serif',
+          fontSize: size,
+          fontWeight: '600',
+          fill: black ? 0xd5d5de : 0x6d6d78,
+        },
+      })
+      text.anchor.set(0.5, 1)
+      text.x = rect.x + rect.w / 2
+      text.y = yOffset + rect.y + rect.h - (black ? 3 : 5)
+      text.eventMode = 'none'
       this.keyLabels.push(text)
     }
   }
@@ -563,7 +634,9 @@ export class KeyboardRenderer {
     const y = walnut ? frame.keysY : 0
     const h = walnut ? frame.keysH : keyboardHeight
     const wash = (x: number, w: number) => {
-      this.rangeSatLayer.rect(x, y, w, h).fill({ color: 0x808080, alpha: 0.4 * playAlpha })
+      if (this.theme.id !== 'highway') {
+        this.rangeSatLayer.rect(x, y, w, h).fill({ color: 0x808080, alpha: 0.4 * playAlpha })
+      }
       this.rangeLayer.rect(x, y, w, h).fill({ color: dim.color, alpha: dim.alpha * playAlpha })
     }
     if (x0 > 0) wash(0, x0)
@@ -629,6 +702,7 @@ export class KeyboardRenderer {
   private paintArrivalLight(canvasWidth: number, keyboardHeight: number, yOffset: number): void {
     this.shadowLayer.clear()
     this.lampLayer.clear()
+    if (this.theme.id === 'highway') return
     const palette = keyboardPalette(this.theme.id)
     const shadowH = Math.max(12, Math.round(keyboardHeight * 0.16))
     for (let i = 0; i < 6; i++) {
@@ -663,6 +737,7 @@ export class KeyboardRenderer {
   // alone so the real note light wins.
   drawShimmer(viewport: Viewport): void {
     this.shimmerLayer.clear()
+    if (this.theme.id === 'highway') return
     const elapsed = this.shimmerMs
     if (elapsed === null) return
     const positions = viewport.getAllKeyPositions()
@@ -734,18 +809,25 @@ export class KeyboardRenderer {
 
     this.whitePracticeHintLayer.y = yOffset
     this.blackPracticeHintLayer.y = yOffset
-    const tint = this.theme.accent
-    const acceptedTint = 0x9ee7b8
+    const highway = this.theme.id === 'highway'
+    const hintColor = (pitch: number) =>
+      screenNoteColor(
+        this.theme,
+        pitch,
+        pitch < 60 ? 'left' : 'right',
+        this.theme.trackColors[pitch < 60 ? 1 : 0] ?? this.theme.accent,
+      )
 
     if (accepted) {
       for (const pitch of accepted) {
         const pos = positions.get(pitch)
         if (!pos) continue
         const layer = isBlackKey(pitch) ? this.blackPracticeHintLayer : this.whitePracticeHintLayer
+        const acceptedTint = highway ? hintColor(pitch) : 0x9ee7b8
         this.drawPracticeKey(layer, pitch, pos, kbHeight, acceptedTint, {
-          bodyAlpha: isBlackKey(pitch) ? 0.36 : 0.25,
-          stripAlpha: 0.58,
-          haloScale: 0.55,
+          bodyAlpha: highway ? 0.72 : isBlackKey(pitch) ? 0.36 : 0.25,
+          stripAlpha: highway ? 0 : 0.58,
+          haloScale: highway ? 0 : 0.55,
         })
       }
     }
@@ -756,10 +838,11 @@ export class KeyboardRenderer {
       if (!pos) continue
       const isBlack = isBlackKey(pitch)
       const layer = isBlack ? this.blackPracticeHintLayer : this.whitePracticeHintLayer
+      const tint = highway ? hintColor(pitch) : this.theme.accent
       this.drawPracticeKey(layer, pitch, pos, kbHeight, tint, {
-        bodyAlpha: (isBlack ? 0.32 : 0.22) * pulse,
-        stripAlpha: 0.55 * pulse,
-        haloScale: pulse,
+        bodyAlpha: highway ? 1 : (isBlack ? 0.32 : 0.22) * pulse,
+        stripAlpha: highway ? 0 : 0.55 * pulse,
+        haloScale: highway ? 0 : pulse,
       })
     }
   }
@@ -774,21 +857,25 @@ export class KeyboardRenderer {
   ): void {
     const { x, y, w, h, radius } = keyRect(pitch, pos, keyboardHeight)
 
-    const halos: readonly [number, number][] = [
-      [12, 0.05 * opts.haloScale],
-      [7, 0.1 * opts.haloScale],
-      [3, 0.18 * opts.haloScale],
-    ]
-    for (const [expand, alpha] of halos) {
-      layer.roundRect(x - expand, y - expand, w + expand * 2, h + expand * 2, radius + expand)
-      layer.fill({ color: tint, alpha })
+    if (opts.haloScale > 0) {
+      const halos: readonly [number, number][] = [
+        [12, 0.05 * opts.haloScale],
+        [7, 0.1 * opts.haloScale],
+        [3, 0.18 * opts.haloScale],
+      ]
+      for (const [expand, alpha] of halos) {
+        layer.roundRect(x - expand, y - expand, w + expand * 2, h + expand * 2, radius + expand)
+        layer.fill({ color: tint, alpha })
+      }
     }
 
     layer.roundRect(x, y, w, h, radius)
     layer.fill({ color: tint, alpha: opts.bodyAlpha })
 
-    layer.rect(x + radius, y, w - radius * 2, 2)
-    layer.fill({ color: tint, alpha: opts.stripAlpha })
+    if (opts.stripAlpha > 0) {
+      layer.rect(x + radius, y, w - radius * 2, 2)
+      layer.fill({ color: tint, alpha: opts.stripAlpha })
+    }
   }
 
   private hintSignature(

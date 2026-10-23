@@ -22,6 +22,7 @@ import '@fontsource/figtree/latin-800.css'
 import '@fontsource/young-serif/latin-400.css'
 import './styles/type.css'
 import './styles/overlay.css'
+import './styles/scenes/highway.css'
 import './ui/paint'
 // Self-hosted fonts via @fontsource. Each CSS import emits a `@font-face`
 // rule (font-display: swap, latin subset) into the main stylesheet bundle
