@@ -16,6 +16,7 @@ import { screenNoteColor } from '../renderer/noteColor'
 import type { Theme } from '../renderer/theme'
 import { getTrackColor } from '../renderer/theme'
 import { createEventSignal } from '../store/eventSignal'
+import { subscribePaint } from '../ui/paint'
 import { isPianoMPortName } from './pianoM'
 import {
   pianoMBoardBase,
@@ -116,6 +117,7 @@ export class KeyLights {
   private readonly unsubscribe: () => void
   private readonly unsubscribeRange: () => void
   private readonly unsubscribeHand: () => void
+  private readonly unsubscribePaint: () => void
   private disposed = false
   private theme: Theme | null = null
 
@@ -133,6 +135,12 @@ export class KeyLights {
     }
     this.unsubscribeRange = subscribeKeyboardRange(retarget)
     this.unsubscribeHand = subscribeHandPractice(retarget)
+    // Hand, finger, and note shape change the block fill. Held keys take the
+    // new colour on the next note-on, so restart the notes that are already lit.
+    this.unsubscribePaint = subscribePaint(() => {
+      if (this.disposed || this.settings.value.channelMode !== 'pianoM' || !this.theme) return
+      this.restart()
+    })
     window.addEventListener('pagehide', this.onPageHide)
     window.addEventListener('pageshow', this.onPageShow)
   }
@@ -156,11 +164,13 @@ export class KeyLights {
     this.bindOutput()
   }
 
-  // The Piano M script paints channels 12/13 with these colours and repaints
-  // keys that are already on, so a theme change does not need new note-ons.
+  // Palette CCs name the hand colours. Keys that are already lit keep the
+  // colour snapshotted at their note-on, so a theme change sends those
+  // note-ons again with the new block colour.
   setTheme(theme: Theme): void {
     this.theme = theme
     this.sendPalette()
+    if (!this.disposed && this.settings.value.channelMode === 'pianoM') this.restart()
   }
 
   configure(patch: Partial<KeyLightsSettings>): void {
@@ -366,14 +376,10 @@ export class KeyLights {
     return note.channel & 0x0f
   }
 
-  private channelColor = new Map<number, number>()
-
   private sendPalette(): void {
     if (this.disposed || this.identifying || !this.hasDestination() || !this.theme) return
     if (this.settings.value.channelMode !== 'pianoM') return
     const colors = themeHandLights(this.theme)
-    this.channelColor.set(11, colors.left)
-    this.channelColor.set(12, colors.right)
     const batch: number[] = []
     for (const message of pianoMPaletteMessages(colors, getKeyboardRange())) {
       batch.push(...message)
@@ -388,24 +394,28 @@ export class KeyLights {
     velocity: number,
     event: LightNote,
   ): void {
+    // The script copies its colour registers at note-on, and only after a
+    // complete red/green/blue triplet. The triplet has to be the bytes
+    // immediately before this note-on, including when it matches the previous
+    // note on the same hand. A skipped triplet leaves the next key with a
+    // stale or half-updated colour.
     if (this.settings.value.channelMode === 'pianoM' && this.theme) {
       const color = this.noteColor(event)
-      if (this.channelColor.get(channel) !== color) {
-        for (const message of pianoMNoteColorMessages(channel, color)) batch.push(...message)
-        this.channelColor.set(channel, color)
-      }
+      for (const message of pianoMNoteColorMessages(channel, color)) batch.push(...message)
     }
     batch.push(0x90 | channel, pitch, velocity)
   }
 
-  // Colour of the note on screen, snapshotted into the script at note-on.
+  // Same fill the block is drawn with, for the pitch the block is drawn on.
   private noteColor(event: LightNote): number {
     const theme = this.theme
     if (!theme) return 0xffffff
+    const source = Math.round(event.sourcePitch ?? event.pitch)
     const track = this.midi?.tracks[event.trackIndex]
     const trackColor = track ? getTrackColor(track, theme) : (theme.trackColors[0] ?? 0xffffff)
-    const hand = noteHandOf(track, event.sourcePitch ?? event.pitch)
-    return screenNoteColor(theme, event.sourcePitch ?? event.pitch, hand, trackColor)
+    const hand = noteHandOf(track, source)
+    const drawn = placedPitch(source, getKeyboardRange())
+    return screenNoteColor(theme, drawn?.pitch ?? source, hand, trackColor)
   }
 
   private send(data: number[]): void {
@@ -660,6 +670,7 @@ export class KeyLights {
     this.unsubscribe()
     this.unsubscribeRange()
     this.unsubscribeHand()
+    this.unsubscribePaint()
     window.removeEventListener('pagehide', this.onPageHide)
     window.removeEventListener('pageshow', this.onPageShow)
   }

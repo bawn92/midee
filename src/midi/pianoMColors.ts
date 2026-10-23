@@ -11,9 +11,10 @@ import type { Theme } from '../renderer/theme'
 export const PIANO_M_LEFT_CHANNEL = 11
 export const PIANO_M_RIGHT_CHANNEL = 12
 
-// CC 20/21/22 carry red/green/blue, 0–127. CC 23 carries the window's lowest
-// key, the same value on every board. Each script adds 24 times its own
-// board index and lights only that range. Calibration updates that lowest key.
+// CC 20/21/22 carry red/green/blue, 0–127. Every Piano M note-on is preceded
+// by that note's own triplet, in the same buffer. CC 23 carries the window's
+// lowest key, the same value on every board. Each script adds 24 times its
+// own board index and lights only that range. Calibration updates that lowest key.
 export const PIANO_M_CC_RED = 20
 export const PIANO_M_CC_GREEN = 21
 export const PIANO_M_CC_BLUE = 22

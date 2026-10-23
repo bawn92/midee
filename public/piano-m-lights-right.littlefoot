@@ -8,14 +8,24 @@ Piano Club sends one shared stream. CC 23 is the lowest MIDI note of the
 whole window, the same value on every board. This file lights only the 24
 keys that belong to board 1: that lowest note, plus 24.
 Notes outside those 24 keys are ignored. The same note-on can arrive twice.
-CC 20/21/22 just before a note-on are that note's colour. The script copies
-them at note-on, and a note-off clears the colour. A held key with no guide
-stays dark.
+
+Each lit key stores the colour of that one note. CC 20, 21, and 22 are a
+complete red, green, and blue triplet on channel 12 or 13, sent immediately
+before that note's note-on. The key changes colour only when all three have
+arrived, so a torn triplet cannot mix two notes. A note-off on those
+channels clears the key. Notes and controllers on any other channel are
+ignored, so playing the board cannot wipe or recolour a guide.
+
+The colour table is 24 keys, not 128 notes. A 128-int table is larger than
+this block's globals and overwrites the colour registers, which is why keys
+used to light in unrelated colours. #heapsize is the shared host heap, in
+bytes. It is not the colour table.
 
 Playing and the octave buttons stay with the factory key handler. This
 program does not define a button handler, so it cannot move the octave
-from a button. The key callbacks below only remember which key is held
-for the lights. They do not transmit notes.
+from a button. The key callbacks below only remember which key is held.
+They do not change the colour and they do not transmit notes. A held key
+stays the note colour.
 
 If this board still plays the same notes as the left board, the load
 below raises its octave when the DNA topology is unset. Press both
@@ -24,8 +34,9 @@ Holding all three top buttons restores the factory program and removes
 these lights.
 
 Channels 12 and 13 are the left and right hands. CC 20/21/22 are red,
-green, and blue. CC 23 on channel 12 or 13 is the window lowest note.
-CC 121 and CC 123 clear the guide notes.
+green, and blue, 0–127, expanded with (value * 255) / 127. CC 23 on
+channel 12 or 13 is the window lowest note. CC 121 and CC 123 clear the
+guide notes.
 */
 
 #heapsize: 128
@@ -40,10 +51,12 @@ int baseNote;
 int leftR;
 int leftG;
 int leftB;
+int leftGot;
 int rightR;
 int rightG;
 int rightB;
-int colorFor[128];
+int rightGot;
+int colorFor[24];
 int downKey[24];
 
 const int configOctave = 4;
@@ -66,16 +79,13 @@ int component(int value) {
     return (value * 255) / 127;
 }
 
-int handFromChannel(int channel) {
-    if (channel == 1 || channel == 11) return 1;
-    if (channel >= 2 && channel <= 5) return 1;
-    if (channel == 6 || channel == 12) return 2;
-    if (channel >= 7 && channel <= 10) return 2;
-    return 0;
+int keyFrom(int note) {
+    int origin = baseNote + boardIndex * keysPerBlock;
+    return note - origin;
 }
 
 void clearNotes() {
-    for (int i = 0; i < 128; i = i + 1) colorFor[i] = 0;
+    for (int i = 0; i < keysPerBlock; i = i + 1) colorFor[i] = 0;
 }
 
 void clearDown() {
@@ -90,6 +100,26 @@ void markUp(int keyIndex) {
     if (keyIndex >= 0 && keyIndex < keysPerBlock) downKey[keyIndex] = 0;
 }
 
+void remember(int channel, int cc, int value) {
+    if (channel == 11) {
+        if (leftGot == 7) leftGot = 0;
+        if (cc == 20) leftR = value;
+        if (cc == 21) leftG = value;
+        if (cc == 22) leftB = value;
+        if (cc == 20) leftGot = leftGot | 1;
+        if (cc == 21) leftGot = leftGot | 2;
+        if (cc == 22) leftGot = leftGot | 4;
+        return;
+    }
+    if (rightGot == 7) rightGot = 0;
+    if (cc == 20) rightR = value;
+    if (cc == 21) rightG = value;
+    if (cc == 22) rightB = value;
+    if (cc == 20) rightGot = rightGot | 1;
+    if (cc == 21) rightGot = rightGot | 2;
+    if (cc == 22) rightGot = rightGot | 4;
+}
+
 void initialise() {
     // Factory handler sends the notes. Do not turn clustering on: that
     // replaces the factory octave map and both boards then play the same notes.
@@ -98,10 +128,12 @@ void initialise() {
     baseNote = 60;
     leftR = 0;
     leftG = 0;
-    leftB = 255;
+    leftB = 0;
+    leftGot = 0;
     rightR = 0;
-    rightG = 255;
+    rightG = 0;
     rightB = 0;
+    rightGot = 0;
     clearNotes();
     clearDown();
 }
@@ -111,49 +143,47 @@ void handleMIDI(int byte0, int byte1, int byte2) {
     int status = (byte0 >> 4) & 0x0F;
 
     if (status == midiCC) {
+        if (channel != 11 && channel != 12) return;
         if (byte1 == 123 || byte1 == 121) {
             clearNotes();
             return;
         }
-        if (byte1 == 23 && (channel == 11 || channel == 12)) {
-            baseNote = byte2;
+        if (byte1 == 23) {
+            if (baseNote != byte2) {
+                baseNote = byte2;
+                clearNotes();
+            }
             return;
         }
-        if (byte1 >= 20 && byte1 <= 22 && (channel == 11 || channel == 12)) {
-            int value = component(byte2);
-            if (channel == 11) {
-                if (byte1 == 20) leftR = value;
-                if (byte1 == 21) leftG = value;
-                if (byte1 == 22) leftB = value;
-            } else {
-                if (byte1 == 20) rightR = value;
-                if (byte1 == 21) rightG = value;
-                if (byte1 == 22) rightB = value;
-            }
-        }
+        if (byte1 >= 20 && byte1 <= 22) remember(channel, byte1, component(byte2));
         return;
     }
 
+    // Factory key echo is another channel. It must not repaint or clear a guide.
+    if (channel != 11 && channel != 12) return;
     if (byte1 < 0 || byte1 > 127) return;
-    int hand = handFromChannel(channel);
+    int key = keyFrom(byte1);
+    if (key < 0 || key >= keysPerBlock) return;
+
     if (status == midiNoteOn && byte2 > 0) {
-        if (hand != 0) {
-            int r = leftR;
-            int g = leftG;
-            int b = leftB;
-            if (hand == 2) {
-                r = rightR;
-                g = rightG;
-                b = rightB;
-            }
-            colorFor[byte1] = r * 65536 + g * 256 + b;
+        int ready = leftGot;
+        int r = leftR;
+        int g = leftG;
+        int b = leftB;
+        if (channel == 12) {
+            ready = rightGot;
+            r = rightR;
+            g = rightG;
+            b = rightB;
         }
-    } else if (status == midiNoteOff || (status == midiNoteOn && byte2 == 0)) {
-        colorFor[byte1] = 0;
+        if (ready == 7) colorFor[key] = r * 65536 + g * 256 + b;
+        return;
     }
+
+    if (status == midiNoteOff || (status == midiNoteOn && byte2 == 0)) colorFor[key] = 0;
 }
 
-// Observe only. These callbacks do not transmit notes.
+// Observe only. These callbacks do not transmit notes or change colours.
 void keyStrike(int keyIndex, int unused, int velocity) {
     if (velocity < 0) keyIndex = unused;
     markDown(keyIndex);
@@ -174,8 +204,7 @@ void repaint() {
         int origin = baseNote + boardIndex * keysPerBlock;
         int note = origin + key;
         int packed = 0;
-        if (note >= 0 && note < 128) packed = colorFor[note];
-        int held = downKey[key];
+        if (note >= origin && note < origin + keysPerBlock) packed = colorFor[key];
         int r = 0;
         int g = 0;
         int b = 0;
@@ -183,11 +212,6 @@ void repaint() {
             r = packed / 65536;
             g = (packed - r * 65536) / 256;
             b = packed - r * 65536 - g * 256;
-            if (held == 1) {
-                r = r + (255 - r) / 2;
-                g = g + (255 - g) / 2;
-                b = b + (255 - b) / 2;
-            }
         }
         fillPixel(makeARGB(255, r, g, b), key, 0);
     }
